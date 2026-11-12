@@ -312,6 +312,9 @@ class SettingsRepository extends ChangeNotifier {
       customReminders: _loadCustomReminders(),
       reduceMotion: _storage.getBool('reduce_motion'),
       eveningEyeCare: _storage.getBool('evening_eye_care'),
+      focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
+      blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
@@ -578,6 +581,9 @@ class SettingsRepository extends ChangeNotifier {
       customReminders: _loadCustomReminders(),
       reduceMotion: _storage.getBool('reduce_motion'),
       eveningEyeCare: _storage.getBool('evening_eye_care'),
+      focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
+      blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
@@ -852,6 +858,12 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('break_chime_enabled', settings.breakChimeEnabled);
     await _storage.setBool('reduce_motion', settings.reduceMotion);
     await _storage.setBool('evening_eye_care', settings.eveningEyeCare);
+    await _storage.setBool('focus_dnd_enabled', settings.focusDndEnabled);
+    await _storage.setBool(
+      'blink_reminders_enabled',
+      settings.blinkRemindersEnabled,
+    );
+    await _storage.setInt('avoid_break_hour', settings.avoidBreakHour);
     await _storage.setBool('large_overlay_text', settings.largeOverlayText);
     await _storage.setString(
       'custom_reminders',

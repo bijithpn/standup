@@ -117,7 +117,7 @@ void main() {
   group('idle relief', () {
     test('20s away rests the eyes but not posture', () {
       final relieved = s.onIdleSample(25, t0);
-      expect(relieved, {eye});
+      expect(relieved, {eye, HealthReminderKind.blink});
     });
 
     test('a longer absence also resets posture', () {

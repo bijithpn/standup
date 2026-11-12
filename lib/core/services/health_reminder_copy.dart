@@ -10,8 +10,11 @@ class HealthReminderCopy {
       'Rest your eyes — look 20 feet away for 20 seconds',
       'Blink a few times and look into the distance',
       'Look away from the screen for a moment',
-      'Distance check — keep the screen an arm\'s length away',
+    ],
+    'blink': [
       'Blink slowly 10 times to rewet your eyes',
+      'Screens make us blink less — blink fully a few times',
+      'Distance check — keep the screen an arm\'s length away',
     ],
     'posture': [
       'Sit tall and relax your shoulders',
@@ -53,12 +56,8 @@ class HealthReminderCopy {
   }
 
   static const Map<String, List<String>> _pills = {
-    'eyeblink': [
-      'Rest your eyes',
-      'Look away for a moment',
-      'Blink & refocus',
-      'Check screen distance',
-    ],
+    'eyeblink': ['Rest your eyes', 'Look away for a moment', 'Blink & refocus'],
+    'blink': ['Blink slowly', 'Blink a few times', 'Check screen distance'],
     'posture': ['Posture check', 'Sit tall', 'Relax your shoulders'],
     'hydration': ['Drink some water', 'Time for water', 'Stay hydrated'],
     'stretch': [
@@ -80,6 +79,7 @@ class HealthReminderCopy {
   static String poster(String? type) => isCustom(type)
       ? _customTitle(type!)
       : switch (type) {
+          'blink' => 'Blink slowly!',
           'posture' => 'Watch your posture!',
           'hydration' => 'Drink some water!',
           'stretch' => 'Time to stretch!',

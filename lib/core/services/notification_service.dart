@@ -155,12 +155,13 @@ class NotificationService {
     await _show(id: 33, title: 'Your day in review', body: text);
   }
 
-  Future<void> showEveningEyeCare() async {
+  Future<void> showEveningEyeCare(bool warmedScreen) async {
     await _show(
       id: 34,
       title: 'Evening eye care',
-      body:
-          'Turn on Night Shift / a warm display tint and lower your brightness.',
+      body: warmedScreen
+          ? 'Night Shift is on. Consider lowering your brightness too.'
+          : 'Turn on a warm display tint and lower your brightness.',
     );
   }
 

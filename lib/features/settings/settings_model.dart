@@ -54,6 +54,15 @@ class SettingsModel {
   /// Nudge at 8 pm to warm and dim the screen.
   final bool eveningEyeCare;
 
+  /// Run the "BreakMate Focus On/Off" Shortcut around focus sessions.
+  final bool focusDndEnabled;
+
+  /// Extra, more frequent blink / screen-distance reminder (off by default).
+  final bool blinkRemindersEnabled;
+
+  /// Hour of day (0-23) in which breaks are deferred to the next hour; -1 off.
+  final int avoidBreakHour;
+
   /// Scale up text in break overlays and reminders.
   final bool largeOverlayText;
 
@@ -226,6 +235,9 @@ class SettingsModel {
     this.customReminders = const [],
     this.reduceMotion = false,
     this.eveningEyeCare = false,
+    this.focusDndEnabled = false,
+    this.blinkRemindersEnabled = false,
+    this.avoidBreakHour = -1,
     this.largeOverlayText = false,
     this.lookedAwayPromptEnabled = false,
     this.customImagePath,
@@ -338,6 +350,9 @@ class SettingsModel {
     List<CustomReminder>? customReminders,
     bool? reduceMotion,
     bool? eveningEyeCare,
+    bool? focusDndEnabled,
+    bool? blinkRemindersEnabled,
+    int? avoidBreakHour,
     bool? largeOverlayText,
     bool? lookedAwayPromptEnabled,
     String? customImagePath,
@@ -458,6 +473,10 @@ class SettingsModel {
       customReminders: customReminders ?? this.customReminders,
       reduceMotion: reduceMotion ?? this.reduceMotion,
       eveningEyeCare: eveningEyeCare ?? this.eveningEyeCare,
+      focusDndEnabled: focusDndEnabled ?? this.focusDndEnabled,
+      blinkRemindersEnabled:
+          blinkRemindersEnabled ?? this.blinkRemindersEnabled,
+      avoidBreakHour: avoidBreakHour ?? this.avoidBreakHour,
       largeOverlayText: largeOverlayText ?? this.largeOverlayText,
       lookedAwayPromptEnabled:
           lookedAwayPromptEnabled ?? this.lookedAwayPromptEnabled,
@@ -598,6 +617,9 @@ class SettingsModel {
     'customReminders': [for (final r in customReminders) r.toJson()],
     'reduceMotion': reduceMotion,
     'eveningEyeCare': eveningEyeCare,
+    'focusDndEnabled': focusDndEnabled,
+    'blinkRemindersEnabled': blinkRemindersEnabled,
+    'avoidBreakHour': avoidBreakHour,
     'largeOverlayText': largeOverlayText,
     'lookedAwayPromptEnabled': lookedAwayPromptEnabled,
     'customImagePath': customImagePath,
@@ -713,6 +735,9 @@ class SettingsModel {
       breakChimeEnabled: map['breakChimeEnabled'] as bool? ?? false,
       reduceMotion: map['reduceMotion'] as bool? ?? false,
       eveningEyeCare: map['eveningEyeCare'] as bool? ?? false,
+      focusDndEnabled: map['focusDndEnabled'] as bool? ?? false,
+      blinkRemindersEnabled: map['blinkRemindersEnabled'] as bool? ?? false,
+      avoidBreakHour: map['avoidBreakHour'] as int? ?? -1,
       largeOverlayText: map['largeOverlayText'] as bool? ?? false,
       customReminders: [
         for (final r in map['customReminders'] as List? ?? const [])

@@ -308,7 +308,8 @@ class CompanionOverlayController extends ChangeNotifier {
       _settingsRepo.currentSettings.companionIdleAnimation;
   bool get reactionsEnabled => _settingsRepo.currentSettings.companionReactions;
   bool get reducedMotionEnabled =>
-      _settingsRepo.currentSettings.companionReducedMotion;
+      _settingsRepo.currentSettings.companionReducedMotion ||
+      _settingsRepo.currentSettings.reduceMotion;
   bool get ballThrowEnabled => _settingsRepo.currentSettings.ballThrowEnabled;
   bool get treatEnabled => _settingsRepo.currentSettings.treatEnabled;
   bool get isLowDistractionMode =>

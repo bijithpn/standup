@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:clock/clock.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
@@ -105,8 +107,19 @@ class DailyInsightNotifierService {
         _storage.getString('last_evening_eye_care') == _dateKey(now)) {
       return;
     }
-    _notificationService.showEveningEyeCare();
     _storage.setString('last_evening_eye_care', _dateKey(now));
+    _enableNightShift().then(_notificationService.showEveningEyeCare);
+  }
+
+  static const _bridge = MethodChannel('com.breakmate.desktop/bridge');
+
+  Future<bool> _enableNightShift() async {
+    if (!Platform.isMacOS) return false;
+    try {
+      return await _bridge.invokeMethod<bool>('setNightShift', true) ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Fired at clock-out: breaks taken and focus time for today.

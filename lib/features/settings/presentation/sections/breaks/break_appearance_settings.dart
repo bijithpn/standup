@@ -257,14 +257,14 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         buildCard([
           toggleRow(
             'Reduce motion',
-            'Freeze decorative animations in break screens and reminders.',
+            'Freeze decorative animations in break screens, reminders, the companion and the app.',
             widget.settings.reduceMotion,
             (v) => widget.onSave(widget.settings.copyWith(reduceMotion: v)),
           ),
           divider(),
           toggleRow(
             'Larger text',
-            'Scale up text in break screens and reminders.',
+            'Scale up text in break screens and reminders (and slightly in the app).',
             widget.settings.largeOverlayText,
             (v) => widget.onSave(widget.settings.copyWith(largeOverlayText: v)),
           ),

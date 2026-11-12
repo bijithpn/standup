@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/analytics/time_pattern_insights.dart'
+    show formatHourLabel;
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -45,11 +47,37 @@ class NotificationsSection extends StatelessWidget {
           if (settings.healthRemindersEnabled) ...[
             divider(),
             _buildReminderPreviewRow(onPreview: _previewRandom),
+            divider(),
+            toggleRow(
+              'Blink & screen-distance reminders',
+              'An extra, more frequent nudge to blink fully and keep the '
+                  'screen an arm\'s length away.',
+              settings.blinkRemindersEnabled,
+              (v) => onSave(settings.copyWith(blinkRemindersEnabled: v)),
+            ),
+          ],
+          if (settings.avoidBreakHour >= 0) ...[
+            divider(),
+            toggleRow(
+              'Avoid breaks around ${formatHourLabel(settings.avoidBreakHour)}',
+              'Breaks due in that hour wait until the next one. Turn off to '
+                  'restore normal timing.',
+              true,
+              (_) => onSave(settings.copyWith(avoidBreakHour: -1)),
+            ),
           ],
           divider(),
           toggleRow(
+            'Do Not Disturb in focus sessions',
+            'macOS only. Create two Shortcuts named "BreakMate Focus On" and '
+                '"BreakMate Focus Off" that set your Focus mode.',
+            settings.focusDndEnabled,
+            (v) => onSave(settings.copyWith(focusDndEnabled: v)),
+          ),
+          divider(),
+          toggleRow(
             'Evening eye care',
-            'At 8 pm, a nudge to warm your screen and lower brightness.',
+            'At 8 pm, turn on Night Shift (macOS) and nudge you to lower brightness.',
             settings.eveningEyeCare,
             (v) => onSave(settings.copyWith(eveningEyeCare: v)),
           ),

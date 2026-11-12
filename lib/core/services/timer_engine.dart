@@ -71,6 +71,7 @@ class TimerEngine extends ChangeNotifier {
   // [TimerStateData] so all of them survive a restart.
   int _elapsedFor(HealthReminderKind kind) => switch (kind) {
     HealthReminderKind.eyeRest => _stateData.eyeBlinkElapsedSeconds,
+    HealthReminderKind.blink => _stateData.blinkElapsedSeconds,
     HealthReminderKind.posture => _stateData.postureElapsedSeconds,
     HealthReminderKind.hydration => _stateData.hydrationElapsedSeconds,
     HealthReminderKind.stretch => _stateData.stretchElapsedSeconds,
@@ -81,6 +82,8 @@ class TimerEngine extends ChangeNotifier {
     switch (kind) {
       case HealthReminderKind.eyeRest:
         _stateData.eyeBlinkElapsedSeconds = 0;
+      case HealthReminderKind.blink:
+        _stateData.blinkElapsedSeconds = 0;
       case HealthReminderKind.posture:
         _stateData.postureElapsedSeconds = 0;
       case HealthReminderKind.hydration:
@@ -92,9 +95,11 @@ class TimerEngine extends ChangeNotifier {
     }
   }
 
-  /// One switch controls them all; the scheduler picks which one to show.
+  /// One switch controls them all (blink is opt-in); the scheduler picks which
+  /// one to show.
   bool _reminderEnabled(HealthReminderKind kind, SettingsModel s) =>
-      s.healthRemindersEnabled;
+      s.healthRemindersEnabled &&
+      (kind != HealthReminderKind.blink || s.blinkRemindersEnabled);
 
   void _resetAllReminderCounters() {
     for (final kind in HealthReminderKind.values) {
@@ -418,6 +423,7 @@ class TimerEngine extends ChangeNotifier {
         _stateData.totalWorkToday += delta;
         _stateData.postureElapsedSeconds += delta.inSeconds;
         _stateData.eyeBlinkElapsedSeconds += delta.inSeconds;
+        _stateData.blinkElapsedSeconds += delta.inSeconds;
         _stateData.hydrationElapsedSeconds += delta.inSeconds;
         _stateData.stretchElapsedSeconds += delta.inSeconds;
         _stateData.standUpElapsedSeconds += delta.inSeconds;
@@ -518,6 +524,15 @@ class TimerEngine extends ChangeNotifier {
 
     if (_stateData.workElapsed >= interval) {
       _stateData.isPreBreak = false;
+
+      final now = clock.now();
+      if (_settingsRepository.currentSettings.avoidBreakHour == now.hour) {
+        final delay = Duration(minutes: 60 - now.minute);
+        _stateData.workElapsed =
+            interval - (delay > interval ? interval : delay);
+        notifyListeners();
+        return;
+      }
 
       _contextManager.isMeetingUpcoming().then((isMeeting) {
         if (state != TimerState.running) {
@@ -680,14 +695,15 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _triggerBreak() {
+  void _triggerBreak({int? durationOverride}) {
     _stateData.state = TimerState.breakActive;
     _stateData.workElapsed = Duration.zero;
 
     final isLongBreak = isLongBreakDue();
 
-    final durationSeconds = _breakDeterminationStrategy
-        .determineBreakDurationSeconds(
+    final durationSeconds =
+        durationOverride ??
+        _breakDeterminationStrategy.determineBreakDurationSeconds(
           isLongBreak: isLongBreak,
           shortBreakDurationSeconds: _shortBreakDurationSeconds,
           longBreakDurationMinutes: _longBreakDurationMinutes,
@@ -963,13 +979,13 @@ class TimerEngine extends ChangeNotifier {
     return true;
   }
 
-  void triggerBreakNow({bool isLong = false}) {
+  void triggerBreakNow({bool isLong = false, int? durationSeconds}) {
     if (isLong) {
       _stateData.longBreakWindowStartedAt = clock.now().subtract(
         Duration(minutes: _longBreakIntervalMinutes),
       );
     }
-    _triggerBreak();
+    _triggerBreak(durationOverride: durationSeconds);
   }
 
   void skipNextBreak() {
