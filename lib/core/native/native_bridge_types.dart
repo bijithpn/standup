@@ -259,6 +259,7 @@ class NativeDisplayInfo {
 class WindowInfo {
   final String windowId;
   final String windowTitle;
+  final String appBundleId;
   final double x;
   final double y;
   final double width;
@@ -269,6 +270,7 @@ class WindowInfo {
   const WindowInfo({
     required this.windowId,
     required this.windowTitle,
+    this.appBundleId = '',
     required this.x,
     required this.y,
     required this.width,
@@ -280,6 +282,7 @@ class WindowInfo {
   Map<String, dynamic> toMap() => {
     'windowId': windowId,
     'windowTitle': windowTitle,
+    'appBundleId': appBundleId,
     'x': x,
     'y': y,
     'width': width,
@@ -292,6 +295,7 @@ class WindowInfo {
     return WindowInfo(
       windowId: map['windowId']?.toString() ?? '',
       windowTitle: map['windowTitle'] as String? ?? '',
+      appBundleId: map['appBundleId'] as String? ?? '',
       x: (map['x'] as num?)?.toDouble() ?? 0.0,
       y: (map['y'] as num?)?.toDouble() ?? 0.0,
       width: (map['width'] as num?)?.toDouble() ?? 0.0,
