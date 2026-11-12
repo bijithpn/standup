@@ -618,7 +618,7 @@ class MainFlutterWindow: NSWindow {
   }
 
   @objc private func handleSystemSleep() {
-    bridgeChannel?.invokeMethod("systemSleep", arguments: nil)
+    bridgeChannel?.invokeMethod("systemSleep", arguments: Int(Date().timeIntervalSince1970 * 1000))
   }
 
   @objc private func handleSystemWake() {

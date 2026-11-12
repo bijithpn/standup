@@ -385,6 +385,17 @@ class TimerEngine extends ChangeNotifier {
         return;
       }
 
+      // A 1s ticker never legitimately stalls this long: the machine was
+      // suspended. Covers platforms/paths with no native sleep notification.
+      final lastTick = _stateData.lastTickTime;
+      if (lastTick != null &&
+          now.difference(lastTick) > const Duration(seconds: 15)) {
+        _logger.info('Tick gap detected: treating as system sleep');
+        _stateData.systemSleepPaused = true;
+        handleSystemWake();
+        return;
+      }
+
       final delta = now.difference(_stateData.lastTickTime ?? now);
       _stateData.lastTickTime = now;
 
@@ -963,7 +974,7 @@ class TimerEngine extends ChangeNotifier {
   /// interval), so the UI can ask the user to start it again.
   VoidCallback? onNeedsRestart;
 
-  void handleSystemSleep() {
+  void handleSystemSleep({DateTime? at}) {
     _logger.info(
       'System sleep or screen lock detected: pausing break/work timers',
     );
@@ -971,7 +982,8 @@ class TimerEngine extends ChangeNotifier {
     // whole away period is measured.
     if (_stateData.systemSleepPaused) return;
     _stateData.systemSleepPaused = true;
-    final now = clock.now();
+    // The channel message can reach Dart only after wake; use the native time.
+    final now = at ?? clock.now();
     _stateData.lastTickTime = now;
     try {
       sl<StorageService>().setInt(
