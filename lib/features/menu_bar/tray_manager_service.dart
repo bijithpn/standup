@@ -295,6 +295,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> _applyIcon() async {
+    // Frame timers can fire before init() has chosen the bundled icon.
+    if (_defaultIconPath == null) return;
     // Windows tray requires .ico files — LoadImage cannot load .png
     if (Platform.isWindows) {
       await _applyWindowsIcon();

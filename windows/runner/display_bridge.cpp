@@ -1,5 +1,6 @@
 #include "display_bridge.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <map>
@@ -130,6 +131,10 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
   return TRUE;
 }
 
+// Channels must outlive the call that created them; they live for the process.
+static std::vector<std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>> g_method_channels;
+static std::vector<std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>>> g_event_channels;
+
 void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler** handler_out) {
   // This channel is queried by Dart when display geometry is needed.
   auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
@@ -197,8 +202,6 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
       &flutter::StandardMethodCodec::GetInstance());
   event_channel->SetStreamHandler(std::move(handler));
 
-  // TODO: Store these channels in a runner-owned registry so their
-  // lifetime is explicit instead of relying on release() from setup code.
-  channel.release();
-  event_channel.release();
+  g_method_channels.push_back(std::move(channel));
+  g_event_channels.push_back(std::move(event_channel));
 }

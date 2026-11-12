@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.11.1` | 1.11.1 | 44 | 2026-11-12 | Multi-display break overlay fixes, undismissable-overlay recovery and debug key-state hang fix (unreleased) |
 | `v1.11.0` | 1.11.0 | 43 | 2026-10-26 | Gallery Focus slideshow, avatar customizer, companion overlay settings, break appearance sections and break-timer sleep/lock fixes (unreleased) |
 | `v1.10.0` | 1.10.0 | 42 | 2026-10-23 | Break template polish: breathing presets, bundled fonts, light-theme coverage and tips (unreleased) |
 | `v1.8.2` | 1.8.2 | 39 | 2026-10-22 | Release pipeline fixes: ad-hoc signed macOS builds and release readiness checks |
@@ -28,6 +29,22 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.11.1] - 2026-11-12 (unreleased)
+
+Tags: `v1.11.1` (not yet tagged)
+
+Build: `44`
+
+Release title: Multi-Display Overlay Fixes
+
+### Fixed
+
+- A break that started while a reminder or pre-break warning was already showing now appears on every display instead of only the one the reminder used.
+- Switching Spaces no longer tears down and rebuilds the break overlay, and a break dismissed during a display change is no longer re-opened.
+- Break overlays are force-hidden shortly after dismissal, and the Escape and render-health failsafes also cover breaks that took over from a reminder, so an overlay can no longer get stuck on screen.
+- A stale pressed-key state no longer floods the log and freezes the app in debug builds.
+- Windows display bridge channels now have an explicit, process-long lifetime.
 
 ## [1.10.0] - 2026-10-23 (unreleased)
 

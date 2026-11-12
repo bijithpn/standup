@@ -187,7 +187,7 @@ class _AboutSectionState extends State<AboutSection> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            border: Border.all(color: AppTheme.border),
           ),
           padding: const EdgeInsets.all(20),
           child: Column(

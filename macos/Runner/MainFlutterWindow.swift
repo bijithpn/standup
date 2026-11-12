@@ -25,7 +25,7 @@ class OverlayWindowManager: NSObject {
     private var escapePresses: [Date] = []
 
     private static func currentScreensHash() -> Int {
-        NSScreen.screens.map { "\($0.frame)-\($0.visibleFrame)" }.joined().hashValue
+        NSScreen.screens.map { "\($0.frame)" }.joined().hashValue
     }
     private var showGeneration: Int = 0
     
@@ -41,6 +41,8 @@ class OverlayWindowManager: NSObject {
         let type = args?["type"] as? String ?? args?["overlayType"] as? String ?? "breakScreen"
         let isReminder = type == "quickReminder" || type == "preBreakWarning"
         let isPreview = args?["isPreview"] as? Bool ?? false
+        let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
+        let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
         
         if !overlayInstances.isEmpty {
             // Cancel any pending reminder auto-dismiss timer
@@ -62,6 +64,12 @@ class OverlayWindowManager: NSObject {
                     instance.window.orderFrontRegardless()
                     instance.window.makeKey()
                 }
+                // A reminder/pre-break warning may have opened on one display only.
+                for screen in screens where overlayInstances[screen] == nil {
+                    present(screen, args: args, isReminder: false)
+                }
+                installEscapeFailsafe()
+                scheduleHealthCheck(attempt: 0)
             }
             
             if let args = args {
@@ -82,48 +90,8 @@ class OverlayWindowManager: NSObject {
             NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
         }
         
-        let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
-        let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
-        
         for screen in screens {
-            let instance: OverlayInstance
-            var fadeDelay: TimeInterval = 0
-            if let warm = warmPool.removeValue(forKey: screen) {
-                prepareReusedInstance(warm, for: screen, args: args)
-                instance = warm
-                // The reused engine still holds the previous break's frame. Stay
-                // invisible until the new data has been delivered and rebuilt,
-                // otherwise the old break/skip time flashes before the new one.
-                fadeDelay = 0.2
-            } else {
-                instance = createOverlayInstance(for: screen, args: args)
-            }
-            instance.window.isReminder = isReminder
-            overlayInstances[screen] = instance
-
-            instance.window.alphaValue = 0.0
-            
-            // For reminders, use orderFront to avoid stealing focus from other apps
-            // For full screens, make the (non-activating) panel key so it actually
-            // receives keyboard events (Escape / any-key dismiss) — a panel that is
-            // merely ordered front never becomes key and silently swallows no input,
-            // it just never gets any. `.nonactivatingPanel` means this does not
-            // steal focus from the owning app or other apps, so it's still safe to
-            // do over fullscreen apps.
-            if isReminder {
-                instance.window.orderFront(nil)
-            } else {
-                instance.window.orderFrontRegardless()
-                instance.window.makeKey()
-            }
-            
-            let window = instance.window
-            DispatchQueue.main.asyncAfter(deadline: .now() + fadeDelay) {
-                NSAnimationContext.runAnimationGroup { context in
-                    context.duration = 0.5
-                    window.animator().alphaValue = 1.0
-                }
-            }
+            present(screen, args: args, isReminder: isReminder)
         }
 
         // Baseline the display layout now. Swiping between Spaces / full-screen
@@ -160,6 +128,40 @@ class OverlayWindowManager: NSObject {
         }
     }
 
+    private func present(_ screen: NSScreen, args: [String: Any]?, isReminder: Bool) {
+        let instance: OverlayInstance
+        var fadeDelay: TimeInterval = 0
+        if let warm = warmPool.removeValue(forKey: screen) {
+            prepareReusedInstance(warm, for: screen, args: args)
+            instance = warm
+            // The reused engine still holds the previous break's frame. Stay
+            // invisible until the new data has been delivered and rebuilt.
+            fadeDelay = 0.2
+        } else {
+            instance = createOverlayInstance(for: screen, args: args)
+        }
+        instance.window.isReminder = isReminder
+        overlayInstances[screen] = instance
+        instance.window.alphaValue = 0.0
+
+        // Full screens must become key to receive Escape / any-key dismiss;
+        // the panel is non-activating so this does not steal app focus.
+        if isReminder {
+            instance.window.orderFront(nil)
+        } else {
+            instance.window.orderFrontRegardless()
+            instance.window.makeKey()
+        }
+
+        let window = instance.window
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDelay) {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.5
+                window.animator().alphaValue = 1.0
+            }
+        }
+    }
+
     /// Last time a full overlay was dismissed; used to ignore the spurious
     /// "reopen" macOS sends when the overlay panels disappear.
     var lastHideTime: Date = .distantPast
@@ -170,7 +172,10 @@ class OverlayWindowManager: NSObject {
         lastHideTime = Date()
         removeEscapeFailsafe()
         NativePowerAssertionManager.shared.releaseDisplaySleep()
-        if overlayInstances.isEmpty { return }
+        if overlayInstances.isEmpty {
+            for instance in warmPool.values { instance.window.orderOut(nil) }
+            return
+        }
 
         let entries = overlayInstances
         overlayInstances.removeAll()
@@ -207,6 +212,16 @@ class OverlayWindowManager: NSObject {
                 channel.invokeMethod("resetOverlay", arguments: nil)
             }
         })
+
+        // The fade-out completion can be skipped (Space switch, busy main
+        // thread). Never leave an opaque panel behind: force-hide regardless.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            guard let self = self else { return }
+            for instance in instances where !self.overlayInstances.values.contains(where: { $0.window === instance.window }) {
+                instance.window.orderOut(nil)
+                instance.window.alphaValue = 0.0
+            }
+        }
 
         // Keep the engines alive, hidden, for instant reuse next time —
         // see `warmPool`. They're only ever actually torn down when the
@@ -384,7 +399,10 @@ class OverlayWindowManager: NSObject {
         // warm for reuse, they have to be rebuilt against the new screens.
         let savedArgs = self.lastShowArgs
         destroyAllInstances()
+        let generation = showGeneration
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Dismissed (or replaced) during the rebuild: don't resurrect it.
+            guard self.showGeneration == generation else { return }
             self.showOverlay(args: savedArgs)
         }
     }

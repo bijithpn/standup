@@ -264,9 +264,9 @@ class _MainLayoutState extends State<MainLayout> {
     return MacosWindow(
       key: key,
       backgroundColor: AppTheme.contentBackground,
-      titleBar: const TitleBar(
+      titleBar: TitleBar(
         height: 52,
-        dividerColor: Colors.transparent,
+        dividerColor: AppTheme.separatorColor,
         centerTitle: true,
       ),
       sidebar: Sidebar(
@@ -285,9 +285,14 @@ class _MainLayoutState extends State<MainLayout> {
           );
         },
       ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: _buildMainContent(),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: AppTheme.separatorColor)),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: _buildMainContent(),
+        ),
       ),
     );
   }

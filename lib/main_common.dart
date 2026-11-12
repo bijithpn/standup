@@ -32,16 +32,22 @@ import 'shared/shared.dart';
 
 void _setupGlobalErrors() {
   FlutterError.onError = (FlutterErrorDetails details) {
+    final exceptionStr = details.exceptionAsString();
+    // A stale pressed-key state makes this assertion fire on every replayed
+    // key event; the flood of logging froze the app. Drop the stale state
+    // once and stay quiet so the next event goes through.
+    if (exceptionStr.contains('_pressedKeys.containsKey') ||
+        exceptionStr.contains('physical key is already pressed')) {
+      // ignore: invalid_use_of_visible_for_testing_member
+      HardwareKeyboard.instance.clearState();
+      return;
+    }
+
     debugPrint('=== FLUTTER ERROR ===');
-    debugPrint(details.exceptionAsString());
+    debugPrint(exceptionStr);
     debugPrint(details.stack?.toString());
 
-    final exceptionStr = details.exceptionAsString();
-    final isHardwareKeyboardAssert =
-        exceptionStr.contains('HardwareKeyboard') ||
-        exceptionStr.contains('_pressedKeys.containsKey');
-
-    if (!details.silent && !isHardwareKeyboardAssert) {
+    if (!details.silent) {
       ErrorHandler().handleError(details.exception, details.stack);
       ErrorToastService.showError('Oops! An internal error occurred.');
 
@@ -402,6 +408,9 @@ void mainCommon(FlavorConfig config) async {
 
         WidgetsFlutterBinding.ensureInitialized();
         logStartup('WidgetsFlutterBinding.ensureInitialized');
+        // A key held across a relaunch leaves a stale pressed state and trips a
+        // "KeyDownEvent ... already pressed" assertion on every later event.
+        unawaited(HardwareKeyboard.instance.syncKeyboardState());
 
         if (kDebugMode && Platform.isMacOS) {
           // Diagnostic only; must never delay startup.

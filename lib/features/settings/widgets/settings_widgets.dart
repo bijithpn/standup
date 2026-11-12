@@ -302,7 +302,7 @@ Widget textFieldRow(
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: AppTheme.border),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             onSubmitted: onChanged,
@@ -431,7 +431,7 @@ void showPicker({
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A1A),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: AppTheme.border),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.4),
@@ -526,9 +526,10 @@ Widget segmentedControl(
   int selected,
   ValueChanged<int> onSelected, {
   bool isSmall = false,
+  bool expand = true,
 }) {
   return Container(
-    width: double.infinity,
+    width: expand ? double.infinity : null,
     decoration: BoxDecoration(
       border: Border(bottom: BorderSide(color: AppTheme.borderSubtle)),
     ),
@@ -666,7 +667,7 @@ Widget colorRow(String label, Color color) {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            border: Border.all(color: AppTheme.border),
           ),
         ),
       ],

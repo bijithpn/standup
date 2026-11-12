@@ -262,6 +262,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           ['Today', 'This Week', 'Month'],
           _selectedFilter,
           (i) => setState(() => _selectedFilter = i),
+          expand: false,
         ),
       ],
     );

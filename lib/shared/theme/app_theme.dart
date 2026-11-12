@@ -43,8 +43,12 @@ class AppTheme {
   static Color get surface => _activePreset.surface;
   static Color get surfaceElevated => _activePreset.surfaceElevated;
   static Color get surfaceCard => _activePreset.surfaceCard;
-  static Color get border => _activePreset.border;
-  static Color get borderSubtle => _activePreset.borderSubtle;
+  // Preset borders are close to the card colour and vanish on screen; lift them
+  // toward the text colour so cards and dividers read on every theme.
+  static Color get border =>
+      Color.lerp(_activePreset.border, _activePreset.textPrimary, 0.12)!;
+  static Color get borderSubtle =>
+      Color.lerp(_activePreset.borderSubtle, _activePreset.textPrimary, 0.07)!;
 
   static Color get textPrimary => _activePreset.textPrimary;
   static Color get textSecondary => _activePreset.textSecondary;

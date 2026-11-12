@@ -28,7 +28,15 @@ struct OverlayEnumData {
 
 void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args) {
   if (!overlay_windows_.empty()) {
-    return; // A break overlay is already active across the current monitor set.
+    // A reminder may be up on the primary monitor only; a break that wants
+    // every monitor rebuilds from the warm pool instead of being ignored.
+    auto want_all = args.find("showOnAllDisplays");
+    bool all_displays = want_all == args.end() || !std::holds_alternative<bool>(want_all->second) ||
+                        std::get<bool>(want_all->second);
+    if (!all_displays || overlay_windows_.size() >= static_cast<size_t>(GetSystemMetrics(SM_CMONITORS))) {
+      return;
+    }
+    HideOverlay();
   }
 
   // Keep the launch payload available for overlay isolates that initialize
