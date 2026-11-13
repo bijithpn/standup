@@ -429,7 +429,7 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
                       .toList(),
                   onChanged: (id) {
                     if (id == null) return;
-                    setState(() => _accentOverrideTemplateId = id);
+                    _selectAccentOverrideTemplate(id);
                   },
                 ),
               ),

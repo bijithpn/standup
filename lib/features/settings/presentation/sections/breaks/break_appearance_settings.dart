@@ -35,6 +35,10 @@ class BreakAppearanceSettings extends StatefulWidget {
 }
 
 class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
+  void _selectAccentOverrideTemplate(String id) {
+    setState(() => _accentOverrideTemplateId = id);
+  }
+
   static const _themeModeLabels = {
     'dark': 'Dark',
     'light': 'Light',

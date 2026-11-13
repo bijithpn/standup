@@ -9,7 +9,7 @@ extension CompanionOverlaySettingActions on CompanionOverlayController {
     if (showLoader) {
       _isTransitioning = true;
       _loaderFromToggle = true;
-      notifyListeners();
+      _notifyStateChanged();
     }
 
     final updated = _settingsRepo.currentSettings.copyWith(
@@ -22,7 +22,7 @@ extension CompanionOverlaySettingActions on CompanionOverlayController {
       if (_loaderFromToggle) {
         _loaderFromToggle = false;
         _isTransitioning = false;
-        notifyListeners();
+        _notifyStateChanged();
       }
     }
   }

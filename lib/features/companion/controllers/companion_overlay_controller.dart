@@ -28,6 +28,8 @@ part 'companion_overlay_setting_actions.dart';
 
 /// Main-window owner of the companion: mirrors settings, shows/hides the native PiP window, and relays timer/break events and PiP interactions via the EventBus.
 class CompanionOverlayController extends ChangeNotifier {
+  void _notifyStateChanged() => notifyListeners();
+
   final SettingsRepository _settingsRepo;
 
   final ValueNotifier<int> openBlobatarNameDialogNotifier = ValueNotifier<int>(

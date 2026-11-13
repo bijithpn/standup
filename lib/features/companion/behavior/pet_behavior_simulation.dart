@@ -511,6 +511,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     );
 
     if (PetBehaviorEngine._visiblySame(previous, _snapshot)) return;
-    notifyListeners();
+    _notifyStateChanged();
   }
 }

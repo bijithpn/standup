@@ -202,8 +202,19 @@ class AdaptiveBreakService {
     _storage.setString(AppConstants.keyActivityPatterns, jsonEncode(jsonData));
   }
 
-  // TODO(persistence): sessions are saved but never reloaded on startup.
-  void _loadFocusSessions() {}
+  void _loadFocusSessions() {
+    final dataString = _storage.getString('focus_sessions');
+    if (dataString.isEmpty) return;
+
+    try {
+      final List<dynamic> jsonData = jsonDecode(dataString);
+      _focusSessions = jsonData
+          .map((s) => FocusSession.fromJson(s as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logger.error('Failed to load focus sessions: $e');
+    }
+  }
 
   void _saveFocusSessions() {
     final jsonData = _focusSessions.map((s) => s.toJson()).toList();

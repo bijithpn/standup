@@ -14,6 +14,8 @@ part 'pet_behavior_simulation.dart';
 
 /// Drives the avatar's procedural life (gaze, blink, breathing, spring wobble, mood) at a fixed step from a ticker and publishes a PetBehaviorSnapshot.
 class PetBehaviorEngine extends ChangeNotifier {
+  void _notifyStateChanged() => notifyListeners();
+
   PetBehaviorEngine({
     CursorFeed? cursorFeed,
     math.Random? random,

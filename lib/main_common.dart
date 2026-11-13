@@ -4,26 +4,26 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:breakmate/core/services/daily_reset_service.dart';
-import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
-import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'package:breakmate/core/services/daily_reset_service.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
+
 import 'app/app.dart';
-import 'app/startup_splash.dart';
 import 'app/bootstrapping/ipc_coordinator.dart';
 import 'app/bootstrapping/service_bootstrapper.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:screen_retriever/screen_retriever.dart';
+import 'app/startup_splash.dart';
 import 'core/core.dart';
 import 'core/ipc/single_instance_token.dart';
 import 'core/utils/file_permissions.dart';
@@ -38,7 +38,7 @@ void _setupGlobalErrors() {
     // Known Flutter desktop keyboard glitch: reset key state and swallow the error.
     if (exceptionStr.contains('_pressedKeys.containsKey') ||
         exceptionStr.contains('physical key is already pressed')) {
-      HardwareKeyboard.instance.clearState();
+      unawaited(HardwareKeyboard.instance.syncKeyboardState());
       return;
     }
 
