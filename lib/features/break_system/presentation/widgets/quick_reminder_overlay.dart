@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_start_warning_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
 
@@ -80,18 +80,18 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
             'hydration' => Icons.water_drop_rounded,
             'stretch' => Icons.self_improvement_rounded,
             'standup' => Icons.directions_walk_rounded,
-            _ when HealthReminderCopy.isCustom(reminderType) =>
+            _ when HealthReminderMessages.isCustom(reminderType) =>
               Icons.notifications_active_rounded,
             _ => Icons.remove_red_eye_rounded,
           };
     final pillText = isMeetingBreak
         ? 'Break ready after your meeting'
-        : HealthReminderCopy.pill(reminderType, Random(_wordingSeed));
+        : HealthReminderMessages.pill(reminderType, Random(_wordingSeed));
 
     if (allowFullPoster) {
       final posterText = isMeetingBreak
           ? 'Break ready after your meeting!'
-          : HealthReminderCopy.poster(reminderType);
+          : HealthReminderMessages.poster(reminderType);
 
       return PosterReminderOverlay(
         icon: icon,

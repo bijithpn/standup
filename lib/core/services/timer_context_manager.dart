@@ -97,6 +97,24 @@ class TimerContextManager {
     return _presentationDetectionService?.isPresenting ?? false;
   }
 
+  DateTime? _healthReminderResumeAt;
+
+  bool get shouldSuppressHealthReminders {
+    final settings = _settingsRepository.currentSettings;
+    final blocked =
+        isMeetingActive() ||
+        isPresentationActive() ||
+        (settings.quietModeEnabled &&
+            (settings.quietModePreset == 'presenting' ||
+                settings.quietModePreset == 'deep_work'));
+    final now = clock.now();
+    if (blocked) {
+      _healthReminderResumeAt = now.add(const Duration(seconds: 30));
+      return true;
+    }
+    return _healthReminderResumeAt?.isAfter(now) ?? false;
+  }
+
   bool shouldRunWorkTimer() {
     return isWithinWorkingHours() && !isSmartPauseActive();
   }

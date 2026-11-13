@@ -7,7 +7,7 @@ public class NativeFlashReminderWindow: NSObject {
     private var mouseMovementTimer: Timer?
     private var isDismissing = false
     
-    public func triggerFlash(text: String, durationMs: Int = 250, opacity: CGFloat = 0.35, colorHex: String = "#000000", dismissOnMouseMove: Bool = false) {
+    public func triggerFlash(text: String, title: String = "A moment for you", reminderType: String = "", durationMs: Int = 250, opacity: CGFloat = 0.35, colorHex: String = "#000000", dismissOnMouseMove: Bool = false) {
         dismissAll()
         generation += 1
         let current = generation
@@ -24,51 +24,26 @@ public class NativeFlashReminderWindow: NSObject {
                 defer: false
             )
             window.setFrame(screen.frame, display: false)
-            window.level = .screenSaver
+            window.level = .statusBar
             window.hidesOnDeactivate = false
             window.isOpaque = false
             window.backgroundColor = .clear
             window.ignoresMouseEvents = true
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
             
-            let container = NSView(frame: NSRect(origin: .zero, size: screen.frame.size))
-            container.wantsLayer = true
-            container.layer?.backgroundColor = NSColor(flashHex: colorHex, alpha: opacity).cgColor
-            
-            let label = NSTextField(labelWithString: text)
-            label.font = NSFont.systemFont(ofSize: 26, weight: .bold)
-            label.textColor = .white
-            label.alignment = .center
-            label.lineBreakMode = .byTruncatingTail
-            let hPad: CGFloat = 40
-            let vPad: CGFloat = 26
-            let maxWidth = min(720, screen.frame.width - 80)
-            let textSize = label.sizeThatFits(NSSize(width: maxWidth - hPad * 2, height: .greatestFiniteMagnitude))
-            let pillWidth = min(maxWidth, textSize.width + hPad * 2)
-            let pillHeight = textSize.height + vPad * 2
-            let pillRect = NSRect(
-                x: (screen.frame.width - pillWidth) / 2,
-                y: (screen.frame.height - pillHeight) / 2,
-                width: pillWidth,
-                height: pillHeight
-            )
-
-            let pillView = NSVisualEffectView(frame: pillRect)
-            pillView.material = .hudWindow
-            pillView.blendingMode = .behindWindow
-            pillView.state = .active
-            pillView.wantsLayer = true
-            pillView.layer?.cornerRadius = pillHeight / 2
-            pillView.layer?.masksToBounds = true
-            pillView.layer?.borderColor = NSColor.white.withAlphaComponent(0.25).cgColor
-            pillView.layer?.borderWidth = 1.0
-
-            label.frame = NSRect(x: hPad, y: vPad, width: pillWidth - hPad * 2, height: textSize.height)
-            pillView.addSubview(label)
-            
-            container.addSubview(pillView)
-            
+            let card = HealthReminderCardView(
+                title: title, message: text, reminderType: reminderType,
+                dismissOnMouseMove: dismissOnMouseMove,
+                width: min(520, screen.visibleFrame.width - 48))
+            let size = NSSize(width: card.frame.width + 24, height: card.frame.height + 24)
+            let container = NSView(frame: NSRect(origin: .zero, size: size))
+            card.setFrameOrigin(NSPoint(x: 12, y: 12))
+            container.addSubview(card)
             window.contentView = container
+            window.setFrame(NSRect(
+                x: screen.visibleFrame.midX - size.width / 2,
+                y: screen.visibleFrame.midY - size.height / 2,
+                width: size.width, height: size.height), display: false)
             window.alphaValue = 0.0
             window.orderFrontRegardless()
             
@@ -76,7 +51,7 @@ public class NativeFlashReminderWindow: NSObject {
         }
         
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.08
+            context.duration = 0.24
             for window in self.flashWindows {
                 window.animator().alphaValue = 1.0
             }
@@ -88,7 +63,7 @@ public class NativeFlashReminderWindow: NSObject {
                 self.mouseMovementTimer?.invalidate()
                 self.mouseMovementTimer = nil
                 NSAnimationContext.runAnimationGroup({ context in
-                    context.duration = 0.12
+                    context.duration = 0.2
                     for window in self.flashWindows {
                         window.animator().alphaValue = 0.0
                     }
@@ -119,7 +94,8 @@ public class NativeFlashReminderWindow: NSObject {
         })
     }
     
-    private func dismissAll() {
+    public func dismissAll() {
+        generation += 1
         mouseMovementTimer?.invalidate()
         mouseMovementTimer = nil
         for window in flashWindows {
@@ -127,6 +103,82 @@ public class NativeFlashReminderWindow: NSObject {
         }
         flashWindows.removeAll()
     }
+}
+
+/// Centered, readable reminder with one message and restrained styling.
+final class HealthReminderCardView: NSView {
+    init(title: String, message: String, reminderType: String,
+         dismissOnMouseMove: Bool, width: CGFloat) {
+        let font = NSFont.systemFont(ofSize: 20, weight: .medium)
+        let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let content = text.isEmpty ? title : text
+        // Unknown/custom reminders have no arbitrary health icon. If an SF
+        // Symbol is unavailable on this macOS version, omit it rather than
+        // substituting an unrelated bell.
+        let symbol: String?
+        switch reminderType {
+        case "eyeblink", "blink": symbol = "eye"
+        case "hydration": symbol = "drop"
+        case "posture": symbol = "figure.stand"
+        case "stretch": symbol = "figure.cooldown"
+        case "standup": symbol = "figure.walk"
+        default: symbol = nil
+        }
+        let image = symbol.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
+        let padding: CGFloat = 22
+        let iconSize: CGFloat = 22
+        let gap: CGFloat = image == nil ? 0 : iconSize + 12
+        let textX = padding + gap
+        let horizontalInset = textX + padding
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = 2
+        paragraph.lineBreakMode = .byWordWrapping
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor(srgbRed: 0.83, green: 0.85, blue: 0.84, alpha: 1),
+            .paragraphStyle: paragraph
+        ]
+        let naturalWidth = ceil((content as NSString).size(withAttributes: attributes).width) + 4
+        let textWidth = min(width - horizontalInset, naturalWidth)
+        let cardWidth = textWidth + horizontalInset
+        let measured = (content as NSString).boundingRect(
+            with: NSSize(width: textWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attributes).height
+        let textHeight = min(86, max(26, ceil(measured) + 2))
+        let height = max(iconSize, textHeight) + 40
+        super.init(frame: NSRect(x: 0, y: 0, width: cardWidth, height: height))
+        wantsLayer = true
+        layer?.backgroundColor = NSColor(srgbRed: 0.14, green: 0.145, blue: 0.15, alpha: 1).cgColor
+        layer?.cornerRadius = 16
+        layer?.borderWidth = 0.5
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.10).cgColor
+        layer?.shadowColor = NSColor.black.cgColor
+        layer?.shadowOpacity = 0.12
+        layer?.shadowRadius = 5
+        layer?.shadowOffset = NSSize(width: 0, height: -2)
+        setAccessibilityElement(true)
+        setAccessibilityLabel(content)
+
+        if let image {
+            let icon = NSImageView(frame: NSRect(
+                x: padding, y: (height - iconSize) / 2,
+                width: iconSize, height: iconSize))
+            icon.image = image
+            icon.contentTintColor = NSColor(srgbRed: 0.64, green: 0.67, blue: 0.66, alpha: 1)
+            icon.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 20, weight: .regular)
+            addSubview(icon)
+        }
+
+        let label = NSTextField(wrappingLabelWithString: content)
+        label.attributedStringValue = NSAttributedString(string: content, attributes: attributes)
+        label.maximumNumberOfLines = 3
+        label.lineBreakMode = .byWordWrapping
+        label.frame = NSRect(x: textX, y: (height - textHeight) / 2,
+                             width: textWidth, height: textHeight)
+        addSubview(label)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }
 
 extension NSColor {

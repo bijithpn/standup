@@ -161,6 +161,9 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
           case "hideCursorCountdown":
               NativeCursorCountdownWindow.shared.dismissCountdown()
               result(nil)
+          case "dismissHealthReminder":
+              NativeFlashReminderWindow.shared.dismissAll()
+              result(nil)
           case "triggerFlashReminder":
               guard let args = call.arguments as? [String: Any],
                     let text = args["text"] as? String else {
@@ -170,7 +173,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
               let duration = args["durationMs"] as? Int ?? 250
               let opacity = CGFloat(args["opacity"] as? Double ?? 0.35)
               let colorHex = args["colorHex"] as? String ?? "#000000"
-              NativeFlashReminderWindow.shared.triggerFlash(text: text, durationMs: duration, opacity: opacity, colorHex: colorHex, dismissOnMouseMove: args["dismissOnMouseMove"] as? Bool ?? false)
+              NativeFlashReminderWindow.shared.triggerFlash(text: text, title: args["title"] as? String ?? "A moment for you", reminderType: args["reminderType"] as? String ?? "", durationMs: duration, opacity: opacity, colorHex: colorHex, dismissOnMouseMove: args["dismissOnMouseMove"] as? Bool ?? false)
               result(nil)
           case "showToast":
               let args = call.arguments as? [String: Any]

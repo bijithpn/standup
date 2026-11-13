@@ -15,7 +15,7 @@ import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
@@ -563,6 +563,7 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
+    if (_contextManager.shouldSuppressHealthReminders) return;
     if (_checkCustomReminders(settings)) return;
 
     final activityRatio =
@@ -604,8 +605,7 @@ class TimerEngine extends ChangeNotifier {
   final Map<String, DateTime> _customLastFired = {};
 
   bool _checkCustomReminders(SettingsModel settings) {
-    if (_contextManager.isMeetingActive() ||
-        _contextManager.isPresentationActive()) {
+    if (_contextManager.shouldSuppressHealthReminders) {
       return false;
     }
     final now = clock.now();
@@ -615,7 +615,7 @@ class TimerEngine extends ChangeNotifier {
       if (now.difference(last) < Duration(minutes: r.minutes)) continue;
       _customLastFired[key] = now;
       _triggerHealthReminder(
-        '${HealthReminderCopy.customPrefix}${r.title}',
+        '${HealthReminderMessages.customPrefix}${r.title}',
         'overlay',
       );
       return true;

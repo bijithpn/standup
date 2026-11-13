@@ -11,7 +11,7 @@ import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
@@ -49,6 +49,7 @@ class TimerOrchestrator {
   Timer? _usageTrackerTimer;
   Timer? _pauseAutoResumeTimer;
   Timer? _autoSaveTimer;
+  Timer? _healthReminderContextTimer;
 
   String? _lastTrayTitle;
   String? _lastTrayTooltip;
@@ -249,10 +250,11 @@ class TimerOrchestrator {
 
   /// Plays the sound, then shows the reminder via the companion if enabled, else a flash reminder (macOS) or quick overlay window.
   void _handleHealthReminder(HealthReminderEvent event) {
+    if (timerEngine.contextManager.shouldSuppressHealthReminders) return;
     final settings = settingsRepository.currentSettings;
 
     if (settings.soundEnabled) {
-      final tone = HealthReminderCopy.isCustom(event.reminderType)
+      final tone = HealthReminderMessages.isCustom(event.reminderType)
           ? 'custom'
           : event.reminderType;
       final player = AudioPlayer();
@@ -263,7 +265,7 @@ class TimerOrchestrator {
     }
 
     if (settings.companionEnabled &&
-        !HealthReminderCopy.isCustom(event.reminderType)) {
+        !HealthReminderMessages.isCustom(event.reminderType)) {
       final interactionType = switch (event.reminderType) {
         'posture' || 'stretch' || 'standup' => 'stretch',
         _ => 'blink',
@@ -283,13 +285,33 @@ class TimerOrchestrator {
     // macOS uses the native flash reminder only; other platforms also show the quick overlay window.
     final macos = Platform.isMacOS;
     NativeEnhancementsService.instance.triggerFlashReminder(
-      text: HealthReminderCopy.text(event.reminderType),
+      text: HealthReminderMessages.text(event.reminderType),
+      reminderType: event.reminderType,
 
       durationMs: macos
           ? AppConstants.healthReminderDismissDuration.inMilliseconds
           : 250,
       opacity: macos ? 0.2 : 0.35,
       dismissOnMouseMove: settings.dismissReminderOnMouseMove,
+    );
+    _healthReminderContextTimer?.cancel();
+    final shownAt = DateTime.now();
+    _healthReminderContextTimer = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (timer) {
+        if (timerEngine.contextManager.shouldSuppressHealthReminders) {
+          timer.cancel();
+          NativeEnhancementsService.instance.dismissHealthReminder();
+          if (!macos &&
+              sl<OverlayWindowService>().currentOverlayType ==
+                  OverlayType.quickReminder) {
+            sl<OverlayWindowService>().hideOverlay();
+          }
+        } else if (DateTime.now().difference(shownAt) >=
+            AppConstants.healthReminderDismissDuration) {
+          timer.cancel();
+        }
+      },
     );
     if (macos) return;
 
@@ -566,6 +588,7 @@ class TimerOrchestrator {
     _usageTrackerTimer?.cancel();
     _pauseAutoResumeTimer?.cancel();
     _autoSaveTimer?.cancel();
+    _healthReminderContextTimer?.cancel();
     timerEngine.removeListener(_onTimerEngineChanged);
   }
 }

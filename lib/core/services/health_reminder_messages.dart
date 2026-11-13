@@ -1,8 +1,8 @@
 import 'dart:math';
 
 /// Reminder wording per reminder type, with random variants; `custom:` prefixed types carry the user's own title.
-class HealthReminderCopy {
-  const HealthReminderCopy._();
+class HealthReminderMessages {
+  const HealthReminderMessages._();
 
   static const Map<String, List<String>> _variants = {
     'eyeblink': [
@@ -68,6 +68,13 @@ class HealthReminderCopy {
     final list = _pills[type] ?? _pills['eyeblink']!;
     return list[(random ?? Random()).nextInt(list.length)];
   }
+
+  /// Stable headings for reminder cards; custom content stays in the body.
+  static String heading(String? type) => isCustom(type)
+      ? 'Your reminder'
+      : isKnown(type)
+      ? poster(type)
+      : 'A moment for you';
 
   // Single fixed title for the poster display.
   static String poster(String? type) => isCustom(type)

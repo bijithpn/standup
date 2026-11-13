@@ -14,7 +14,7 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/core/services/native_enhancements_service.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 
@@ -216,7 +216,8 @@ class NotificationsSection extends StatelessWidget {
   void _showPreview(String reminderType) {
     if (Platform.isMacOS) {
       NativeEnhancementsService.instance.triggerFlashReminder(
-        text: HealthReminderCopy.text(reminderType),
+        text: HealthReminderMessages.text(reminderType),
+        reminderType: reminderType,
         durationMs: AppConstants.healthReminderDismissDuration.inMilliseconds,
         opacity: 0.2,
         dismissOnMouseMove: settings.dismissReminderOnMouseMove,

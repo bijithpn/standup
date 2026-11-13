@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 
 class NativeEnhancementsService {
   static final NativeEnhancementsService instance =
@@ -35,6 +36,7 @@ class NativeEnhancementsService {
 
   Future<void> triggerFlashReminder({
     required String text,
+    String? reminderType,
     int durationMs = 250,
     double opacity = 0.35,
     String colorHex = '#000000',
@@ -44,6 +46,8 @@ class NativeEnhancementsService {
     try {
       await _channel.invokeMethod('triggerFlashReminder', {
         'text': text,
+        'title': HealthReminderMessages.heading(reminderType),
+        'reminderType': reminderType ?? '',
         'durationMs': durationMs,
         'opacity': opacity,
         'colorHex': colorHex,
@@ -51,6 +55,15 @@ class NativeEnhancementsService {
       });
     } catch (e) {
       _logger.error('Failed to trigger flash reminder: $e');
+    }
+  }
+
+  Future<void> dismissHealthReminder() async {
+    if (!Platform.isMacOS) return;
+    try {
+      await _channel.invokeMethod('dismissHealthReminder');
+    } catch (e) {
+      _logger.error('Failed to dismiss health reminder: $e');
     }
   }
 
