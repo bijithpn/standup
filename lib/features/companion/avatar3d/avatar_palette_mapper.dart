@@ -4,22 +4,7 @@ import 'dart:ui' show Color;
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 
-/// Recolours an authored scene with a user-chosen palette.
-///
-/// The scenes ship with the colours their illustrator picked, which is what
-/// makes them look right. A palette has to change those without flattening the
-/// modelling: each part carries a base, a lit side, a shadowed side and an ink
-/// colour, and the difference between them *is* the shading. So colours are
-/// remapped by role, keeping each one's own lightness, rather than replaced.
-///
-/// Parts that shared a colour still share it afterwards, which is what keeps a
-/// pair of ears matching.
-
-/// Applies [palette] to [scene], or returns it untouched when there is nothing
-/// to apply.
-///
-/// [strength] of 0 leaves the authored colours alone; 1 pulls fully to the
-/// palette.
+/// Recolors a scene by mapping its most-covered colors (by part volume) onto the palette roles in order; dark ink colors map to the eye color.
 AvatarScene applyPalette(
   AvatarScene scene,
   AvatarPalette? palette, {
@@ -60,8 +45,6 @@ AvatarScene applyPalette(
       ),
   ];
 
-  // Markings follow the body: dark stripes become a dark shade of the new
-  // body hue. Near-white ones (muzzles, belly patches) stay light.
   final head = scene.facePart;
   final bodyColor = head == null ? null : map(head.baseColor);
   final markings = <AvatarMarking>[
@@ -82,14 +65,11 @@ AvatarScene applyPalette(
   );
 }
 
-/// Builds the authored-colour → palette-colour table for one scene.
 Map<int, Color> _buildSubstitutions(
   AvatarScene scene,
   AvatarPalette palette,
   double strength,
 ) {
-  // How much of the avatar each colour covers, approximated by the part's
-  // volume. A colour on the head should take the body role, not one on an ear.
   final coverage = <int, double>{};
   final inkCandidates = <int>{};
 
@@ -104,8 +84,7 @@ Map<int, Color> _buildSubstitutions(
     }
 
     add(part.baseColor, 1.0);
-    // The lit and shadowed sides are variations of the base, so they carry
-    // less weight in deciding which role a colour plays.
+
     add(part.highlightColor, 0.25);
     add(part.shadowColor, 0.25);
     inkCandidates.add(part.foregroundColor.toARGB32());
@@ -133,8 +112,6 @@ Map<int, Color> _buildSubstitutions(
   for (final key in ordered) {
     final source = Color(key);
 
-    // Ink stays ink. Eyes and outlines drawn in the body colour would erase
-    // the face entirely.
     if (inkCandidates.contains(key) &&
         ink != null &&
         _luminance(source) < 0.4) {
@@ -150,8 +127,6 @@ Map<int, Color> _buildSubstitutions(
     roleIndex++;
   }
 
-  // Any ink colour that was light enough to take a body role still needs to
-  // read as ink somewhere, so map the remainder explicitly.
   if (ink != null) {
     for (final key in inkCandidates) {
       substitutions.putIfAbsent(
@@ -177,8 +152,6 @@ Color? _parse(String hex) {
 double _luminance(Color colour) =>
     0.2126 * (colour.r) + 0.7152 * (colour.g) + 0.0722 * (colour.b);
 
-/// Takes [target]'s hue and saturation but keeps much of [source]'s lightness,
-/// so a highlight stays a highlight and a shadow stays a shadow.
 Color _reshade(Color source, Color target, double strength) {
   final sourceHsl = _Hsl.from(source);
   final targetHsl = _Hsl.from(target);

@@ -2,15 +2,12 @@ import 'package:breakmate/features/companion/services/companion_state_manager.da
 import 'package:breakmate/app/bootstrapper.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
-/// Centralizes runtime coordination between services, event subscriptions,
-/// and native IPC wiring after initialization is complete.
+/// Final startup step: wires the IPC bridge and companion listeners once services exist.
 class IpcCoordinator {
   static void coordinate() {
-    // Wire native IPC message channels to the Dart EventBus boundary.
+    // Must run after ServiceBootstrapper so sl<> lookups in handlers resolve.
     AppBootstrapper.initializeIpc();
 
-    // Service-to-service dependencies for TrayManager and MenuBarController
-    // are now constructor-injected in dependency_injection.dart.
     sl<CompanionStateManager>().startListening();
   }
 }

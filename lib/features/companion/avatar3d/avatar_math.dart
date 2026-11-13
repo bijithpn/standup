@@ -1,17 +1,8 @@
 import 'dart:math' as math;
 
-/// The vector and projection maths behind the OneWorks avatar scene.
-///
-/// This is a direct port of `avatarGeometry.ts`. The constants and the order of
-/// operations are load-bearing: change them and the companions stop matching
-/// the artwork the editor produces, which is the whole point of porting rather
-/// than approximating.
-
-/// The authored view box every scene is laid out in.
 const double kViewSize = 420;
 const double kCenterX = kViewSize / 2;
 
-/// Not the vertical centre — the authored scenes sit slightly high in frame.
 const double kCenterY = 202;
 
 class Vec2 {
@@ -24,6 +15,7 @@ class Vec2 {
   String toString() => 'Vec2(${x.toStringAsFixed(2)}, ${y.toStringAsFixed(2)})';
 }
 
+/// Minimal 3D vector; the avatar renderer is pure Dart with no GPU or 3D engine.
 class Vec3 {
   const Vec3(this.x, this.y, this.z);
 
@@ -61,7 +53,6 @@ Vec3 cross(Vec3 left, Vec3 right) => Vec3(
   left.x * right.y - left.y * right.x,
 );
 
-/// The camera rotation: yaw about the vertical axis, then pitch.
 Vec3 rotateByPose(Vec3 point, double yaw, double pitch) {
   final cosYaw = math.cos(yaw);
   final sinYaw = math.sin(yaw);
@@ -77,7 +68,6 @@ Vec3 rotateByPose(Vec3 point, double yaw, double pitch) {
   );
 }
 
-/// A part's own rotation, applied before the camera's.
 Vec3 rotateLocal(
   Vec3 point, {
   required double rotationX,
@@ -113,8 +103,6 @@ Vec3 rotateLocal(
   );
 }
 
-/// Orthographic projection — depth is carried separately, for sorting and
-/// shading, rather than being divided out.
 Vec2 project(Vec3 point) => Vec2(kCenterX + point.x, kCenterY + point.y);
 
 Vec2 rotateFacePoint(
@@ -134,10 +122,6 @@ Vec2 rotateFacePoint(
   );
 }
 
-/// Drops the part of a polygon that has wrapped around the far side.
-///
-/// Without this, back-facing geometry folds through the silhouette and the pet
-/// grows a second, inside-out face.
 List<Vec3> clipToVisibleHemisphere(
   List<Vec3> points, {
   double minimumDepth = 0.015,
@@ -164,7 +148,7 @@ List<Vec3> clipToVisibleHemisphere(
   return clipped;
 }
 
-/// Andrew's monotone chain, matching the editor's hull so silhouettes agree.
+/// Monotone-chain hull, used to build a part silhouette from projected points.
 List<Vec2> convexHull(List<Vec2> points) {
   if (points.length <= 2) return List<Vec2>.of(points);
 
@@ -201,11 +185,7 @@ List<Vec2> convexHull(List<Vec2> points) {
   return <Vec2>[...lower, ...upper];
 }
 
-/// How dark a surface cell is drawn, from its angle to the light.
-///
-/// Lit and shadowed sides use different curves on purpose: the editor leans on
-/// shadow far more than on highlight, which is what gives these avatars their
-/// soft, moulded look instead of a plastic sheen.
+/// Turns a signed shade value into overlay opacity; shadows are stronger than highlights, and fade with light distance.
 double surfaceShadeOpacity(double shade, double lightDistance) {
   final lightStrength = 1 - clampDouble(lightDistance, 0, 100) / 100;
   final normalized = clampDouble(shade, -1, 1).abs();

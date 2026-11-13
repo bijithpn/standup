@@ -18,11 +18,13 @@ import 'package:breakmate/features/break_system/presentation/standalone_overlay/
 
 export 'package:breakmate/features/break_system/presentation/standalone_overlay/break_theme.dart';
 
+/// Root widget of the separate overlay window/engine; renders break, pre-break warning and quick reminder from data pushed by the main app.
 class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
   final String message;
   final int initialDurationSeconds;
 
+  // Lets template widgets report build errors so the overlay can fall back to the error template.
   static final List<void Function(FlutterErrorDetails)> onErrorCallbacks = [];
 
   const StandaloneBreakOverlay({
@@ -38,6 +40,7 @@ class StandaloneBreakOverlay extends StatefulWidget {
 
 class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     with TickerProviderStateMixin, BreakTimerManager {
+  // Native bridge: delivers overlay data/lifecycle calls from the main app and takes quit/dismiss requests back.
   static const MethodChannel _bridge = MethodChannel(
     'com.breakmate.desktop/bridge',
   );
@@ -57,7 +60,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   SettingsModel? _cachedSettingsModel;
 
   bool _initialized = false;
+  // The overlay stays blank until the first data arrives; native polls this via "isReady" before showing the window.
   bool _hasReceivedOverlayData = false;
+  // Bumps on each data push so stale delayed callbacks (quick-reminder auto-dismiss) can detect they were superseded.
   int _overlayDataGeneration = 0;
 
   @override
@@ -95,6 +100,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     StandaloneBreakOverlay.onErrorCallbacks.add(_handleTemplateError);
   }
 
+  // Pulls data that was set before this engine was ready to receive "updateOverlayData".
   Future<void> _loadInitialData() async {
     try {
       final Map? data = await _bridge.invokeMethod<Map>('getOverlayData');
@@ -106,6 +112,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     }
   }
 
+  /// Applies a new config from the main app; the end time is wall-clock based so the countdown stays correct if updates are late.
   void _applyOverlayData(Map args) {
     if (!mounted) return;
 
@@ -132,6 +139,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     }
 
     final newRemaining = config.remainingSeconds;
+    // Main app signalled the end of the break; fade out.
     if (newRemaining == 0 && remainingSeconds > 0) {
       _fadeController.reverse();
     }
@@ -139,8 +147,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     setState(() {
       _config = config;
       durationSeconds = config.durationSeconds;
-      // Show the right time on this very frame. Waiting for the timer's first
-      // tick left the previous break's countdown on screen for a second or two.
+
       final end = targetEndTime;
       remainingSeconds = end == null
           ? config.remainingSeconds
@@ -202,16 +209,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     }
   }
 
+  // Native -> overlay calls: updateOverlayData, isReady, resetOverlay (reuse the window for the next break), setScreenInfo.
   void _setupBridge() {
     _bridge.setMethodCallHandler((call) async {
       if (call.method == 'updateOverlayData') {
         _applyOverlayData(call.arguments as Map);
       } else if (call.method == 'isReady') {
-        // Native watchdog: has this overlay received data and drawn content?
         return mounted && _initialized && _hasReceivedOverlayData;
       } else if (call.method == 'resetOverlay') {
-        // Engine is kept warm between breaks: drop the last break's state so
-        // its time/content never shows before the next data arrives.
         if (mounted) {
           cancelTimer();
           targetEndTime = null;
@@ -250,12 +255,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       skipBreak(_config.isPreview, _config.overlayType, _fadeController);
   void _quitApp() => _bridge.invokeMethod('quitApp');
 
+  // Strict mode only locks real breaks; reminders and previews can always be dismissed.
   bool get _canDismiss =>
       _config.isPreview ||
       (!_config.strictMode) ||
       _config.overlayType == 'quickReminder' ||
       _config.overlayType == 'preBreakWarning';
 
+  // Swaps to the error template once so a broken template does not leave a blank full-screen overlay.
   void _handleTemplateError(FlutterErrorDetails details) {
     if (!_templateFailed) {
       debugPrint(

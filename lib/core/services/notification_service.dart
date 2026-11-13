@@ -14,6 +14,7 @@ import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
+/// Shows system notifications for reminders, breaks and insights; each helper maps to a fixed notification id/copy.
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -23,6 +24,7 @@ class NotificationService {
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
 
+  // Permission is requested without awaiting so startup is not blocked on the system prompt.
   Future<void> init() async {
     try {
       const macOS = DarwinInitializationSettings(
@@ -49,6 +51,7 @@ class NotificationService {
     }
   }
 
+  // Denied permission turns notifications off in settings and emits NotificationPermissionDeniedEvent for the UI.
   Future<void> _checkAndRequestPermission() async {
     final granted = await requestPermission();
     if (!granted) {
@@ -69,6 +72,7 @@ class NotificationService {
   }
 
   Future<bool> requestPermission() async {
+    // Windows toasts need no runtime permission.
     if (Platform.isWindows) return true;
     try {
       final granted = await _plugin
@@ -116,11 +120,7 @@ class NotificationService {
   }
 
   Future<void> showBreakFinished() async {
-    await _show(
-      id: 3,
-      title: 'Break over',
-      body: 'Back to it.',
-    );
+    await _show(id: 3, title: 'Break over', body: 'Back to it.');
   }
 
   Future<void> showClockOutReminder() async {
@@ -145,9 +145,6 @@ class NotificationService {
     );
   }
 
-  /// The daily proactive insight (plan doc §7.5) — the single
-  /// highest-priority [OverviewInsight] of the day, delivered once so it
-  /// reaches the user without a Statistics-screen visit.
   Future<void> showDailyInsight(String text) async {
     await _show(id: 32, title: 'Worth a look', body: text);
   }
@@ -174,9 +171,7 @@ class NotificationService {
     await _show(
       id: 1,
       title: 'Break soon',
-      body: isLong
-          ? 'Long break in 1 minute'
-          : 'Short break in 30 seconds',
+      body: isLong ? 'Long break in 1 minute' : 'Short break in 30 seconds',
     );
   }
 
@@ -190,6 +185,7 @@ class NotificationService {
     );
   }
 
+  // Single funnel for all notifications: honours the enabled flag, then shows a native toast (macOS) plus a pet-icon notification.
   Future<void> _show({
     required int id,
     required String title,
@@ -220,10 +216,9 @@ class NotificationService {
             ),
           );
 
-          // The toast covers banner + sound on the active display; the system
-          // notification only keeps a silent entry in Notification Center.
           final macOS = DarwinNotificationDetails(
             presentAlert: true,
+            // Banner off because the native toast above is the visible alert; list keeps it in Notification Center.
             presentBanner: false,
             presentList: true,
             presentSound: false,

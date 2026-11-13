@@ -2,10 +2,7 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
-/// Persistence repository for managing the active timer and focus state.
-/// Following our state and storage constraints, this repository acts as the sole source
-/// of truth for timer session storage and routes all access through StorageService
-/// instead of managing SQLite/ObjectBox or preferences directly.
+/// Saves and restores TimerStateData as flat key-value entries in StorageService so the timer survives restarts.
 class TimerRepository {
   final StorageService _storageService;
   final AppLogger _logger = AppLogger();
@@ -133,9 +130,7 @@ class TimerRepository {
         orElse: () => TimerState.idle,
       );
 
-      // Prevent break screen from showing immediately on application launch.
-      // If the app exited during an active break, displaying a full-screen overlay window immediately on boot
-      // would lock the user out of main control windows or settings page during initial rendering.
+      // An interrupted break is not resumed; return to running with a fresh work interval.
       if (state.state == TimerState.breakActive) {
         state.state = TimerState.running;
         state.workElapsed = Duration.zero;
@@ -187,6 +182,7 @@ class TimerRepository {
         defaultValue: defaultResetTimerAfterMinutes,
       );
 
+      // Break settings stored with the timer state are pushed back into the engine through this callback.
       onSettingsRestored(
         shortInterval,
         shortDuration,
@@ -199,7 +195,7 @@ class TimerRepository {
 
       state.isCompletionState = _storageService.getBool('timer_is_completion');
 
-      // Prevent pre-break warnings from showing immediately on application launch
+      // Pre-break warning is transient and recomputed on the next tick.
       state.isPreBreak = false;
       state.clockOutTriggered = _storageService.getBool(
         'timer_clock_out_triggered',

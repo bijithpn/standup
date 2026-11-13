@@ -1,15 +1,13 @@
 part of 'pip_overlay_window.dart';
 
-/// How one interaction is presented.
+/// Icon and copy for each PetWish shown in the action bar.
 class _WishStyle {
   const _WishStyle(this.icon, this.label, this.hint);
 
   final IconData icon;
 
-  /// One word, shown under the row for whichever button is in play.
   final String label;
 
-  /// The longer form, for the tooltip.
   final String hint;
 }
 
@@ -32,14 +30,6 @@ const Map<PetWish, _WishStyle> _wishStyles = <PetWish, _WishStyle>{
   ),
 };
 
-/// The things a user can actually do to the companion, shown on hover.
-///
-/// The face says what the pet feels, and that was the whole of it before —
-/// which left anyone seeing it for the first time with a wistful animal and no
-/// idea that the answer was to click it. So the options appear under the pet
-/// the moment the pointer arrives, with the one it would most appreciate right
-/// now picked out in the accent colour, and a single word naming whichever
-/// button is in play.
 class _ActionBar extends StatefulWidget {
   const _ActionBar({
     required this.actions,
@@ -49,11 +39,8 @@ class _ActionBar extends StatefulWidget {
     required this.onSelected,
   });
 
-  /// The interactions the user has left switched on.
   final List<PetWish> actions;
 
-  /// What the pet would most like. Highlighted, and prepended to the row when
-  /// it is something the list does not already offer.
   final PetWish suggested;
 
   final Color background;
@@ -71,15 +58,11 @@ class _ActionBarState extends State<_ActionBar> {
   Widget build(BuildContext context) {
     final suggested = widget.suggested;
     final actions = <PetWish>[
-      // Resting is the companion's own suggestion rather than a standing
-      // option, so it is only ever here when it is being asked for.
       if (suggested == PetWish.rest) PetWish.rest,
       ...widget.actions,
     ];
     if (actions.isEmpty) return const SizedBox.shrink();
 
-    // The hovered button wins the caption, because that is the one the user is
-    // asking about. Otherwise it names what the pet wants.
     final labelled =
         _hovered ?? (actions.contains(suggested) ? suggested : null);
 
@@ -122,8 +105,6 @@ class _ActionBarState extends State<_ActionBar> {
                           ? AppTheme.accent
                           : widget.foreground.withValues(alpha: 0.75),
                       shadows: const <Shadow>[
-                        // The caption can land on anything from a dark card to
-                        // a white desktop, so it carries its own contrast.
                         Shadow(blurRadius: 4, color: Color(0xCC000000)),
                       ],
                     ),
@@ -195,7 +176,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-/// A small round control in the window chrome.
 class _ChromeButton extends StatelessWidget {
   const _ChromeButton({
     required this.icon,
@@ -248,11 +228,6 @@ class _ChromeButton extends StatelessWidget {
   }
 }
 
-/// The companion's name, and nothing else.
-///
-/// What it is feeling is on its face. Narrating that in a caption would say
-/// the same thing twice and worse — a pet that has to tell you it is happy
-/// is not a pet, it is a status bar.
 class _NamePill extends StatelessWidget {
   const _NamePill({
     required this.name,
@@ -292,7 +267,6 @@ class _NamePill extends StatelessWidget {
   }
 }
 
-/// A top drag grip displaying a 2x4 dotted grid with grab mouse cursors.
 class _DottedDragHandle extends StatefulWidget {
   const _DottedDragHandle({
     required this.foreground,
@@ -370,7 +344,6 @@ class _DottedDragHandleState extends State<_DottedDragHandle> {
   }
 }
 
-/// Custom painter for a clean 2x4 dotted grid.
 class _DottedGridPainter extends CustomPainter {
   const _DottedGridPainter({required this.color});
 
@@ -403,9 +376,6 @@ class _DottedGridPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-/// A tappable control that also works from the keyboard and to a screen
-/// reader: focusable, activated by Enter or Space, announced as a button, and
-/// ringed in the accent colour while focused.
 class _Pressable extends StatefulWidget {
   const _Pressable({
     required this.label,

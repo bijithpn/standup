@@ -24,6 +24,7 @@ import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/core/utils/file_permissions.dart';
 import 'package:breakmate/features/settings/local_data_wiper.dart';
 
+/// Settings > Data: JSON backup export/import, CSV stats export/import and full data wipe.
 class DataManagementSection extends StatefulWidget {
   const DataManagementSection({super.key});
 
@@ -58,9 +59,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return '${n.year}-${two(n.month)}-${two(n.day)}_${two(n.hour)}${two(n.minute)}';
   }
 
-  /// Asks the user where to save, so the export works inside the macOS sandbox
-  /// and never silently overwrites an earlier file. Returns the path, or null
-  /// if cancelled.
+  // Appends the extension when the picker omits it and restricts file permissions to the owner.
   Future<String?> _saveText(
     String dialogTitle,
     String fileName,
@@ -81,7 +80,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return target;
   }
 
-  /// Lets the user choose a backup file; null if cancelled.
   Future<({String path, String content})?> _pickFile(List<String> exts) async {
     final result = await FilePicker.pickFiles(
       dialogTitle: 'Import Data',
@@ -98,7 +96,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       final backup = <String, dynamic>{
         'schemaVersion': AppConstants.backupSchemaVersion,
         'timestamp': DateTime.now().toIso8601String(),
-        // The app's own settings format, so restore reads back what it wrote.
+
         'settingsFormat': 'model',
         'settings': sl<SettingsRepository>().currentSettings.toMap(),
         'companion': _storage.companionPreferencesBox?.get(1)?.toMap() ?? {},
@@ -241,7 +239,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     }
   }
 
-  /// One import entry point: the file's type decides how it is read.
   Future<void> _importData() async {
     try {
       final picked = await _pickFile(['json', 'csv', 'tsv']);
@@ -281,6 +278,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return ok ?? false;
   }
 
+  // Validates the backup shape and asks for confirmation before replacing settings and stats.
   Future<void> _importBackupJson(String content) async {
     try {
       final decoded = jsonDecode(content);
@@ -294,8 +292,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       final Map<String, dynamic> data = decoded;
       if (!await _confirmReplace('settings and statistics')) return;
 
-      // Older backups stored the database's internal settings layout, which
-      // the model cannot read; those restore through the key-value records.
       if (data['settingsFormat'] == 'model' &&
           data.containsKey('settings') &&
           data['settings'] is Map) {
@@ -307,7 +303,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
-      // Global and daily stats are restored directly because their ObjectBox
       if (data.containsKey('global_stats') && data['global_stats'] is Map) {
         final globalStatsMap = Map<String, dynamic>.from(data['global_stats']);
         if (globalStatsMap.isNotEmpty) {
@@ -385,7 +380,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _importStatsTable(String picked) async {
     try {
-      // Spreadsheet apps often prepend a byte-order mark.
       final content = picked.replaceFirst('\uFEFF', '');
       final lines = content.split(RegExp(r'\r?\n'));
       if (lines.length <= 1) {
@@ -396,6 +390,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       String clean(String v) => v.trim().replaceAll('"', '');
+      // Tolerates tab, semicolon and comma exports (e.g. spreadsheet re-saves) and a leading BOM.
       final delimiter = lines.first.contains('\t')
           ? '\t'
           : lines.first.contains(';') && !lines.first.contains(',')
@@ -551,6 +546,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     );
   }
 
+  // Delegates to [wipeAllLocalData] then refreshes the displayed DB size.
   Future<void> _clearAllData() async {
     try {
       await wipeAllLocalData();

@@ -12,6 +12,8 @@ import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 
+/// Loads, holds and persists [SettingsModel]; [save] notifies listeners so timers, overlays and the tray react to changes.
+/// Primary store is the ObjectBox settings snapshot; companion prefs live in a separate box and some keys in the KV store.
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
   SettingsModel _current = const SettingsModel();
@@ -25,9 +27,7 @@ class SettingsRepository extends ChangeNotifier {
       if (decoded is Map) {
         return decoded.map((k, v) => MapEntry(k as String, v as int));
       }
-    } catch (_) {
-      // Corrupt/legacy value — fall back to no overrides.
-    }
+    } catch (_) {}
     return const {};
   }
 
@@ -38,9 +38,7 @@ class SettingsRepository extends ChangeNotifier {
       if (decoded is Map) {
         return decoded.map((k, v) => MapEntry(k as String, v as int));
       }
-    } catch (_) {
-      // Corrupt/legacy value — fall back to no budgets set.
-    }
+    } catch (_) {}
     return const {};
   }
 
@@ -58,6 +56,7 @@ class SettingsRepository extends ChangeNotifier {
     }
   }
 
+  /// Reads settings at startup (snapshot, else legacy KV keys, else defaults) and reconciles the onboarding flag across stores.
   Future<void> load() async {
     if (!_storage.isReady) {
       debugPrint(
@@ -125,10 +124,9 @@ class SettingsRepository extends ChangeNotifier {
         }
       }
 
-      // The onboarding completion flag is a one-way toggle (false -> true).
-      // We check both the ObjectBox settings snapshot and the database key-value fallback to ensure consistency.
       final snapshotOnboarding = snapshot?.hasCompletedOnboarding ?? false;
       final kvOnboarding = _storage.getBool('has_completed_onboarding');
+      // Onboarding flag is kept in both snapshot and KV; either one counts so a partial write never re-shows onboarding.
       final onboardingDone = snapshotOnboarding || kvOnboarding;
 
       debugPrint(
@@ -158,6 +156,7 @@ class SettingsRepository extends ChangeNotifier {
     }
   }
 
+  /// Saved exercises plus any newly shipped defaults the user hasn't seen yet.
   List<ExerciseModel> getExercises() {
     if (_storage.settingsBox != null) {
       final snapshot = _storage.settingsBox?.get(1);
@@ -176,9 +175,6 @@ class SettingsRepository extends ChangeNotifier {
     return _loadExercises();
   }
 
-  /// Appends any built-in exercise that isn't already in [saved] by id, so
-  /// new default activities show up for existing users too, not just fresh
-  /// installs. Existing entries (and any favorite/hidden state) are untouched.
   List<ExerciseModel> _withNewDefaults(List<ExerciseModel> saved) {
     final savedIds = saved.map((e) => e.id).toSet();
     final missing = ExerciseModel.defaults.where(
@@ -380,6 +376,7 @@ class SettingsRepository extends ChangeNotifier {
     return ExerciseModel.defaults;
   }
 
+  // Pre-snapshot installs stored each setting as its own KV key; used once, then migrated by [save].
   SettingsModel _loadFromLegacy() {
     return SettingsModel(
       shortBreakIntervalMinutes: _storage.getInt(
@@ -625,6 +622,7 @@ class SettingsRepository extends ChangeNotifier {
     );
   }
 
+  /// Marks onboarding done in both the KV store and the snapshot.
   Future<void> completeOnboarding() async {
     debugPrint('[SettingsRepo] Completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
@@ -645,6 +643,7 @@ class SettingsRepository extends ChangeNotifier {
     }
   }
 
+  /// Persists settings to the snapshot, companion prefs and KV keys, then notifies listeners; throws if storage is unavailable.
   Future<void> save(SettingsModel settings) async {
     if (!_storage.isReady) {
       debugPrint(

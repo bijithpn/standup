@@ -32,15 +32,14 @@ export 'package:breakmate/features/break_system/domain/break_model.dart'
 export 'package:breakmate/core/services/timer_state.dart'
     show TimerState, WorkMode;
 
-/// The central state machine governing focus sessions, break countdowns,
-/// and wellness micro-reminders (posture, eye blinking). It handles the tick loop,
-/// settings synchronization, and system sleep/wake event handling.
+/// Core work/break state machine (idle, running, paused, breakActive, windDown) driven by a 1s tick; publishes changes via ChangeNotifier and the EventBus.
 class TimerEngine extends ChangeNotifier {
   final SettingsRepository _settingsRepository;
   final SmartDetectionService? _smartDetectionService;
   final EventBus _eventBus;
   final AppLogger _logger = AppLogger();
 
+  // All mutable timer state lives here; times are absolute (workEndTime/breakEndTime) so UI countdowns survive missed ticks.
   final TimerStateData _stateData = TimerStateData();
   late final TimerContextManager _contextManager;
 
@@ -59,16 +58,9 @@ class TimerEngine extends ChangeNotifier {
   BreakDeterminationStrategy _breakDeterminationStrategy =
       const IdleTimeBreakStrategy(innerStrategy: RepeatCycleBreakStrategy());
 
-  // Health reminders (posture/eye rest) no longer run on a fixed,
-  // user-set countdown — each fires once at a randomized point within the
-  // current work cycle (see `_checkHealthReminders`). These hold that
-  // cycle's chosen target in seconds; null means "not yet picked for this
-  // cycle". Not part of TimerStateData because they're never persisted —
-  // a fresh random target is fine after every app restart.
+  // Eye/posture/hydration/etc. reminders are counted while work runs; the scheduler decides which one fires.
   final HealthReminderScheduler _healthScheduler;
 
-  // Active-work seconds since each reminder was last satisfied. They live in
-  // [TimerStateData] so all of them survive a restart.
   int _elapsedFor(HealthReminderKind kind) => switch (kind) {
     HealthReminderKind.eyeRest => _stateData.eyeBlinkElapsedSeconds,
     HealthReminderKind.blink => _stateData.blinkElapsedSeconds,
@@ -95,8 +87,6 @@ class TimerEngine extends ChangeNotifier {
     }
   }
 
-  /// One switch controls them all (blink is opt-in); the scheduler picks which
-  /// one to show.
   bool _reminderEnabled(HealthReminderKind kind, SettingsModel s) =>
       s.healthRemindersEnabled &&
       (kind != HealthReminderKind.blink || s.blinkRemindersEnabled);
@@ -159,6 +149,7 @@ class TimerEngine extends ChangeNotifier {
     _resetTimerAfterMinutes = s.resetTimerAfterMinutes;
   }
 
+  // Re-derive the countdown immediately so interval edits apply without waiting for the next tick.
   void _onSettingsChanged() {
     _syncSettingsFromRepo();
     if (state == TimerState.running) {
@@ -265,9 +256,6 @@ class TimerEngine extends ChangeNotifier {
     return _stateData.countdownSeconds;
   }
 
-  /// Remaining time to the absolute break deadline, rounded up to whole
-  /// seconds so the display never shows 0 before the deadline. Null when no
-  /// deadline is set.
   Duration? _remainingUntilBreakEnd() {
     final end = _stateData.breakEndTime;
     if (end == null) return null;
@@ -290,6 +278,7 @@ class TimerEngine extends ChangeNotifier {
     return null;
   }
 
+  // Countdown is derived from workElapsed, not stored, so pauses and idle discards stay consistent.
   Duration get timeUntilNextShortBreak {
     final interval = Duration(minutes: _shortBreakIntervalMinutes);
     final remaining = interval - _stateData.workElapsed;
@@ -303,6 +292,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Starts the tick loop; from idle it enters running, and a resumed break keeps its remaining time.
   void startTimers() {
     _syncSettingsFromRepo();
 
@@ -324,7 +314,6 @@ class TimerEngine extends ChangeNotifier {
 
     _stateData.lastTickTime = clock.now();
 
-    // Recalculate target end times based on the current system clock to prevent drift after suspension.
     if (state == TimerState.breakActive) {
       _stateData.breakEndTime ??= clock.now().add(
         Duration(seconds: _stateData.countdownSeconds),
@@ -358,7 +347,6 @@ class TimerEngine extends ChangeNotifier {
   void _startTicking() {
     _tickTimer?.cancel();
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      // An exception in one tick must not leave the countdown frozen.
       try {
         _tickOnce();
       } catch (e, st) {
@@ -367,11 +355,12 @@ class TimerEngine extends ChangeNotifier {
     });
   }
 
+  /// One second of work: handles sleep gaps, smart pauses, elapsed accounting, break/reminder checks and break countdown.
   void _tickOnce() {
     {
       final now = clock.now();
 
-      // Skip processing while the system is asleep to avoid state corruption from stale deltas.
+      // Ticks are ignored while the system is asleep/locked; handleSystemWake resumes.
       if (_stateData.systemSleepPaused) {
         return;
       }
@@ -391,9 +380,8 @@ class TimerEngine extends ChangeNotifier {
         return;
       }
 
-      // A 1s ticker never legitimately stalls this long: the machine was
-      // suspended. Covers platforms/paths with no native sleep notification.
       final lastTick = _stateData.lastTickTime;
+      // A >15s gap between ticks means the machine slept without a sleep event.
       if (lastTick != null &&
           now.difference(lastTick) > const Duration(seconds: 15)) {
         _logger.info('Tick gap detected: treating as system sleep');
@@ -410,7 +398,7 @@ class TimerEngine extends ChangeNotifier {
       if (state == TimerState.running) {
         if (_checkClockOut(now)) return;
 
-        // Context-aware pausing (e.g., active meeting detection).
+        // manualOverride keeps the timer running after the user resumed it despite a smart pause, until the pause condition clears.
         if (_contextManager.shouldRunWorkTimer()) {
           _stateData.manualOverride = false;
         } else {
@@ -492,6 +480,7 @@ class TimerEngine extends ChangeNotifier {
     return false;
   }
 
+  /// Toggles the pre-break warning window and triggers a break when the interval elapses (unless suppressed, deferred or in a meeting).
   void _checkBreakConditions() {
     final settings = _settingsRepository.currentSettings;
     if (settings.quietModeEnabled) {
@@ -527,6 +516,7 @@ class TimerEngine extends ChangeNotifier {
 
       final now = clock.now();
       if (_settingsRepository.currentSettings.avoidBreakHour == now.hour) {
+        // Avoided hour: push the break to the start of the next hour.
         final delay = Duration(minutes: 60 - now.minute);
         _stateData.workElapsed =
             interval - (delay > interval ? interval : delay);
@@ -534,6 +524,7 @@ class TimerEngine extends ChangeNotifier {
         return;
       }
 
+      // Async calendar check; the state is re-verified in the callback because the timer may have changed meanwhile.
       _contextManager.isMeetingUpcoming().then((isMeeting) {
         if (state != TimerState.running) {
           _logger.info(
@@ -547,9 +538,7 @@ class TimerEngine extends ChangeNotifier {
             final rawDelay = (gapMinutes != null && gapMinutes > 0)
                 ? Duration(minutes: gapMinutes)
                 : const Duration(minutes: 5);
-            // Cap the delay to one interval — if the calendar is packed
-            // further out than that, defer by a full cycle and re-check
-            // rather than pushing workElapsed deeply negative.
+
             final delay = rawDelay > interval ? interval : rawDelay;
             _logger.info(
               'Delaying break by ${delay.inMinutes}min to land in the next calendar gap',
@@ -564,6 +553,7 @@ class TimerEngine extends ChangeNotifier {
     }
   }
 
+  /// Asks the scheduler which health reminder is due (never during meetings/presentations) and fires at most one.
   void _checkHealthReminders() {
     final settings = _settingsRepository.currentSettings;
     if (settings.quietModeEnabled) {
@@ -575,11 +565,6 @@ class TimerEngine extends ChangeNotifier {
 
     if (_checkCustomReminders(settings)) return;
 
-    // Cadence follows evidence-based baselines (eye rest: the 20-20-20 rule,
-    // posture: roughly every 30 minutes); the break interval only nudges it by
-    // up to ±20%. All timing decisions — real relief from idle time, holding
-    // off when a break is imminent, deferring during meetings, spacing,
-    // backing off when ignored — live in HealthReminderScheduler.
     final activityRatio =
         _shortBreakIntervalMinutes /
         AppConstants.defaultShortBreakIntervalMinutes;
@@ -615,10 +600,9 @@ class TimerEngine extends ChangeNotifier {
     _triggerHealthReminder(due.typeName, 'overlay');
   }
 
+  // Custom reminders are keyed by title|minutes and use a simple wall-clock interval.
   final Map<String, DateTime> _customLastFired = {};
 
-  /// Fires at most one due user-defined reminder; waits out meetings and
-  /// presentations. Counts from first sight, so a new reminder isn't instant.
   bool _checkCustomReminders(SettingsModel settings) {
     if (_contextManager.isMeetingActive() ||
         _contextManager.isPresentationActive()) {
@@ -639,13 +623,8 @@ class TimerEngine extends ChangeNotifier {
     return false;
   }
 
-  /// Feed of how long the user has been without keyboard/mouse input
-  /// (seconds), sampled every few seconds. Stepping away is real relief: it
-  /// resets the matching reminder instead of nagging right after.
+  /// Fed idle samples: lets health reminders count real rests and recovers from a stuck sleep flag when input resumes.
   void reportIdleSeconds(double idleSeconds) {
-    // Self-heal a stuck sleep/lock flag: a missed unlock/wake notification
-    // would otherwise freeze the tick loop while the UI still says "running".
-    // Fresh input while the flag has been set for a while means we're awake.
     final since = _stateData.lastTickTime;
     if (_stateData.systemSleepPaused &&
         idleSeconds < 3 &&
@@ -665,6 +644,7 @@ class TimerEngine extends ChangeNotifier {
     );
   }
 
+  // Clock-out starts a 60s wind-down "break" instead of a normal break.
   void _triggerClockOut() {
     _stateData.state = TimerState.windDown;
     _stateData.workElapsed = Duration.zero;
@@ -695,6 +675,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Enters breakActive: picks long vs short via the strategy, sets the end time and emits BreakStartedEvent (which shows the overlay).
   void _triggerBreak({int? durationOverride}) {
     _stateData.state = TimerState.breakActive;
     _stateData.workElapsed = Duration.zero;
@@ -752,6 +733,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Ends the active break (completed or skipped), resets reminder counters on completion and returns to running.
   Future<void> finishBreak({required bool skipped}) async {
     if (state != TimerState.breakActive) return;
 
@@ -773,9 +755,6 @@ class TimerEngine extends ChangeNotifier {
     _emit(BreakEndedEvent(skipped: skipped));
 
     if (!skipped) {
-      // A completed break rests the eyes and changes position, so those
-      // reminders are not due right after it (a long one also covers a drink);
-      // a skipped break does none of that.
       final isLong = activeBreak?.type == BreakType.long;
       for (final kind in HealthReminderKind.values) {
         if (kind == HealthReminderKind.hydration && !isLong) continue;
@@ -815,6 +794,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Delegates to the break strategy with the current cycle count and time since the last long break.
   bool isLongBreakDue() {
     final now = clock.now();
     _stateData.longBreakWindowStartedAt ??= now;
@@ -830,8 +810,7 @@ class TimerEngine extends ChangeNotifier {
     );
   }
 
-  /// Idle is only detected after the threshold passes, by which time the tick
-  /// loop has already counted that stretch as work; take it back.
+  /// Removes idle time from elapsed counters (the idle threshold had already been counted as work).
   void discardIdleTime(Duration idle) {
     if (idle <= Duration.zero) return;
     Duration back(Duration v) => v > idle ? v - idle : Duration.zero;
@@ -841,6 +820,7 @@ class TimerEngine extends ChangeNotifier {
     totalWorkTodayNotifier.value = _stateData.totalWorkToday;
   }
 
+  /// Starts a fresh break cycle after a long idle period.
   void resetCycleOnIdle() {
     _stateData.workElapsed = Duration.zero;
     _stateData.completedShortBreaksInCycle = 0;
@@ -883,6 +863,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pauses work; [isManual] distinguishes a user pause (no auto-resume) from a smart pause (resumes when the condition clears).
   void pauseTimers({bool isManual = false}) {
     if (state == TimerState.breakActive) return;
     _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
@@ -949,14 +930,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Starts a fresh logical day: clears the day's accumulated work, the clock-out
-  /// latch and the in-progress focus cycle so no countdown from the previous
-  /// day survives. The timer's mode is preserved (a manual pause stays paused;
-  /// a running timer keeps running with a freshly computed deadline).
-  ///
-  /// An active break is never touched — the caller defers the reset until the
-  /// break ends so it cannot be completed twice or restarted.
-  /// Returns false when the reset was deferred.
+  /// Daily reset hook for DailyResetService; returns false (deferred) while a break is active.
   bool resetForNewDay() {
     if (state == TimerState.breakActive) return false;
     _stateData.totalWorkToday = Duration.zero;
@@ -990,6 +964,7 @@ class TimerEngine extends ChangeNotifier {
     return true;
   }
 
+  // For a forced long break, backdate the window so the strategy sees the interval as elapsed.
   void triggerBreakNow({bool isLong = false, int? durationSeconds}) {
     if (isLong) {
       _stateData.longBreakWindowStartedAt = clock.now().subtract(
@@ -1005,6 +980,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Adds 2 minutes to the active break end time.
   void postponeBreak() {
     final base = _stateData.breakEndTime ?? clock.now();
     _stateData.breakEndTime = base.add(const Duration(seconds: 120));
@@ -1022,21 +998,18 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Handles the transition when the system goes to sleep or the screen locks.
-  /// We persist the current timestamp to storage to calculate elapsed sleep time on wake.
-  /// Invoked when a wake left the timer idle (away longer than a break
-  /// interval), so the UI can ask the user to start it again.
+  /// Set by the orchestrator; invoked after a long absence resets the session so timers can be restarted.
   VoidCallback? onNeedsRestart;
 
+  /// Freezes ticking and persists the last tick time so wake can compute time away even after a restart.
   void handleSystemSleep({DateTime? at}) {
     _logger.info(
       'System sleep or screen lock detected: pausing break/work timers',
     );
-    // Lock then sleep fire back to back; keep the first timestamp so the
-    // whole away period is measured.
+
     if (_stateData.systemSleepPaused) return;
     _stateData.systemSleepPaused = true;
-    // The channel message can reach Dart only after wake; use the native time.
+
     final now = at ?? clock.now();
     _stateData.lastTickTime = now;
     try {
@@ -1050,19 +1023,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Handles recovery upon system wake or screen unlock by reconciling against
-  /// the authoritative deadlines rather than any per-tick counter:
-  ///  - Active break: remaining time is recomputed from `breakEndTime`. If the
-  ///    deadline passed while asleep the break completes exactly once (the
-  ///    `breakActive` guard in `finishBreak` makes repeated wakes a no-op).
-  ///  - Manually paused: stays paused; the paused remaining time is untouched.
-  ///  - Work timer: if the user was away at least one break interval we assume
-  ///    they took an offline break and reset; otherwise work resumes with the
-  ///    time that was left (sleep is not counted as work).
-  ///
-  /// Limitation: deadlines are wall-clock `DateTime`s, so a manual clock change
-  /// or DST shift while a break is active moves the deadline by the same
-  /// amount. Breaks are short (minutes) so the effect is bounded.
+  /// Reconciles after sleep: extends a running break by the time asleep, ends it if past due, or resets the session if away longer than one work interval.
   void handleSystemWake() {
     _logger.info(
       'System wake or screen unlock detected: checking recovery flow',
@@ -1092,7 +1053,6 @@ class TimerEngine extends ChangeNotifier {
       ErrorHandler().handleError(e, st);
     }
 
-    // Duplicate wake/unlock notifications (lock + wake fire back to back).
     if (!wasAsleep && state != TimerState.breakActive) {
       syncNotifiersFromState();
       notifyListeners();
@@ -1100,8 +1060,6 @@ class TimerEngine extends ChangeNotifier {
     }
 
     if (state == TimerState.breakActive) {
-      // The break deadline is wall-clock, so push it out by the time spent
-      // asleep/locked: the break countdown pauses while the user is away.
       final end = _stateData.breakEndTime;
       final slept = _stateData.lastTickTime;
       if (wasAsleep && end != null && slept != null) {

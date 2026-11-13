@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
+/// Settings > Privacy: tracking toggles, crash reporting, OS permission status and a summary of what data is stored locally.
 class PrivacySection extends StatefulWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -33,8 +34,6 @@ class PrivacySection extends StatefulWidget {
 }
 
 class _PrivacySectionState extends State<PrivacySection> {
-  /// How many activity entries are stored, so "clear history" can say what it
-  /// would actually delete.
   int _segmentCount = 0;
 
   bool _crashReporting = SimplePrefs.instance.getBool(
@@ -46,7 +45,7 @@ class _PrivacySectionState extends State<PrivacySection> {
   void initState() {
     super.initState();
     _refreshSegmentCount();
-    // Shared, throttled: shows the real calendar permission state.
+
     sl<CalendarSyncController>().refresh();
   }
 
@@ -66,7 +65,6 @@ class _PrivacySectionState extends State<PrivacySection> {
               'no accounts and no servers, and nothing is sent anywhere.',
         ),
 
-        // ── Permissions ─────────────────────────────────────────────────
         sectionHeader('Permissions'),
         ChangeNotifierProvider<CalendarSyncController>.value(
           value: calendar,
@@ -92,7 +90,6 @@ class _PrivacySectionState extends State<PrivacySection> {
           ),
         ),
 
-        // ── Data collection ─────────────────────────────────────────────
         sectionHeader('Data collection'),
         buildCard([
           toggleRow(
@@ -149,8 +146,6 @@ class _PrivacySectionState extends State<PrivacySection> {
         ]),
         _DataTransparencyPanel(enabled: settings.appUsageTrackingEnabled),
 
-        // ── Recorded data ───────────────────────────────────────────────
-        // The detailed app-usage view lives on the Statistics screen only.
         if (settings.appUsageTrackingEnabled) ...[
           sectionHeader('Recorded app usage'),
           buildCard([
@@ -165,7 +160,6 @@ class _PrivacySectionState extends State<PrivacySection> {
           ]),
         ],
 
-        // ── Your data ───────────────────────────────────────────────────
         const SizedBox(height: 24),
         sectionHeader('Your data'),
         buildCard([
@@ -204,8 +198,6 @@ class _PrivacySectionState extends State<PrivacySection> {
     }
   }
 
-  /// Turning tracking on for the first time explains itself before it starts;
-  /// turning it off is immediate, because stopping never needs consent.
   Future<void> _setTracking(SettingsModel settings, bool value) async {
     if (!value) {
       widget.onSave(settings.copyWith(appUsageTrackingEnabled: false));
@@ -277,9 +269,6 @@ class _PrivacySectionState extends State<PrivacySection> {
   }
 }
 
-/// Plain-language breakdown of exactly what the app usage feature stores,
-/// how long it's kept, and what it never touches — the "what we know"
-/// half of the dashboard, next to the "here's the data" half above.
 class _DataTransparencyPanel extends StatelessWidget {
   final bool enabled;
 
@@ -392,6 +381,7 @@ class _TransparencyRow extends StatelessWidget {
   }
 }
 
+// `notRequested` differs from `denied`: the OS prompt can still be shown.
 enum _PermissionStatus { checking, granted, notRequested, denied }
 
 class _PermissionRow extends StatelessWidget {

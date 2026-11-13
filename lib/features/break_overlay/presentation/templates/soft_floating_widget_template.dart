@@ -19,6 +19,7 @@ const _warm = BreakPalette(
   isDark: true,
 );
 
+/// Break template: a draggable glass card that snaps to a screen anchor, leaving the rest of the desktop visible.
 class SoftFloatingWidgetTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -35,8 +36,7 @@ class SoftFloatingWidgetTemplate extends StatefulWidget {
     this.onSkip,
   });
 
-  /// Where the card was last left. Lives for the process, so the next break's
-  /// overlay opens where this one was dropped.
+  // Remembers the last dragged position for tests.
   @visibleForTesting
   static Alignment lastAnchor = Alignment.bottomRight;
 

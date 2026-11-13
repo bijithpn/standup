@@ -18,6 +18,7 @@ const _print = BreakPalette(
   isDark: false,
 );
 
+/// Break template: splits the tip into up to four steps and highlights each as progress advances.
 class StepGuideTemplate extends StatelessWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -38,7 +39,7 @@ class StepGuideTemplate extends StatelessWidget {
   static const double _left = 520;
   static const double _top = 150;
 
-  /// Steps are the sentences of the break's tip (up to four).
+  // Splits the tip on sentence boundaries; previews use sample steps when the tip is too short.
   List<String> _steps(bool preview) {
     final parsed = breakInfo.tip
         .split('. ')
@@ -47,7 +48,7 @@ class StepGuideTemplate extends StatelessWidget {
         .map((s) => s.trim())
         .map((s) => s.endsWith('.') ? s : '$s.')
         .toList();
-    // A one-line tip has no list to show in a thumbnail.
+
     if (preview && parsed.length < 3) {
       return const [
         'Look away from the screen.',
@@ -67,7 +68,7 @@ class StepGuideTemplate extends StatelessWidget {
     final complete = breakIsComplete(context, remainingSeconds, totalSeconds);
     final steps = _steps(BreakPreviewScope.isPreview(context));
     final n = steps.length;
-    // The active step follows elapsed time; every step is done at the end.
+
     final active = complete ? n : (progress * n).floor().clamp(0, n - 1);
 
     return BreakScaffold(

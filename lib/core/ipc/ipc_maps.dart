@@ -1,7 +1,4 @@
-/// Platform channels hand back `Map<Object?, Object?>` at every level, and the
-/// generated `fromJson` casts nested maps straight to `Map<String, dynamic>`,
-/// which throws. This converts a decoded payload, recursively, into the types
-/// those casts expect.
+/// Platform channels deliver `Map<dynamic, dynamic>`; this deep-converts them to `Map<String, dynamic>` for JSON/freezed parsing.
 Map<String, dynamic> stringKeyedMap(Map<dynamic, dynamic> source) {
   return source.map<String, dynamic>(
     (key, value) =>

@@ -1,19 +1,20 @@
 import 'package:objectbox/objectbox.dart';
 
+/// Single-row (id 1) snapshot of timer progress, used to resume the session after a restart.
 @Entity()
 class SessionState {
   @Id(assignable: true)
-  int id = 1; // Singleton
+  int id = 1;
 
-  String lastSessionDate; // Format: "YYYY-MM-DD" (today's date)
-  int workElapsedSeconds; // Duration of work since last break
-  int totalWorkTodaySeconds; // Total work time for today
-  int postureElapsedSeconds; // Health reminder counters
+  String lastSessionDate;
+  int workElapsedSeconds;
+  int totalWorkTodaySeconds;
+  int postureElapsedSeconds;
   int eyeBlinkElapsedSeconds;
-  bool isPreBreak; // Was user in pre-break warning?
-  String timerState; // Enum name: 'idle', 'running', 'paused', etc.
+  bool isPreBreak;
+  String timerState;
   @Property(type: PropertyType.date)
-  DateTime? longBreakWindowStartedAt; // Timestamp for long break tracking
+  DateTime? longBreakWindowStartedAt;
 
   SessionState({
     this.id = 1,

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_helpers.dart';
 
-/// `MM:SS` countdown in tabular figures. Announced as "N seconds remaining"
-/// without a live region, so screen readers do not chatter every second.
+/// mm:ss countdown text with a screen-reader label.
 class BreakCountdown extends StatelessWidget {
   final int seconds;
   final TextStyle? style;
@@ -36,7 +35,6 @@ class BreakCountdown extends StatelessWidget {
   }
 }
 
-/// Micro-style uppercase label (the break type).
 class BreakLabel extends StatelessWidget {
   final String text;
   final Color? color;
@@ -62,7 +60,6 @@ class BreakLabel extends StatelessWidget {
   }
 }
 
-/// Instruction text: body style in secondary color, at most 420 wide.
 class BreakTip extends StatelessWidget {
   final String text;
   final Color? color;

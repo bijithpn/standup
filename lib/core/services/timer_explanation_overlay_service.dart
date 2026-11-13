@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/core/services/timer_explanation.dart';
 
-/// Shows [TimerExplanation] as a dismissible overlay panel — Phase 2's
-/// "why did BreakMate do that?" surface, opened by [ExplainHotkeyService].
-/// Reuses [ErrorToastService]'s existing global `navigatorKey` rather than
-/// adding new app-level plumbing, the same way toasts already show without
-/// a local `BuildContext`.
+/// Shows the explanation as an in-app overlay panel on the root navigator; replaces any open panel and auto-dismisses.
 class TimerExplanationOverlayService {
   static const _autoDismissAfter = Duration(seconds: 20);
 
@@ -28,6 +24,7 @@ class TimerExplanationOverlayService {
     );
     _entry = entry;
 
+    // Insert after the frame to avoid modifying the overlay during build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (overlay.mounted) {
         overlay.insert(entry);
@@ -54,8 +51,6 @@ class _ExplanationPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // A full-screen, invisible tap target so clicking anywhere outside
-        // the panel dismisses it, same UX as the platform tray menus.
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
@@ -68,7 +63,7 @@ class _ExplanationPanel extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: GestureDetector(
-              onTap: () {}, // absorb taps on the card itself
+              onTap: () {},
               child: Container(
                 width: 320,
                 padding: const EdgeInsets.all(16),

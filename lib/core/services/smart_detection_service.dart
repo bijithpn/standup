@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:breakmate/core/services/background_polling_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
+/// Snapshot from the native detector: mic/camera/meeting/video activity and whether breaks should pause.
 class SmartDetectionState {
   final bool isMicrophoneActive;
   final bool isCameraActive;
@@ -38,11 +39,7 @@ class SmartDetectionState {
   );
 }
 
-/// Detects video calls, meetings, media playback, and to pause reminders.
-///
-/// The native detector (macOS, Windows, Linux) pushes state over
-/// [_eventChannel]. If it is unavailable the background polling isolate
-/// reports through [updateDetectionStatus] instead.
+/// Listens to native meeting/video detection and exposes whether reminders should pause; falls back to isolate polling off macOS.
 class SmartDetectionService {
   static const _eventChannel = EventChannel(
     'com.breakmate/smart_detection_events',
@@ -57,7 +54,6 @@ class SmartDetectionService {
   bool _isVideoCallActive = false;
   bool _isVideoPlaying = false;
 
-  /// Native state changes; empty while the polling fallback is in use.
   Stream<SmartDetectionState> get stateStream => _stateController.stream;
   SmartDetectionState get currentState => _currentState;
 
@@ -74,8 +70,8 @@ class SmartDetectionService {
       _onNativeState,
       onError: (Object err) {
         _logger.error('SmartDetection stream error: $err');
-        // A runner without the native detector (older build, unsupported
-        // desktop session) still gets meeting and focus detection by polling.
+
+        // No native stream available: use the background isolate heuristics instead.
         if (!Platform.isMacOS && !_usingPollingFallback) {
           _usingPollingFallback = true;
           _subscription?.cancel();
@@ -115,6 +111,7 @@ class SmartDetectionService {
     _logger.info('SmartDetectionService stopped');
   }
 
+  /// Called by BackgroundPollingService when polling (not native events) changes the video-call state.
   void updateDetectionStatus(bool isVideoCallActive, String? frontApp) {
     final wasVideoCallActive = _isVideoCallActive;
 

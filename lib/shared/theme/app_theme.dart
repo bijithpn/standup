@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:breakmate/features/themes/domain/app_theme_preset.dart';
 
+/// Static design tokens (colors, text styles, spacing) driven by the active theme preset.
 class AppTheme {
   AppTheme._();
 
@@ -11,6 +12,7 @@ class AppTheme {
   static AppThemePreset get activePreset => _activePreset;
   static Color? get customAccent => _customAccent;
 
+  // Presets and accent are static state; ThemeController calls this when the user changes theme.
   static void applyPreset(AppThemePreset preset, {Color? customAccent}) {
     _activePreset = preset;
     _customAccent = customAccent;
@@ -20,7 +22,6 @@ class AppTheme {
     _customAccent = customAccent;
   }
 
-  // Core Theme Palette
   static Color get primary => _activePreset.primary;
   static Color get primaryLight => _activePreset.primaryLight;
   static Color get primaryDark => _activePreset.primaryDark;
@@ -43,8 +44,7 @@ class AppTheme {
   static Color get surface => _activePreset.surface;
   static Color get surfaceElevated => _activePreset.surfaceElevated;
   static Color get surfaceCard => _activePreset.surfaceCard;
-  // Preset borders are close to the card colour and vanish on screen; lift them
-  // toward the text colour so cards and dividers read on every theme.
+
   static Color get border =>
       Color.lerp(_activePreset.border, _activePreset.textPrimary, 0.12)!;
   static Color get borderSubtle =>

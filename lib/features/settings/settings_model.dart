@@ -1,5 +1,6 @@
 import 'package:breakmate/features/settings/exercise_model.dart';
 
+/// Immutable snapshot of every user setting; changed via [copyWith] and persisted by [SettingsRepository].
 class SettingsModel {
   final bool autoStart;
   final String clockFaceStyle;
@@ -35,49 +36,36 @@ class SettingsModel {
   final int clockFaceTextColorHex;
   final bool clockFaceBlurEnabled;
 
-  /// Break overlay appearance: `dark` (default), `light`, or `system`.
   final String overlayThemeMode;
 
-  /// Default breathing pattern for Zen Mode and Breathe Line (`box`, `relax`,
-  /// `even`).
   final String breathPreset;
 
-  /// Play a soft chime when a break finishes on its own.
   final bool breakChimeEnabled;
 
-  /// User-defined recurring reminders, shown alongside the health reminders.
   final List<CustomReminder> customReminders;
 
-  /// Freeze decorative motion in break overlays, regardless of the OS setting.
   final bool reduceMotion;
 
-  /// Nudge at 8 pm to warm and dim the screen.
   final bool eveningEyeCare;
 
-  /// Run the "BreakMate Focus On/Off" Shortcut around focus sessions.
   final bool focusDndEnabled;
 
-  /// Extra, more frequent blink / screen-distance reminder (off by default).
   final bool blinkRemindersEnabled;
   final bool dismissReminderOnMouseMove;
 
-  /// Hour of day (0-23) in which breaks are deferred to the next hour; -1 off.
   final int avoidBreakHour;
 
-  /// Scale up text in break overlays and reminders.
   final bool largeOverlayText;
 
-  /// Show an "I looked away" button during eye-rest breaks; each tap that is
-  /// followed by a completed break counts as a wellness action.
   final bool lookedAwayPromptEnabled;
   final String? customImagePath;
 
   final int resetTimerAfterMinutes;
 
   final bool workingHoursEnabled;
-  final List<int> workingDays; // 1=Mon … 7=Sun
-  final String workStartTime; // "HH:mm"
-  final String workEndTime; // "HH:mm"
+  final List<int> workingDays;
+  final String workStartTime;
+  final String workEndTime;
 
   final bool detectVideoCalls;
   final bool detectMeetings;
@@ -85,14 +73,14 @@ class SettingsModel {
   final bool presentationPauseEnabled;
 
   final bool enableClockOut;
-  final String clockOutTime; // "HH:mm"
+  final String clockOutTime;
 
   final List<ExerciseModel> exercises;
 
   final bool autoSuggestExercises;
   final bool useCursorCountdown;
   final bool enableAnimations;
-  final String trayIconStyle; // 'default', 'companion', 'minimal', 'countdown'
+  final String trayIconStyle;
   final bool companionEnabled;
   final bool pipModeEnabled;
   final String companionPetTheme;
@@ -101,32 +89,18 @@ class SettingsModel {
   final bool companionClickThrough;
   final bool companionFollowMouse;
 
-  /// Whether the companion may move its own window around the screen.
-  ///
-  /// On by default: a pet that only ever sits where it was dropped reads as a
-  /// widget. Off is for anyone who wants the window exactly where they put it
-  /// and nowhere else.
   final bool companionWanderingEnabled;
   final String companionPreviewBackground;
   final List<String> unlockedPets;
 
-  /// The companion's full appearance as JSON-encoded `AvatarDefinition`.
-  ///
-  /// Held alongside [companionPetTheme] because a theme id only names a
-  /// species: the breed, palette, and seed the customizer produced have
-  /// nowhere else to live, and the overlay windows need all of it.
   final String? companionAvatarDefinition;
 
-  /// Whether the floating companion stays on screen all the time.
-  ///
-  /// When false it appears when a break starts and hides when the break ends,
-  /// so the desktop stays clear during focused work.
   final bool companionKeepOnScreen;
 
   final double companionWindowWidth;
   final double companionWindowHeight;
-  final double? companionWindowX; // null = use platform default
-  final double? companionWindowY; // null = use platform default
+  final double? companionWindowX;
+  final double? companionWindowY;
 
   final String pipBackgroundStyle;
   final double pipOpacity;
@@ -135,10 +109,6 @@ class SettingsModel {
   final bool stretchReminderEnabled;
   final bool standUpReminderEnabled;
 
-  /// The single "Health reminders" switch. All reminder kinds (eye rest,
-  /// posture, hydration, stretch, stand up) are scheduled together and shown
-  /// at varied times according to how the user works; the five stored flags
-  /// are kept in step so older saved settings keep working.
   bool get healthRemindersEnabled =>
       eyeBlinkReminderEnabled ||
       postureReminderEnabled ||
@@ -149,27 +119,18 @@ class SettingsModel {
   final String companionToyType;
   final String companionTreatType;
 
-  /// Per-break-template accent color overrides, keyed by template id (e.g.
-  /// 'iris_rest') with values as 0xAARRGGBB ints. A template not present
-  /// here falls back to its built-in [BreakOverlayTheme] accent.
   final Map<String, int> templateAccentOverrides;
 
   final bool pettingEnabled;
 
-  /// Whether the companion's eyes follow the pointer.
   final bool companionGazeEnabled;
 
-  /// 0..1. How readily the companion notices the pointer: higher means a
-  /// smaller relaxed zone around it and a wider area of interest.
   final double companionGazeSensitivity;
 
-  /// Whether the companion breathes, blinks and glances about on its own.
   final bool companionIdleAnimation;
 
-  /// Whether the companion reacts to events such as a finished break.
   final bool companionReactions;
 
-  /// Forces a calm, low-motion companion regardless of the system setting.
   final bool companionReducedMotion;
   final bool ballThrowEnabled;
   final bool treatEnabled;
@@ -178,10 +139,9 @@ class SettingsModel {
 
   final bool hasCompletedOnboarding;
   final bool quietModeEnabled;
-  final String
-  quietModePreset; // 'none', 'presenting', 'meeting', 'deep_work', 'low_battery'
+  final String quietModePreset;
   final int lastSnoozeDurationMinutes;
-  final String intensityLevel; // 'gentle', 'standard', 'strict', 'locked'
+  final String intensityLevel;
 
   final int dailyBreakGoalCount;
   final int maxContinuousSittingMinutes;
@@ -192,16 +152,8 @@ class SettingsModel {
 
   final bool appUsageTrackingEnabled;
 
-  /// How many days of activity history to keep, or 0 for no limit.
-  ///
-  /// Matches the 30-day window app usage has always pruned to, so upgrading
-  /// does not silently change how much history a user has.
   final int activityHistoryRetentionDays;
 
-  /// Opt-in, local-only daily time budgets per [AppCategory] name (e.g.
-  /// `{'browsing': 120}` for a 2h/day soft cap). A category absent from the
-  /// map has no budget. Purely a UI nudge threshold — never enforced by
-  /// blocking anything, consistent with the app's non-punitive tone.
   final Map<String, int> categoryDailyBudgetMinutes;
 
   const SettingsModel({
@@ -845,6 +797,7 @@ class SettingsModel {
   }
 }
 
+/// User-defined recurring reminder (title + interval in minutes), stored as JSON.
 class CustomReminder {
   final String title;
   final int minutes;

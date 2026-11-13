@@ -4,6 +4,7 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
+// Shared row/section builders used by every settings page so they look consistent.
 Widget sectionHeader(String title, {String? subtitle}) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 12, left: 4, top: 12),
@@ -36,7 +37,6 @@ Widget sectionHeader(String title, {String? subtitle}) {
   );
 }
 
-/// A group of rows: no box, just hairlines above and below (same as Goals).
 Widget buildCard(List<Widget> children) {
   return Container(
     margin: const EdgeInsets.only(bottom: 32),

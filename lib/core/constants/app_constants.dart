@@ -1,11 +1,10 @@
+/// App-wide defaults, SharedPreferences keys and static copy (tips, exercises, quotes).
 class AppConstants {
   AppConstants._();
 
   static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
-  /// Bundled landscape photos for the Gallery Focus break template (CC0; see
-  /// `assets/slideshow/CREDITS.md`). Each is 1600 px wide and under 300 KB.
   static const List<String> wellnessSlideshow = [
     'assets/slideshow/lake_reflection.jpg',
     'assets/slideshow/misty_lake.jpg',
@@ -25,12 +24,6 @@ class AppConstants {
 
   static const int idleThresholdMinutes = 3;
 
-  /// How long a quick health-reminder overlay (posture/eye-rest nudge) stays
-  /// on screen before auto-dismissing. Deliberately its own constant,
-  /// separate from break-timer durations — a health reminder is a brief
-  /// nudge, not a countdown, and must never share a clock with the real
-  /// break overlay's `BreakTimerManager` countdown or with the pre-break
-  /// warning's own dismiss delay.
   static const Duration healthReminderDismissDuration = Duration(seconds: 6);
 
   static const int maxRetries = 3;
@@ -58,8 +51,6 @@ class AppConstants {
   static const String keyWeeklyStats = 'weekly_stats';
   static const String keyAppUsageData = 'app_usage_data';
 
-  /// Whether anonymised crash reports may be sent (read from SimplePrefs so it
-  /// is available before the database opens). Defaults to on.
   static const String keyCrashReportingEnabled = 'crash_reporting_enabled';
   static const String keyFocusSessionData = 'focus_session_data';
   static const String keyBreakHistoryData = 'break_history_data';
@@ -72,8 +63,10 @@ class AppConstants {
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';
   static const String keyCompanionPetTheme = 'companion_pet_theme';
+  // Old key kept only to migrate existing users.
   static const String legacyKeyCompanionCatTheme = 'companion_cat_theme';
 
+  // Breaks needed in a day to count toward the streak.
   static const int breaksPerDayForStreak = 5;
 
   static const List<String> shortBreakTips = [
@@ -114,6 +107,5 @@ class AppConstants {
     'Sometimes the most productive thing you can do is relax.',
   ];
 
-  /// Tray icon — points to raster PNG with alpha suitable for tray template extraction.
   static const String trayIconPath = 'assets/icons/app_icon_bg.png';
 }

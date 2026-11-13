@@ -5,6 +5,7 @@ import 'package:breakmate/core/services/health_reminder_copy.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_start_warning_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
 
+/// Renders short reminders and the pre-break warning: break-start card, full poster, or a minimal pill depending on type and context.
 class QuickReminderOverlay extends StatefulWidget {
   final String? reminderType;
   final String overlayType;
@@ -14,11 +15,6 @@ class QuickReminderOverlay extends StatefulWidget {
   final ValueNotifier<int>? remainingSecondsNotifier;
   final VoidCallback? onSkip;
 
-  /// Whether it's safe to show the full-screen [PosterReminderOverlay]
-  /// instead of the small translucent pill. Defaults to `false` so every
-  /// existing caller keeps today's pill-only behavior unless it explicitly
-  /// opts in after checking meeting/presentation state (see
-  /// `poster_reminder_gate.dart`).
   final bool allowFullPoster;
 
   const QuickReminderOverlay({
@@ -38,8 +34,7 @@ class QuickReminderOverlay extends StatefulWidget {
 }
 
 class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
-  // Picked once per showing (and again if the reminder type changes) so the
-  // wording varies between reminders without flickering while one is visible.
+  // Re-rolled per reminder type so the pill wording varies between reminders.
   int _wordingSeed = Random().nextInt(1 << 30);
 
   @override

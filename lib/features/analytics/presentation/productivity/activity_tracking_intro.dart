@@ -2,16 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// What BreakMate asks before it starts recording.
-///
-/// Shown once, before tracking is switched on for the first time. Consent for
-/// something that runs quietly all day is worth asking for properly: the
-/// dialog says what is recorded, what is deliberately not, and that the answer
-/// can be changed later — and it can be declined without breaking anything.
 class ActivityTrackingIntro extends StatelessWidget {
   const ActivityTrackingIntro({super.key});
 
-  /// Returns true when the user agreed to switch tracking on.
   static Future<bool> show(BuildContext context) async {
     final accepted = await showDialog<bool>(
       context: context,
@@ -28,9 +21,7 @@ class ActivityTrackingIntro extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         side: BorderSide(color: AppTheme.border),
       ),
-      // The explainer is deliberately thorough, which makes it tall. On a
-      // short window the content scrolls rather than overflowing, so the
-      // decision buttons are always reachable.
+
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460),
         child: SingleChildScrollView(
@@ -219,10 +210,6 @@ class _Group extends StatelessWidget {
   }
 }
 
-/// Confirms deleting the recorded history.
-///
-/// Names the number of records at risk, because "clear history" means nothing
-/// until you know whether it is an afternoon or three months.
 class ClearActivityHistoryDialog extends StatelessWidget {
   const ClearActivityHistoryDialog({super.key, required this.segmentCount});
 

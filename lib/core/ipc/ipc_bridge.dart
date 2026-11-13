@@ -3,12 +3,15 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/ipc/ipc_maps.dart';
 
+// Native-side channel that relays events between the main window and the overlay/companion windows.
 const _ipcChannel = MethodChannel('com.breakmate/ipc');
 
+/// Singleton wrapper over the IPC MethodChannel: sends typed [IpcEvent]s to other windows and receives theirs.
 class IpcBridge {
   IpcBridge._();
   static final IpcBridge instance = IpcBridge._();
   final _logger = AppLogger();
+  // Lets callers detect stale/silent peers by checking when an event last went through.
   final Map<String, DateTime> _lastSuccessfulEventByName = {};
 
   DateTime? lastSuccessfulEvent(String eventName) {
@@ -30,13 +33,13 @@ class IpcBridge {
     });
   }
 
-  /// Binds a handler that processes typed IPC events.
   void setTypedEventHandler(void Function(IpcEvent event) handler) {
     setEventHandler((event, data) {
       handler(IpcEvent.parse(event, data));
     });
   }
 
+  /// Sends an event to the other window; retries up to 3 times (50ms apart) since the peer window may still be starting.
   Future<void> dispatch(IpcEvent event) async {
     int retries = 3;
     while (retries > 0) {

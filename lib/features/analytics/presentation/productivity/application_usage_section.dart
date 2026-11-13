@@ -6,9 +6,7 @@ import 'package:breakmate/features/analytics/presentation/productivity/productiv
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Which applications the time went to, and what a single one looks like up
-/// close.
-
+/// Ranked app list with share bars; tapping an app opens ApplicationDetailSheet via [onSelected].
 class ApplicationUsageList extends StatefulWidget {
   const ApplicationUsageList({
     super.key,
@@ -21,8 +19,6 @@ class ApplicationUsageList extends StatefulWidget {
   final List<AppTotal> apps;
   final int totalActiveSeconds;
 
-  /// How many applications get their own slice and row; the rest are folded
-  /// into one "Others" slice. Null shows everything.
   final int? limit;
 
   final ValueChanged<AppTotal>? onSelected;
@@ -100,7 +96,6 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
         ? shown[_touched!]
         : null;
 
-    // Time per category, for the strip under the header.
     final byCategory = <String, int>{};
     for (final app in apps) {
       byCategory[app.categoryName] =
@@ -187,9 +182,6 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
       ),
     );
 
-    // Every app is listed, however many there are; the list scrolls inside a
-    // fixed height so a long day never stretches the page. Only the chart
-    // folds the tail into "Others".
     final legend = ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 300),
       child: Scrollbar(
@@ -316,8 +308,6 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
 int _percent(int seconds, int total) =>
     total == 0 ? 0 : (seconds * 100 / total).round();
 
-/// Slices need to be told apart by app, not just by category, so the category
-/// colour is shifted in lightness per rank when several apps share one.
 Color _sliceColour(AppTotal app, int rank) {
   final hsl = HSLColor.fromColor(categoryColor(app.categoryName));
   final shift = ((rank % 4) - 1.5) * 0.08;
@@ -436,7 +426,6 @@ class _ApplicationRow extends StatelessWidget {
   }
 }
 
-/// One application, up close: how long, how often, and when.
 class ApplicationDetailSheet extends StatelessWidget {
   const ApplicationDetailSheet({
     super.key,
@@ -450,12 +439,10 @@ class ApplicationDetailSheet extends StatelessWidget {
   final AppTotal app;
   final int totalActiveSeconds;
 
-  /// This application's stretches on the selected day, oldest first.
   final List<ActivitySegment> segments;
 
   final String dateLabel;
 
-  /// Seconds per day over the recent past, oldest key first.
   final Map<String, int> historyByDate;
 
   @override

@@ -1,4 +1,3 @@
-// ignore_for_file: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
 part of 'break_appearance_settings.dart';
 
 final _colorPresets = [
@@ -12,6 +11,7 @@ final _colorPresets = [
   (color: const Color(0xFFFFFFFF), name: 'Contrast White'),
 ];
 
+// Color/opacity/blur and per-template accent sections split out of the state class to keep it small.
 extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
   List<Widget> _buildColorsSection(BuildContext context) {
     final currentColor = Color(widget.settings.clockFaceTextColorHex);

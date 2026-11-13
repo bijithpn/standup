@@ -4,8 +4,7 @@ import 'package:breakmate/features/companion/domain/blobatar_emotion_mapper.dart
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Shows a dialog allowing the user to rename their Blobatar companion,
-/// updating the generative silhouette and colors live as they type.
+/// Dialog to rename the Blobatar; onSaved receives the new name.
 Future<String?> showBlobatarNameDialog(
   BuildContext context, {
   required String currentName,
@@ -100,7 +99,6 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Title
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -137,7 +135,6 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
               ),
               const SizedBox(height: 18),
 
-              // Live Blobatar Preview
               Container(
                 width: 130,
                 height: 130,
@@ -157,7 +154,6 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
               ),
               const SizedBox(height: 18),
 
-              // Text Field
               TextField(
                 controller: _controller,
                 autofocus: true,
@@ -191,7 +187,6 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
               ),
               const SizedBox(height: 12),
 
-              // Suggestions Wrap
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
@@ -240,7 +235,6 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
               ),
               const SizedBox(height: 20),
 
-              // Action Buttons
               Row(
                 children: [
                   Expanded(

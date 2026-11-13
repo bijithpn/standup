@@ -6,6 +6,7 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/looked_awa
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// Shared frame around a break template: context pill, preview badge, skip button, and swipe/strict-mode hints.
 class OverlayChrome extends StatelessWidget {
   final Widget child;
   final bool templateOwnsChrome;
@@ -16,7 +17,6 @@ class OverlayChrome extends StatelessWidget {
   final String intensityLevel;
   final VoidCallback onSkip;
 
-  /// Eye-rest "I looked away" button: shown when [onLookedAway] is set.
   final bool lookedAway;
   final VoidCallback? onLookedAway;
 

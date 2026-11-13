@@ -1,8 +1,6 @@
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// Categories that count as "deep work" for focus-session detection.
-/// Mirrors the categories [AppCategorizer] already resolves — no new
-/// classification logic, just a subset used differently here.
+// Only these categories count as focused work.
 const Set<AppCategory> kFocusCategories = {
   AppCategory.coding,
   AppCategory.writing,
@@ -12,10 +10,9 @@ const Set<AppCategory> kFocusCategories = {
 bool isFocusCategory(AppCategory category) =>
     kFocusCategories.contains(category);
 
-/// A single uninterrupted block of time spent in a focus category, long
-/// enough to count as deep work rather than a passing glance.
 const int kMinFocusSessionSeconds = 15 * 60;
 
+/// A continuous stretch of focus-category activity.
 class FocusSession {
   final AppCategory category;
   final DateTime start;

@@ -1,5 +1,6 @@
 part of 'break_appearance_settings.dart';
 
+/// Non-interactive thumbnail rendering the real break template with sample data, using settings overrides when given.
 class _LiveTemplatePreview extends StatefulWidget {
   final String id;
   final SettingsModel? settings;
@@ -49,8 +50,6 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
           height: 120,
           child: LayoutBuilder(
             builder: (context, c) {
-              // Lay the template out at its design width but with the
-              // thumbnail's aspect ratio, so nothing is cropped at the edges.
               const designWidth = 1280.0;
               final aspect = c.maxHeight / c.maxWidth;
               return FittedBox(
@@ -63,7 +62,7 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
                       breakTemplate: widget.id,
                       breakInfo: _previewBreak,
                       settings: effectiveSettings,
-                      // ~35 % elapsed: a representative mid-break frame.
+
                       remaining: 39,
                       total: 60,
                       onSkip: null,

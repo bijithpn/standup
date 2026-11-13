@@ -17,6 +17,7 @@ const _sand = BreakPalette(
 );
 const _clay = Color(0xFFC0623B);
 
+/// Break template: one giant word (Rest or Pause) while a color fill rises with progress.
 class OneWordTemplate extends StatelessWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -50,7 +51,6 @@ class OneWordTemplate extends StatelessWidget {
       background: Align(
         alignment: Alignment.bottomCenter,
         child: TweenAnimationBuilder<double>(
-          // Glide between per-second updates.
           tween: Tween(end: progress),
           duration: const Duration(seconds: 1),
           curve: Curves.linear,

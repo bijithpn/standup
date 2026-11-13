@@ -1,12 +1,13 @@
 import 'package:objectbox/objectbox.dart';
 
+/// Per-day break and usage counters, keyed by unique "date" string.
 @Entity()
 class DailyStats {
   @Id()
   int id;
 
   @Unique()
-  String date; // Format: "YYYY-MM-DD"
+  String date;
 
   int breaksCompleted;
   int breaksSkipped;
@@ -34,10 +35,11 @@ class DailyStats {
   }
 }
 
+/// Single-row lifetime stats (streaks and session totals).
 @Entity()
 class GlobalStats {
   @Id(assignable: true)
-  int id; // Always 1 for singleton
+  int id;
 
   int currentStreak;
   int longestStreak;

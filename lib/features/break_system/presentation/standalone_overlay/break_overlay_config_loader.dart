@@ -6,8 +6,9 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
-/// Loads initial [OverlayWindowConfig] from [SimplePrefs] and provides model mappings.
+/// Builds the overlay's initial config from shared prefs, since the overlay process has no access to the main app's settings objects.
 class BreakOverlayConfigLoader {
+  /// Falls back to defaults if prefs are not ready or reading fails.
   static OverlayWindowConfig loadFromPrefs({
     required String defaultTitle,
     required String defaultMessage,
@@ -96,6 +97,7 @@ class BreakOverlayConfigLoader {
     );
   }
 
+  // Only the test fake exposes updateBreaksCompleted; real stats are owned by the main app.
   static void updateStatsIfNeeded(OverlayWindowConfig config) {
     if (config.breaksCompleted == null) return;
     try {
@@ -111,7 +113,9 @@ class BreakOverlayConfigLoader {
   }
 }
 
+/// Adapters from the IPC config to the domain models the break templates consume.
 extension OverlayWindowConfigModels on OverlayWindowConfig {
+  // Infers short vs long from the title when the sender did not provide breakType.
   BreakModel toBreakModel(int duration) {
     BreakType type;
     if (breakType != null) {

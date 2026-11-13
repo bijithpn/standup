@@ -1,23 +1,12 @@
-/// The break-before-meeting skip correlation — the one time-pattern finding
-/// sketched for §7.2/Phase 4 that shipped separately once timestamped
-/// meeting history was needed (only [CalendarFocusComparison]'s caller
-/// already fetches that via `CalendarService.getEvents`). See the
-/// workflow-analysis plan doc §7.6.
 library;
 
 import 'package:breakmate/features/analytics/break_history_service.dart';
 
-/// A break counts as "before a meeting" if a calendar event starts within
-/// this many minutes after the break's scheduled time.
 const int meetingProximityWindowMinutes = 15;
 
-/// Minimum sample size on each side before the comparison is trusted enough
-/// to surface — same standard as [CalendarFocusComparison.minComparisonDays].
 const int minMeetingProximitySamples = 3;
 
-/// Compares the skip rate of breaks that fell shortly before a meeting
-/// against breaks that didn't, to answer: does a meeting on the horizon make
-/// you more likely to skip your break?
+/// Compares skip rate of breaks within 15 min before a meeting vs other breaks.
 class MeetingBreakCorrelation {
   final int nearMeetingCount;
   final int nearMeetingSkipped;
@@ -40,8 +29,6 @@ class MeetingBreakCorrelation {
       nearMeetingCount >= minMeetingProximitySamples &&
       otherCount >= minMeetingProximitySamples;
 
-  /// Percentage-point gap; positive means breaks before a meeting get
-  /// skipped more often.
   double get skipRateDeltaPoints => (nearMeetingSkipRate - otherSkipRate) * 100;
 
   String describe() {
@@ -51,9 +38,6 @@ class MeetingBreakCorrelation {
         "${delta.abs().round()}% $direction often than other breaks.";
   }
 
-  /// Buckets [breakEvents] by whether a meeting in [meetingStartTimes] began
-  /// within [meetingProximityWindowMinutes] after the break, then compares
-  /// skip rates between the two buckets.
   static MeetingBreakCorrelation compute({
     required List<BreakEvent> breakEvents,
     required List<DateTime> meetingStartTimes,

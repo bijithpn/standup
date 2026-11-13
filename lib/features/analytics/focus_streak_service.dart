@@ -10,30 +10,14 @@ import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart'
     show StreakMilestone;
 
-/// A second, complementary streak axis to [CompanionStreakService]'s
-/// break-taking consistency: consecutive days whose Focus Score meets
-/// [minFocusScore]. Deliberately mirrors [CompanionStreakService]'s exact
-/// structure (same tier ladder, same persisted-highest-marker mechanism,
-/// same companion `happy` reaction) — a different input signal, not a
-/// competing progression system.
-///
-/// Unlike the break streak (which [StatsService] already tracks
-/// incrementally), nothing maintains a running "focus streak" counter, so
-/// this computes it on demand from [FocusSessionService]/[AppUsageService]
-/// history each time it's checked, on the same periodic-timer pattern
-/// [WeeklyDigestService] and [FocusInsightService] already use.
+/// Counts consecutive days with focus score >= minFocusScore and emits a companion event when a new milestone tier is crossed.
 class FocusStreakService extends ChangeNotifier {
   static const _kHighestMilestoneDaysKey =
       'focus_highest_streak_milestone_days';
   static const _checkInterval = Duration(minutes: 15);
 
-  /// A day counts toward the streak once its Focus Score reaches this share
-  /// of tracked time — deliberately lower than a "great" day, since this is
-  /// a consistency signal, not a personal-best one.
   static const double minFocusScore = 0.3;
 
-  /// Data is pruned to 30 days upstream (see [AppUsageService]), so the
-  /// streak can never exceed that — this just bounds the backward scan.
   static const int _maxScanDays = 40;
 
   final FocusSessionService _focusSessionService;
@@ -71,7 +55,6 @@ class FocusStreakService extends ChangeNotifier {
     _checkTimer = null;
   }
 
-  /// The highest tier already celebrated.
   StreakMilestone? get highestMilestone {
     for (final tier in StreakMilestone.tiers.reversed) {
       if (_highestMilestoneDays >= tier.days) return tier;
@@ -79,7 +62,6 @@ class FocusStreakService extends ChangeNotifier {
     return null;
   }
 
-  /// The next tier still to be reached, if any remain.
   StreakMilestone? get nextMilestone {
     for (final tier in StreakMilestone.tiers) {
       if (_highestMilestoneDays < tier.days) return tier;
@@ -87,11 +69,7 @@ class FocusStreakService extends ChangeNotifier {
     return null;
   }
 
-  /// Consecutive days (ending today) whose Focus Score met [minFocusScore].
-  /// A day with *zero* tracked activity — today before usage lands, or any
-  /// day genuinely away from the computer (sick day, vacation, weekend) —
-  /// doesn't break the streak, since there's no work to have missed. A day
-  /// that *had* activity but fell short of [minFocusScore] does.
+  // Walks back from today; days with no tracked activity are skipped, a low-score day ends the streak.
   int currentStreakDays({DateTime? now}) {
     final today = now ?? clock.now();
     var streak = 0;
@@ -104,7 +82,7 @@ class FocusStreakService extends ChangeNotifier {
           .fold<int>(0, (sum, s) => sum + s);
 
       if (totalActiveSeconds == 0) {
-        continue; // no activity: a day off, not a break
+        continue;
       }
 
       final dateKey = _dateKey(date);

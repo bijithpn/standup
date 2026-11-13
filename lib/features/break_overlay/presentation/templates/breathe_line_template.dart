@@ -17,6 +17,7 @@ const _dusk = BreakPalette(
 );
 const _peach = Color(0xFFF6BE9A);
 
+/// Break template: a line that rises and falls with the selected breathing preset over a dusk sky.
 class BreatheLineTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -39,7 +40,6 @@ class BreatheLineTemplate extends StatefulWidget {
 
 class _BreatheLineTemplateState extends State<BreatheLineTemplate>
     with SingleTickerProviderStateMixin {
-  /// The user's chosen breathing pattern (box 4-4-4-4 by default).
   late final BreathPreset _preset = BreathPreset.byId(
     widget.settings.breathPreset,
   );
@@ -60,6 +60,7 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
     _controller.addListener(_updatePhase);
   }
 
+  // Rebuilds only when the phase label changes, not on every animation tick.
   void _updatePhase() {
     final phase = switch (_preset.phaseAt(
       _controller.value * _preset.cycleSeconds,
@@ -74,12 +75,11 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Previews park the breath at a fixed mid-inhale frame instead of looping.
     if (BreakPreviewScope.isPreview(context)) {
-      // Preview frame: width ~300, glow ~40%.
       _controller.stop();
       _controller.value = 0.175;
     } else if (!_started) {
-      // Reduced motion still runs this loop: it only drives opacity there.
       _started = true;
       _controller.repeat();
     }
@@ -185,7 +185,6 @@ class _LinePainter extends CustomPainter {
   final Color accent;
   final bool reduced;
 
-  /// 0..1: extends the line to full width and fades it out (completion).
   final double finish;
 
   final Paint _line = Paint()
@@ -206,11 +205,10 @@ class _LinePainter extends CustomPainter {
     final base = reduced ? 300.0 : 120 + 440 * eased;
     final width = base + (size.width - base) * finish;
     final cx = size.width / 2;
-    // Reduced motion pins the width, so the breath shows as opacity instead.
+
     final breath = reduced ? 0.5 + 0.5 * eased : 1.0;
     final fade = breath * (1 - finish);
 
-    // Ripples in the water: shorter and fainter the further below the horizon.
     for (var i = 0; i < 5; i++) {
       final w = width * (0.82 - i * 0.14);
       final y = 10 + 18.0 * (i + 1) + 3.0 * i * i;
@@ -234,8 +232,6 @@ class _LinePainter extends CustomPainter {
       old.accent != accent || old.reduced != reduced || old.finish != finish;
 }
 
-/// Sky from deep teal to peach at the horizon (the vertical middle), and dark
-/// water below.
 class _SkyAndWater extends StatelessWidget {
   const _SkyAndWater();
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
-/// 32px circular skip control for compact surfaces (floating card, pill).
+/// Compact circular variant of the Skip button for small templates.
 class BreakSkipIcon extends StatefulWidget {
   final VoidCallback onPressed;
   final Color accent;

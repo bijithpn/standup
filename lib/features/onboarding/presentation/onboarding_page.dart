@@ -7,6 +7,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 
+/// First-run wizard (intro, break profile, strictness, companion); nothing is saved until the last step.
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -18,6 +19,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // Choices accumulate here and are persisted once in [_finishOnboarding], which also flips hasCompletedOnboarding.
   late SettingsModel _pendingSettings;
 
   @override
@@ -159,7 +161,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             const SizedBox(height: 48),
             child,
-            const SizedBox(height: 100), // Space for navigation
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -266,17 +268,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: AppStrings.boundariesSubtitle,
       child: Column(
         children: [
-          // _ProfileOption(
-          //   title: 'Strict Mode',
-          //   description: 'Breaks cannot be skipped. Recommended for results.',
-          //   isSelected: _pendingSettings.strictMode,
-          //   onTap: () => setState(
-          //     () => _pendingSettings = _pendingSettings.copyWith(
-          //       strictMode: true,
-          //     ),
-          //   ),
-          // ),
-          // const SizedBox(height: 12),
           _ProfileOption(
             title: 'Gentle Mode',
             description: 'Breaks can be skipped or postponed easily.',

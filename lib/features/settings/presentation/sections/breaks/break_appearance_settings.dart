@@ -18,6 +18,7 @@ part 'break_template_catalog.dart';
 part 'break_appearance_sections.dart';
 part 'live_template_preview.dart';
 
+/// Settings > Break Templates: searchable, category-filtered template gallery with live previews, plus colors and accent pins (see the part files).
 class BreakAppearanceSettings extends StatefulWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -40,11 +41,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     'system': 'Match system',
   };
 
+  // Hovered card shows its live preview; selected id mirrors settings.breakTemplate.
   String? _hoveredId;
   String? _selectedTemplateId;
 
-  /// Templates whose accent color can be pinned independently of the app
-  /// theme (see `BreakOverlayTheme.resolveAccent`).
   static const _overridableTemplates = [
     (id: 'iris_rest', name: 'Iris Rest'),
     (id: 'split_view', name: 'Split View'),

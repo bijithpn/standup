@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Shown the moment the window opens, while storage and services load, so the
-/// window is never blank. Deliberately free of any service dependency.
+/// Minimal splash shown via runApp() while services bootstrap, before DI is ready.
 class StartupSplash extends StatelessWidget {
   const StartupSplash({super.key});
 
@@ -20,8 +19,6 @@ class StartupSplash extends StatelessWidget {
   }
 }
 
-/// The splash artwork on its own, so the same picture can sit over the real
-/// app and fade away instead of cutting.
 class StartupSplashContent extends StatefulWidget {
   const StartupSplashContent({super.key});
 
@@ -84,8 +81,7 @@ class _StartupSplashContentState extends State<StartupSplashContent>
   }
 }
 
-/// Sits over the real app for its first frames and fades out, so the hand-off
-/// from [StartupSplash] is a dissolve instead of a cut.
+/// Overlay on top of the real app that fades the splash out after first build.
 class StartupSplashCover extends StatefulWidget {
   const StartupSplashCover({super.key});
 
@@ -106,7 +102,6 @@ class _StartupSplashCoverState extends State<StartupSplashCover>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Let the dashboard settle for a moment before dissolving.
       await Future<void>.delayed(const Duration(milliseconds: 200));
       if (!mounted) return;
       await _fade.reverse();

@@ -10,12 +10,7 @@ import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 
-/// Draws the companion for one frame of [PetBehaviorSnapshot].
-///
-/// This is the only place that knows how behaviour numbers become motion, so
-/// the illustrated avatars and the generative blob move the same way — the
-/// picture-in-picture window, the customizer preview, and the break overlay all
-/// render through here.
+/// Stateless renderer that picks Blobatar or the 3D avatar artwork for a behavior snapshot and applies bounce/squash/tilt.
 class PetStage extends StatelessWidget {
   const PetStage({
     super.key,
@@ -33,26 +28,18 @@ class PetStage extends StatelessWidget {
 
   final PetBehaviorSnapshot snapshot;
 
-  /// Edge length of the square the pet is drawn into.
   final double size;
 
-  /// The illustrated companion. Ignored when [blobName] is set.
   final AvatarDefinition? definition;
 
-  /// Renders the generative blob companion for this name instead of artwork.
   final String? blobName;
 
   final bool showShadow;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
 
-  /// The card the editor draws behind the companion. Null leaves it off.
-  ///
-  /// Pass [kSceneAuthoredBackground] to use whatever colour the scene itself
-  /// was authored with.
   final Color? background;
 
-  /// The companion's own outline stroke and contact shadow, as authored.
   final bool showOutline;
   final bool showSceneShadow;
 
@@ -83,7 +70,6 @@ class PetStage extends StatelessWidget {
       ),
     );
 
-    // The pet repaints every frame; the window chrome around it does not.
     stage = RepaintBoundary(child: stage);
 
     if (onTap == null && onDoubleTap == null) return stage;
@@ -99,10 +85,6 @@ class PetStage extends StatelessWidget {
     );
   }
 
-  /// The companion, as the 3D scene the editor authored.
-  ///
-  /// Falls back to the flat snapshot artwork only for species the scene
-  /// catalog has no entry for.
   Widget _buildArtwork() {
     final def = definition;
     if (def == null) return SizedBox(width: size, height: size);
@@ -116,8 +98,7 @@ class PetStage extends StatelessWidget {
         showOutline: showOutline,
         showShadow: showSceneShadow,
         densityScale: avatarDensityFor(size),
-        // The palette the user chose, applied to the companion itself rather
-        // than only to swatches in the customizer.
+
         palette: def.palette == AvatarPalette.defaultPalette
             ? null
             : def.palette,
@@ -128,7 +109,6 @@ class PetStage extends StatelessWidget {
     return _buildFlatArtwork(def);
   }
 
-  /// The pre-rendered snapshot, for anything the catalog cannot build in 3D.
   Widget _buildFlatArtwork(AvatarDefinition def) {
     final head = snapshot.headTurn;
     final body = snapshot.bodyLean;
@@ -145,13 +125,7 @@ class PetStage extends StatelessWidget {
       ..rotateY(head.dx * 0.5)
       ..rotateX(-head.dy * 0.38)
       ..rotateZ(snapshot.tilt)
-      ..scaleByDouble(
-        snapshot.squash,
-        // Squash and stretch conserve volume: wider means shorter.
-        2.0 - snapshot.squash,
-        1.0,
-        1.0,
-      );
+      ..scaleByDouble(snapshot.squash, 2.0 - snapshot.squash, 1.0, 1.0);
 
     return Transform(
       transform: transform,
@@ -164,22 +138,15 @@ class PetStage extends StatelessWidget {
     );
   }
 
-  /// The generative blob, posed through the channels its pose model exposes.
-  ///
-  /// A blob has no directional eyes, so horizontal gaze is carried by leaning
-  /// the whole body toward the cursor — which is how a blob would look at
-  /// something anyway.
   Widget _buildBlob() {
     final gaze = snapshot.gaze;
     final blinkSquash = 1.0 - snapshot.blink * 0.94;
 
     final pose = Pose(
-      // Lids. A blink is the eye height collapsing, so drive it straight off
-      // the blink channel.
       esy: (_basePose().esy * blinkSquash).clamp(0.04, 2.0),
       esx: _basePose().esx,
       tilt: _basePose().tilt + snapshot.tilt * 12.0,
-      // Eyes ride up when alert and sink when drowsy.
+
       edy: _basePose().edy + gaze.dy * 2.6,
       edx: _basePose().edx + snapshot.attention * 0.8,
       esx2: _basePose().esx2,
@@ -205,20 +172,16 @@ class PetStage extends StatelessWidget {
         ..scaleByDouble(snapshot.squash, 2.0 - snapshot.squash, 1.0, 1.0),
       alignment: Alignment.center,
       child: Blobatar(
-        // Keyed by name so a rename rebuilds the blob straight away instead of
-        // waiting for the window to be recreated.
         key: ValueKey<String>(blobName!),
         name: blobName!,
         size: size * 0.86,
-        // The engine already runs at frame rate, so the package's own ticker
-        // would be a second animation loop doing the same job.
+
         animate: BlobatarAnimate.none,
         expression: expression,
       ),
     );
   }
 
-  /// The resting expression the pet's current activity reads from.
   Expression _baseExpression() {
     switch (snapshot.activity) {
       case PetActivity.sleeping:
@@ -243,7 +206,6 @@ class PetStage extends StatelessWidget {
   Pose _basePose() => _baseExpression().pose;
 }
 
-/// A soft contact shadow that shrinks as the pet leaves the ground.
 class _GroundShadow extends StatelessWidget {
   const _GroundShadow({
     required this.width,
@@ -253,10 +215,8 @@ class _GroundShadow extends StatelessWidget {
 
   final double width;
 
-  /// Vertical offset of the pet; negative is up.
   final double lift;
 
-  /// Horizontal body lean, -1..1.
   final double lean;
 
   @override
@@ -288,5 +248,4 @@ class _GroundShadow extends StatelessWidget {
   }
 }
 
-/// Convenience: how far a pet should be inset in a square of [size].
 double petStageInset(double size) => math.max(6.0, size * 0.04);

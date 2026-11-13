@@ -4,12 +4,7 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 
-/// A milestone tier in the companion's streak-recognition ladder.
-///
-/// This deliberately reuses [StatsService.currentStreak] (days the daily
-/// break goal was met) rather than introducing a second streak counter —
-/// it just gives the desktop companion a reason to react when the existing
-/// streak crosses a new tier.
+/// Streak tier that unlocks companion rewards.
 class StreakMilestone {
   final int days;
   final String label;
@@ -26,13 +21,7 @@ class StreakMilestone {
   ];
 }
 
-/// Watches [StatsService.currentStreak] and celebrates the companion
-/// whenever a new [StreakMilestone] tier is crossed for the first time.
-///
-/// The "unlock" is intentionally lightweight — a persisted highest-tier
-/// marker plus a `happy` companion reaction — rather than new cosmetic
-/// assets, since no additional pet sprites/accessories exist in the
-/// asset bundle to gate behind tiers yet.
+/// Watches StatsService streaks and fires an event the first time a new milestone tier is reached; the highest tier is persisted.
 class CompanionStreakService extends ChangeNotifier {
   static const _kHighestMilestoneDaysKey =
       'companion_highest_streak_milestone_days';
@@ -57,10 +46,8 @@ class CompanionStreakService extends ChangeNotifier {
     _statsService.addListener(_onStatsChanged);
   }
 
-  /// Current streak length, in days, from the existing stats system.
   int get currentStreakDays => _statsService.stats.currentStreak;
 
-  /// The highest tier the companion has already celebrated.
   StreakMilestone? get highestMilestone {
     for (final tier in StreakMilestone.tiers.reversed) {
       if (_highestMilestoneDays >= tier.days) return tier;
@@ -68,7 +55,6 @@ class CompanionStreakService extends ChangeNotifier {
     return null;
   }
 
-  /// The next tier still to be reached, if any remain.
   StreakMilestone? get nextMilestone {
     for (final tier in StreakMilestone.tiers) {
       if (_highestMilestoneDays < tier.days) return tier;
@@ -80,8 +66,6 @@ class CompanionStreakService extends ChangeNotifier {
     final streak = _statsService.stats.currentStreak;
     if (streak <= _highestMilestoneDays) return;
 
-    // Advance through every newly-crossed tier (in case the app was closed
-    // across several days of streak growth) but only celebrate the highest one.
     StreakMilestone? crossed;
     for (final tier in StreakMilestone.tiers) {
       if (streak >= tier.days && _highestMilestoneDays < tier.days) {

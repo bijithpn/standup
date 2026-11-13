@@ -10,13 +10,7 @@ import 'package:breakmate/features/companion/behavior/pet_behavior_engine.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/presentation/widgets/pet_stage.dart';
 
-/// A live companion drawn inside an ordinary window.
-///
-/// Owns one [PetBehaviorEngine] on one ticker and reads the shared
-/// [CursorFeed], so every surface that shows the pet — the fullscreen
-/// companion panel, the break overlay — moves the same way and costs the same.
-/// The picture-in-picture window does this itself, because there the window
-/// *is* the pet and its viewport comes straight from the window manager.
+/// In-app companion: owns a PetBehaviorEngine, drives it from the global cursor feed (converted to screen space) and renders it via PetStage.
 class CompanionPet extends StatefulWidget {
   const CompanionPet({
     super.key,
@@ -30,19 +24,14 @@ class CompanionPet extends StatefulWidget {
     this.onDoubleTap,
   });
 
-  /// Edge length of the square the pet is drawn into.
   final double size;
 
-  /// The illustrated companion. Ignored when [blobName] is set.
   final AvatarDefinition? definition;
 
-  /// Renders the generative blob for this name instead of artwork.
   final String? blobName;
 
-  /// Whether the pet watches the cursor across the whole screen.
   final bool trackCursor;
 
-  /// Freezes motion, for tests and golden captures.
   final bool isStatic;
 
   final bool showShadow;
@@ -55,8 +44,6 @@ class CompanionPet extends StatefulWidget {
 
 class CompanionPetState extends State<CompanionPet>
     with SingleTickerProviderStateMixin {
-  /// The pet's own window rarely moves, and being a moment stale only shifts
-  /// where it thinks it is by a few pixels.
   static const Duration _originRefresh = Duration(seconds: 2);
 
   late final PetBehaviorEngine _engine = PetBehaviorEngine(
@@ -70,8 +57,6 @@ class CompanionPetState extends State<CompanionPet>
   StreamSubscription<CursorSample>? _cursorSub;
   Timer? _originTimer;
 
-  /// Where this window sits on screen, so widget coordinates can be compared
-  /// with the cursor's.
   Offset _windowOrigin = Offset.zero;
 
   @override
@@ -108,7 +93,7 @@ class CompanionPetState extends State<CompanionPet>
     super.dispose();
   }
 
-  /// Runs the frame ticker again after something gave the pet work to do.
+  /// On-demand ticking; see _enterRest for the idle fallback.
   void _requestFrames() {
     final ticker = _ticker;
     if (!mounted || ticker == null) return;
@@ -125,8 +110,6 @@ class CompanionPetState extends State<CompanionPet>
     if (_engine.isSettled) _enterRest();
   }
 
-  /// Nothing is moving: stop asking Flutter for frames and tick slowly so the
-  /// slow feelings (drowsiness, loneliness) still advance.
   void _enterRest() {
     _ticker?.stop();
     _restTimer ??= Timer.periodic(_restInterval, (_) {
@@ -147,10 +130,7 @@ class CompanionPetState extends State<CompanionPet>
     if (!Platform.isMacOS && !Platform.isWindows && !Platform.isLinux) return;
     try {
       _windowOrigin = await windowManager.getPosition();
-    } catch (_) {
-      // Secondary engines do not all carry the window plugin. A fullscreen
-      // overlay sits at the origin anyway, which is the common case here.
-    }
+    } catch (_) {}
   }
 
   void _onCursorSample(CursorSample sample) {
@@ -162,7 +142,7 @@ class CompanionPetState extends State<CompanionPet>
       ..pointerMoved(sample.position);
   }
 
-  /// This widget's rectangle in screen coordinates.
+  /// Pet bounds in screen coordinates (window origin + local position) so they match the global cursor.
   Rect? _screenRect() {
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return null;
@@ -175,11 +155,8 @@ class CompanionPetState extends State<CompanionPet>
     );
   }
 
-  /// Reacts to being petted. Exposed so the window hosting the pet can trigger
-  /// it from its own gestures or from an incoming state change.
   void pet() => _engine.pet();
 
-  /// Gets the pet's attention without touching it.
   void nudge() => _engine.nudge();
 
   void _handleTap() {

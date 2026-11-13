@@ -14,16 +14,9 @@ import 'package:breakmate/features/companion/avatar3d/avatar_palette_mapper.dart
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 
-/// Asks [Avatar3DView] to use the card colour the scene was authored with.
 const Color kSceneAuthoredBackground = Color(0x00FFFFFE);
 
-/// Draws a companion as the 3D scene the editor authored.
-///
-/// The behaviour snapshot drives the camera directly: where the pet looks
-/// becomes yaw and pitch, so the head genuinely turns in space rather than a
-/// flat picture being skewed. Everything the editor treats as scene styling —
-/// the card behind it, the outline, the drop shadow — is exposed here so the
-/// app can decide, per surface, how much of that look to keep.
+/// Software-rendered 3D avatar: poses a preset scene from the behavior snapshot (head turn, tilt, blink, emotion) and paints it each frame.
 class Avatar3DView extends StatefulWidget {
   const Avatar3DView({
     super.key,
@@ -43,41 +36,30 @@ class Avatar3DView extends StatefulWidget {
     this.placeholder,
   });
 
-  /// The editor preset name, e.g. `cat` or `red-panda`.
   final String preset;
 
-  /// Edge length of the square the companion is drawn into.
   final double size;
 
-  /// What the pet is doing. Drives the camera and the eyes.
   final PetBehaviorSnapshot snapshot;
 
-  /// The card behind the companion. Null leaves it transparent.
   final Color? background;
 
   final bool showOutline;
   final bool showShadow;
 
-  /// Trims the mesh for surfaces that run all day. 1.0 matches the editor.
   final double densityScale;
 
-  /// How far, in radians, a full-deflection gaze turns the head.
   final double lookRange;
 
-  /// Recolours the authored scene. Null keeps the colours it shipped with.
   final AvatarPalette? palette;
 
-  /// How far the recolour pulls toward [palette], 0..1.
   final double paletteStrength;
 
-  /// The user's scene-level styling: outline, shadow, lighting, face size.
-  /// Defaults to the look the scene was authored with.
   final AvatarSceneStyle style;
 
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
 
-  /// Shown until the scene catalog has loaded.
   final Widget? placeholder;
 
   @override
@@ -86,8 +68,6 @@ class Avatar3DView extends StatefulWidget {
 
 class _Avatar3DViewState extends State<Avatar3DView>
     with SingleTickerProviderStateMixin {
-  /// Below this, a pose change is not worth a rebuild — it would not move the
-  /// silhouette by a visible amount.
   static const double _poseEpsilon = 0.004;
 
   AvatarScene? _scene;
@@ -97,17 +77,10 @@ class _Avatar3DViewState extends State<Avatar3DView>
   AvatarFaceStyle? _builtFace;
   Rect? _fitBounds;
 
-  /// The expression as drawn, easing toward the one the pet is feeling.
-  ///
-  /// The behaviour engine changes emotion in one step, and drawing that
-  /// directly made the face pop between shapes. This is the same face, arrived
-  /// at over a fraction of a second. Blinking is applied afterwards, outside
-  /// the easing, because a blink is quick on purpose.
   AvatarFaceStyle? _shownFace;
   late final Ticker _faceTicker;
   Duration _lastFaceTick = Duration.zero;
 
-  /// Seconds for the face to cover most of the way to a new expression.
   static const double _faceEaseSeconds = 0.11;
 
   void _easeFace(Duration elapsed) {
@@ -173,9 +146,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
     setState(() => _scene = _tinted(catalog.sceneFor(widget.preset)));
   }
 
-  /// Recolouring and restyling are done once when the scene resolves, not per
-  /// frame: both walk the whole scene and neither depends on what the pet is
-  /// doing. Only the pose and the expression change frame to frame.
+  /// Scene pipeline: species face tuning, then palette recolor, then user style overrides.
   AvatarScene? _tinted(AvatarScene? scene) {
     if (scene == null) return null;
     final suited = scene.copyWith(
@@ -186,7 +157,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
     );
   }
 
-  /// The camera for this frame, from the scene's authored pose plus the pet's.
+  /// Applies head turn/tilt/emotion to the authored view; the face is eased in _easeFace rather than snapped.
   AvatarScene? _posedScene() {
     final scene = _scene;
     if (scene == null) return null;
@@ -194,24 +165,18 @@ class _Avatar3DViewState extends State<Avatar3DView>
     final snapshot = widget.snapshot;
     final base = _restView(scene.viewState);
 
-    // The head leads with the eyes, so gaze turns the camera further than the
-    // head alone would; the body lean adds a little roll on top.
     final yaw = base.yaw + snapshot.headTurn.dx * widget.lookRange;
-    // Screen y grows downward and so does positive gaze; positive pitch here
-    // tips the face down, so the signs add. (Subtracting made the pet look up
-    // at a pointer below it and down at one above.)
+
     final pitch = base.pitch + snapshot.headTurn.dy * widget.lookRange * 0.7;
     final roll = base.roll + snapshot.tilt;
 
     return scene.copyWith(
       viewState: base.copyWith(yaw: yaw, pitch: pitch, roll: roll),
-      // The face is where the companion says what it feels. Nothing else has
-      // to: no caption, no badge, no colour code.
+
       faceStyle: _expressedFace(scene, snapshot),
     );
   }
 
-  /// The face to draw this frame: the eased expression, then the blink.
   AvatarFaceStyle _expressedFace(
     AvatarScene scene,
     PetBehaviorSnapshot snapshot,
@@ -223,8 +188,6 @@ class _Avatar3DViewState extends State<Avatar3DView>
     if (shown == null) {
       _shownFace = target;
     } else if (!shown.isCloseTo(target) && !_faceTicker.isActive) {
-      // Keeps easing even when the pet holds still and the widget is not being
-      // rebuilt for any other reason.
       _lastFaceTick = Duration.zero;
       _faceTicker.start();
     }
@@ -232,10 +195,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
     return (_shownFace ?? target).withEyeOpenness(1 - snapshot.blink);
   }
 
-  /// The pose the pet rests in. The scenes were authored at a three-quarter
-  /// angle for the editor, which turns several faces half away (and, on the
-  /// cheeky species, behind their own cheeks). Mostly front-on reads as a face
-  /// looking at you, and leaves the head turn to carry the looking.
+  // Authored angles are damped to 20% so the idle pose stays mostly front-facing.
   static AvatarViewState _restView(AvatarViewState authored) =>
       authored.copyWith(
         yaw: authored.yaw * 0.2,
@@ -243,6 +203,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
         roll: authored.roll * 0.2,
       );
 
+  /// Geometry is expensive; rebuild only when yaw/pitch/face moved past a small epsilon.
   AvatarGeometry? _geometryFor(AvatarScene posed) {
     final yaw = posed.viewState.yaw;
     final pitch = posed.viewState.pitch;
@@ -265,10 +226,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
     return built;
   }
 
-  /// The silhouette the pet is fitted to, measured once at rest.
-  ///
-  /// Fitting to each frame's own silhouette made the whole pet zoom in and out
-  /// as the head turned and the expression changed.
+  /// Fit bounds come from the rest pose and are cached so the avatar does not rescale as it turns.
   Rect _fitBoundsFor(AvatarScene posed) {
     final cached = _fitBounds;
     if (cached != null) return cached;
@@ -297,8 +255,6 @@ class _Avatar3DViewState extends State<Avatar3DView>
         ? posed.cameraBackground
         : widget.background;
 
-    // Breath, bounce and squash ride on top of the 3D scene as whole-body
-    // motion — they move the creature, they do not reshape it.
     final breath = snapshot.breath * widget.size * 0.004;
 
     Widget painted = CustomPaint(
@@ -345,11 +301,6 @@ class _Avatar3DViewState extends State<Avatar3DView>
   }
 }
 
-/// Maps the app's species naming onto an editor preset name.
-///
-/// Most line up already; these are the ones the app names differently or that
-/// the editor has no scene for, where a near relative reads better than a
-/// missing companion.
 String avatarPresetFor(String species) {
   const aliases = <String, String>{
     'guineaPig': 'guinea-pig',
@@ -377,11 +328,6 @@ String avatarPresetFor(String species) {
       .toLowerCase();
 }
 
-/// Every preset the bundled catalog ships with.
-///
-/// Listed rather than read from the catalog so callers can decide how to draw a
-/// companion before the JSON has finished loading; the catalog itself is the
-/// authority once it is in.
 const Set<String> kAvatarScenePresets = <String>{
   'alpaca',
   'bear',
@@ -417,15 +363,9 @@ const Set<String> kAvatarScenePresets = <String>{
   'tiger',
 };
 
-/// Whether this species can be drawn as a 3D scene.
 bool hasAvatarScene(String species) =>
     kAvatarScenePresets.contains(avatarPresetFor(species));
 
-/// A sensible mesh density for a companion of this size.
-///
-/// A 96px pet on a desktop does not need the same tessellation as a 400px
-/// studio preview, and the saving is the difference between the pet costing
-/// nothing and costing a frame.
 double avatarDensityFor(double size) {
   if (size <= 120) return 0.55;
   if (size <= 220) return 0.75;

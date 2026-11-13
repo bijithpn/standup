@@ -3,10 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
+/// Mini eye-tracking exercise: follow a drifting orb for several 20-second sessions.
 class EyeSyncGameWidget extends StatefulWidget {
   final int targetSessions;
 
-  /// Test hook: supplies the random source so the orb path is reproducible.
   @visibleForTesting
   static math.Random Function()? randomFactory;
 
@@ -82,9 +82,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
               if (mounted && !_done) _moveOrbToTarget();
             });
           })
-          .catchError((_) {
-            // Ticker was canceled, safe to ignore
-          });
+          .catchError((_) {});
   }
 
   void _startSession() {
@@ -102,6 +100,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
     }
   }
 
+  // Starts the next session until targetSessions is reached, then shows the done state.
   void _advanceSession() {
     final next = _completedSessions + 1;
     if (next >= widget.targetSessions) {

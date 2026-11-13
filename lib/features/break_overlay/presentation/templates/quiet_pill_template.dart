@@ -9,6 +9,7 @@ const _mint = Color(0xFF8FD8C2);
 const _smoke = Color(0xFF12171E);
 const _mist = Color(0xFFE6EEF0);
 
+/// Break template: small unobtrusive pill that springs open on hover or focus to show the countdown, tip and skip.
 class QuietPillTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -33,12 +34,11 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
     with SingleTickerProviderStateMixin {
   bool _hover = false;
   bool _focus = false;
-  bool _pinned = false; // Enter toggles this for keyboard users
+  bool _pinned = false;
 
+  // Expands on hover, keyboard focus, or when pinned open.
   bool get _expanded => _hover || _focus || _pinned;
 
-  /// 0 = collapsed (200x36), 1 = expanded (320x56). Unbounded so the spring
-  /// can overshoot a touch.
   late final AnimationController _size = AnimationController.unbounded(
     vsync: this,
     value: 0,

@@ -1,12 +1,15 @@
 import 'dart:ui' show Rect;
 
+/// Base type for events published on the in-app event bus; sealed so listeners can switch exhaustively.
 sealed class AppEvent {
   final DateTime timestamp;
   AppEvent({DateTime? timestamp}) : timestamp = timestamp ?? DateTime.now();
 }
 
+// Mirrors the timer engine states for UI/tray listeners.
 enum TimerStateEvent { running, paused, idle, breakActive }
 
+/// Emitted by the timer engine on every state change or tick; drives the countdown UI and tray.
 class TimerStateChangedEvent extends AppEvent {
   final TimerStateEvent state;
   final int countdownSeconds;
@@ -23,6 +26,7 @@ class TimerStateChangedEvent extends AppEvent {
   });
 }
 
+/// Emitted when a break begins; triggers the break overlay.
 class BreakStartedEvent extends AppEvent {
   final bool isLongBreak;
   final int durationSeconds;
@@ -35,16 +39,19 @@ class BreakStartedEvent extends AppEvent {
   });
 }
 
+/// Emitted when a break finishes or is skipped.
 class BreakEndedEvent extends AppEvent {
   final bool skipped;
   BreakEndedEvent({required this.skipped, super.timestamp});
 }
 
+/// Emitted when the user snoozes a pending break.
 class BreakPostponedEvent extends AppEvent {
   final int additionalSeconds;
   BreakPostponedEvent({required this.additionalSeconds, super.timestamp});
 }
 
+// Animation states of the desktop companion pet.
 enum CompanionState {
   idle,
   walking,
@@ -64,6 +71,7 @@ class CompanionStateChangedEvent extends AppEvent {
   CompanionStateChangedEvent({required this.state, super.timestamp});
 }
 
+/// User interaction with the companion (click, pet, etc.), identified by [interactionType].
 class CompanionInteractionEvent extends AppEvent {
   final String interactionType;
   final Map<String, dynamic>? metadata;
@@ -84,6 +92,7 @@ class CompanionPositionChangedEvent extends AppEvent {
   });
 }
 
+/// A meeting/video call started or ended.
 class MeetingDetectedEvent extends AppEvent {
   final bool isActive;
   final String? bundleId;
@@ -94,16 +103,19 @@ class MeetingDetectedEvent extends AppEvent {
   });
 }
 
+/// User went idle or became active again.
 class IdleDetectedEvent extends AppEvent {
   final bool isIdle;
   IdleDetectedEvent({required this.isIdle, super.timestamp});
 }
 
+/// A tray/menu-bar menu item was chosen.
 class TrayActionEvent extends AppEvent {
   final String action;
   TrayActionEvent({required this.action, super.timestamp});
 }
 
+/// A single setting changed; services subscribe to react without polling.
 class SettingsChangedEvent extends AppEvent {
   final String key;
   final dynamic value;
@@ -134,6 +146,7 @@ class DisplayDisconnectedEvent extends AppEvent {
   DisplayDisconnectedEvent({required this.displayId, super.timestamp});
 }
 
+/// Display configuration changed (resolution, arrangement); overlays re-layout.
 class DisplayChangedEvent extends AppEvent {
   DisplayChangedEvent({super.timestamp});
 }
@@ -143,9 +156,10 @@ class OverlayLayoutChangedEvent extends AppEvent {
   OverlayLayoutChangedEvent({required this.displayId, super.timestamp});
 }
 
+/// A health reminder (eyes, posture, water, ...) is due, shown as [displayType].
 class HealthReminderEvent extends AppEvent {
-  final String reminderType; // 'posture' or 'eyeblink'
-  final String displayType; // 'native' or 'overlay'
+  final String reminderType;
+  final String displayType;
   HealthReminderEvent({
     required this.reminderType,
     required this.displayType,
@@ -157,6 +171,7 @@ class NotificationPermissionDeniedEvent extends AppEvent {
   NotificationPermissionDeniedEvent({super.timestamp});
 }
 
+// Cursor/throwable/pet events below drive the companion pet behaviour.
 class CursorEnteredZoneEvent extends AppEvent {
   final double velocity;
   CursorEnteredZoneEvent({required this.velocity, super.timestamp});
@@ -219,6 +234,7 @@ class PetWindowOverlapEvent extends AppEvent {
   PetWindowOverlapEvent({required this.started, super.timestamp});
 }
 
+/// The window the pet was standing on closed or moved away, so the pet must fall.
 class PetStandingSurfaceLostEvent extends AppEvent {
   PetStandingSurfaceLostEvent({super.timestamp});
 }
@@ -237,6 +253,7 @@ class PlatformErrorEvent extends AppEvent {
   PlatformErrorEvent({required this.message, super.timestamp});
 }
 
+/// Bounds of the window the pet is constrained to changed.
 class ConstraintWindowBoundsChangedEvent extends AppEvent {
   final Rect bounds;
   ConstraintWindowBoundsChangedEvent({required this.bounds, super.timestamp});

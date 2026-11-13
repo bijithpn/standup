@@ -17,6 +17,7 @@ import 'package:breakmate/features/companion/services/pet_companion_service.dart
 import 'package:breakmate/features/companion/services/throwable_object_manager.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
+/// Turns pointer gestures (click, drag, petting, treat, toy) into PetStateMachine events and needs updates, gated by user settings and the current pet state.
 class InteractionController with WidgetsBindingObserver {
   InteractionController({
     PetStateMachine? stateMachine,
@@ -40,7 +41,7 @@ class InteractionController with WidgetsBindingObserver {
        _behaviorEngine = behaviorEngine;
 
   final PetStateMachine _stateMachine;
-  final EventBus _eventBus; // ignore: unused_field
+  final EventBus _eventBus;
   final CursorTracker _cursorTracker;
   final ThrowableObjectManager? _throwableObjectManager;
   final NeedsEngine _needsEngine;
@@ -185,6 +186,7 @@ class InteractionController with WidgetsBindingObserver {
     }
   }
 
+  /// Petting = repeated slow strokes (speed 20-300) over the pet; two strokes start a session, then a debounced reaction fires.
   void onPetPetted() {
     _logger.info(
       '{"interaction":"onPetPetted",'
@@ -244,6 +246,7 @@ class InteractionController with WidgetsBindingObserver {
     });
   }
 
+  /// Session ends after a 1.5s grace period so brief exits do not cancel petting.
   void onPetPettingZoneExited() {
     if (!_pettingActive) return;
 
@@ -327,7 +330,6 @@ class InteractionController with WidgetsBindingObserver {
 
     final petPosition = _petCompanionService?.position ?? Offset.zero;
 
-    // Similar to throwToy, throw the treat from above (120px above pet) with a downward velocity
     final double velocityTarget = 300.0 + _random.nextDouble() * 500.0;
     final double angle = (45.0 + _random.nextDouble() * 90.0) * math.pi / 180.0;
     final Offset direction = Offset(math.cos(angle), math.sin(angle));
@@ -419,6 +421,7 @@ class InteractionController with WidgetsBindingObserver {
     }
   }
 
+  /// Common feature gate: companion enabled, feature enabled, not in break-reminder/meeting-paused, and no ball throw under reduced motion.
   bool _guardPasses(String featureKey) {
     if (!_isFeatureEnabled('companionEnabled')) return false;
 
@@ -455,6 +458,7 @@ class InteractionController with WidgetsBindingObserver {
     }
   }
 
+  /// Fast cursors are ignored; species with low mouse attraction react after their lookDelay.
   void onCursorEnteredZone(double velocity) {
     _logger.info(
       '{"interaction":"onCursorEnteredZone","velocity":$velocity,'

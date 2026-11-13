@@ -2,8 +2,7 @@ import 'dart:ui';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 
-// Mutable, JSON-serialisable representation of a user-created environment theme.
-// Built-in EnvironmentThemeConfig.themes remains const and untouched.
+/// User-editable, JSON-serializable environment (sky, ground, clouds, props) that converts to an EnvironmentThemeConfig for rendering.
 class CustomEnvironmentTheme {
   String id;
   String name;
@@ -21,10 +20,7 @@ class CustomEnvironmentTheme {
   double rockOpacity;
   double birdScale;
   double rabbitScale;
-  // NPC and decoration asset paths – stored as plain path strings.
-  // isSpriteSheet / frameCount come from the asset catalogue; here we only
-  // persist the selected path. The controller resolves full ThemeAssetConfig
-  // when building the EnvironmentThemeConfig.
+
   String birdPath;
   String rabbitIdlePath;
   String rabbitRunPath;
@@ -32,9 +28,9 @@ class CustomEnvironmentTheme {
   String mountainRightPath;
   String rockLeftPath;
   String rockRightPath;
-  // Dynamic custom layers
+
   List<CustomEnvironmentLayer> layers;
-  // Key = toy/food identifier (e.g. 'tennis_ball'), value = asset path.
+
   Map<String, String> toyPaths;
   Map<String, String> foodPaths;
 
@@ -69,7 +65,7 @@ class CustomEnvironmentTheme {
 
   factory CustomEnvironmentTheme.fromDefaults() {
     const src = EnvironmentThemeConfig.themes;
-    final base = src.first; // Forest
+    final base = src.first;
     final mSec = DateTime.now().millisecondsSinceEpoch;
     final mtnL = base.mountainLeftAsset.path;
     final mtnR = base.mountainRightAsset.path;
@@ -255,8 +251,6 @@ class CustomEnvironmentTheme {
     'foodPaths': foodPaths,
   };
 
-  // Builds a runtime EnvironmentThemeConfig from the asset catalogue defaults
-  // for sprite-sheet metadata, substituting this theme's chosen paths.
   EnvironmentThemeConfig toEnvironmentThemeConfig() {
     ThemeAssetConfig resolveAsset(
       String path,
@@ -264,8 +258,7 @@ class CustomEnvironmentTheme {
     ) {
       final cat = EnvironmentAssetCatalogue.findByPath(path);
       if (cat != null) return cat;
-      // If the path is not in the catalogue (user somehow ended up with an
-      // unknown path), fall back to the single-image default.
+
       return catalogueFallback();
     }
 
@@ -394,8 +387,7 @@ class CustomEnvironmentTheme {
   }
 }
 
-// Static catalogue that maps asset paths to their ThemeAssetConfig metadata.
-// This avoids duplicating sprite-sheet metadata in the persisted JSON.
+/// Bundled sprite choices (birds, rabbits, mountains, rocks) offered in the environment editor.
 class EnvironmentAssetCatalogue {
   static const List<ThemeAssetConfig> birds = [
     ThemeAssetConfig(

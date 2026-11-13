@@ -7,19 +7,12 @@ import 'package:flutter/foundation.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/render/avatar_svg_preparer.dart';
 
-/// A single long-lived isolate that compiles avatar artwork off the UI thread.
-///
-/// `flutter_svg` already moves this work off-thread, but it does so with
-/// `compute()`, which spawns and tears down an isolate for *every* compile. The
-/// customizer paints 129 breed tiles at once, so that alone is 129 isolate
-/// spawns competing with the frame loop. One worker, kept warm between
-/// requests and retired when idle, removes that cost entirely.
+/// Lazily spawned isolate that compiles SVGs and shuts itself down after idleTimeout; falls back to compiling inline if spawning fails.
 class AvatarArtworkWorker {
   AvatarArtworkWorker._();
 
   static final AvatarArtworkWorker instance = AvatarArtworkWorker._();
 
-  /// How long the worker sticks around with nothing to do before shutting down.
   static const Duration idleTimeout = Duration(seconds: 30);
 
   Isolate? _isolate;
@@ -31,14 +24,9 @@ class AvatarArtworkWorker {
   int _nextRequestId = 0;
   final Map<int, Completer<Uint8List>> _pending = <int, Completer<Uint8List>>{};
 
-  /// True while the worker isolate is alive.
   @visibleForTesting
   bool get isRunning => _commands != null;
 
-  /// Compiles [rawSvg] according to [recipe], off the UI thread.
-  ///
-  /// Falls back to compiling inline if the isolate cannot be started — a slow
-  /// frame beats a companion that never appears.
   Future<Uint8List> compile(
     AvatarArtworkRecipe recipe,
     Uint8List rawSvg,
@@ -98,9 +86,6 @@ class AvatarArtworkWorker {
 
       _responses = responses;
       responses.listen(_handleResponse);
-
-      // The worker's first message is the port to send requests on.
-      // `_handleResponse` completes `_starting` once it arrives.
     }());
 
     return completer.future;
@@ -140,8 +125,6 @@ class AvatarArtworkWorker {
     });
   }
 
-  /// Retires the worker. Safe to call at any time; the next [compile] restarts
-  /// it.
   void shutdown() {
     _idleTimer?.cancel();
     _idleTimer = null;
@@ -160,7 +143,6 @@ class AvatarArtworkWorker {
   }
 }
 
-/// Entry point of the worker isolate: compile requests in, buffers out.
 void _workerEntry(SendPort responses) {
   final commands = ReceivePort();
   responses.send(commands.sendPort);

@@ -1,7 +1,6 @@
 import 'dart:math';
 
-/// Short, varied wording for each health reminder so repeats don't read as
-/// the same message. Plain tips only — no medical claims.
+/// Reminder wording per reminder type, with random variants; `custom:` prefixed types carry the user's own title.
 class HealthReminderCopy {
   const HealthReminderCopy._();
 
@@ -48,13 +47,13 @@ class HealthReminderCopy {
   static bool isKnown(String? type) =>
       _variants.containsKey(type) || isCustom(type);
 
-  /// One random line for [type]; falls back to the eye-rest wording.
   static String text(String? type, [Random? random]) {
     if (isCustom(type)) return _customTitle(type!);
     final list = _variants[type] ?? _variants['eyeblink']!;
     return list[(random ?? Random()).nextInt(list.length)];
   }
 
+  // Short labels for the compact pill display.
   static const Map<String, List<String>> _pills = {
     'eyeblink': ['Rest your eyes', 'Look away for a bit', 'Look far away'],
     'blink': ['Blink more', 'Blink a few times', 'Move back from the screen'],
@@ -64,14 +63,13 @@ class HealthReminderCopy {
     'standup': ['Stand up', 'Take a short walk', 'Move around'],
   };
 
-  /// Short label for the compact pill (one of a few variants).
   static String pill(String? type, [Random? random]) {
     if (isCustom(type)) return _customTitle(type!);
     final list = _pills[type] ?? _pills['eyeblink']!;
     return list[(random ?? Random()).nextInt(list.length)];
   }
 
-  /// Big wording for the full-screen poster.
+  // Single fixed title for the poster display.
   static String poster(String? type) => isCustom(type)
       ? _customTitle(type!)
       : switch (type) {

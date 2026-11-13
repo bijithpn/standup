@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// Flat button with hover/press states used across settings pages.
 class MinimalButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget child;
@@ -64,8 +65,6 @@ class _MinimalButtonState extends State<MinimalButton>
 
     final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
-    // Keyboard users reach the button with Tab and press it with Enter/Space;
-    // screen readers announce it as an enabled/disabled button.
     return Semantics(
       button: true,
       enabled: !isDisabled,
@@ -135,6 +134,7 @@ class _MinimalButtonState extends State<MinimalButton>
   }
 }
 
+/// Custom slider supporting drag, keyboard nudging and accessibility semantics.
 class MinimalSlider extends StatefulWidget {
   final double value;
   final double min;
@@ -176,8 +176,6 @@ class _MinimalSliderState extends State<MinimalSlider> {
     _interactionValue = null;
   }
 
-  /// Moves the value by [fraction] of the range and commits it, so arrow keys
-  /// and screen-reader increase/decrease behave like a finished drag.
   void _nudge(double fraction) {
     final next = (widget.value + (widget.max - widget.min) * fraction).clamp(
       widget.min,
@@ -255,7 +253,7 @@ class _MinimalSliderState extends State<MinimalSlider> {
                     _updateValue(details.localPosition, width),
                 onTapUp: (_) => _finishInteraction(),
                 child: Container(
-                  height: 24, // Touch target size
+                  height: 24,
                   color: Colors.transparent,
                   child: Center(
                     child: SizedBox(
@@ -323,11 +321,7 @@ class _MinimalSliderState extends State<MinimalSlider> {
   }
 }
 
-/// A tappable region that is reachable by Tab, activated with Enter/Space and
-/// announced by screen readers as a button. Use it instead of a bare
-/// [GestureDetector] for cards, chips and swatches. [selected] is announced
-/// for choice controls; [semanticLabel] is only needed when the child has no
-/// readable text of its own.
+/// Tap wrapper adding pointer cursor, focus and semantics to any child.
 class TapTarget extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget child;

@@ -2,11 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
-/// Registers a single system-wide hotkey (default `Cmd+Option+B` on macOS,
-/// `Ctrl+Alt+B` on Windows) that either starts a break immediately, or —
-/// if a break is already active — skips it.
-///
-/// Desktop-only; a no-op on any other platform.
+/// Registers the system-wide shortcut (Cmd/Ctrl+Alt+B) that triggers a break on demand.
 class GlobalHotkeyService {
   static final HotKey defaultHotKey = HotKey(
     key: PhysicalKeyboardKey.keyB,
@@ -23,7 +19,6 @@ class GlobalHotkeyService {
       defaultTargetPlatform == TargetPlatform.windows ||
       defaultTargetPlatform == TargetPlatform.linux;
 
-  /// Registers the hotkey and invokes [onPressed] whenever it fires.
   Future<void> start({required VoidCallback onPressed}) async {
     if (_isRunning || !isSupportedPlatform) return;
     _isRunning = true;

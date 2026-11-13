@@ -1,9 +1,6 @@
-// lib/features/analytics/app_usage_insights.dart
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// One-line insight for the App Usage section's tip card, based on the
-/// period's dominant category. Mirrors the tone of
-/// WellnessEngine.getSuggestedBreakTip's per-category tips.
+/// Health tip shown under the usage summary, chosen by the day's dominant category.
 String usageTip(AppCategory dominant, int totalMinutes) {
   switch (dominant) {
     case AppCategory.coding:
@@ -21,11 +18,7 @@ String usageTip(AppCategory dominant, int totalMinutes) {
   }
 }
 
-/// Categories whose usage today has met or exceeded the user's own
-/// [SettingsModel.categoryDailyBudgetMinutes] for that category. Purely
-/// informational — [AppUsageSection] surfaces this as a soft nudge line,
-/// nothing here ever blocks or restricts anything, and a category absent
-/// from [budgetMinutes] (or set to 0) has no budget and is never included.
+/// Categories whose used time today has reached their daily budget (budgets keyed by category name; <=0 means no budget).
 List<AppCategory> categoriesOverBudget({
   required Map<AppCategory, int> todayCategorySeconds,
   required Map<String, int> budgetMinutes,

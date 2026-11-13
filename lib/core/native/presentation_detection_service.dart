@@ -4,10 +4,7 @@ import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
-/// Exposes [isPresenting]: a known presentation / screen-share app has a
-/// window covering the primary display, seen on two consecutive polls.
-/// Window coverage alone also matches any fullscreen app or Space switch, so
-/// the owner app / title must match [_presentationHints] too.
+/// Heuristic presenting detector: a near-fullscreen window whose app/title looks like slides or screen sharing.
 class PresentationDetectionService {
   static const double _coverageThreshold = 0.95;
   static final _presentationHints = RegExp(
@@ -15,8 +12,7 @@ class PresentationDetectionService {
     r'zoom\.us|zoom meeting|microsoft teams|webex|screen shar',
     caseSensitive: false,
   );
-  // The result only decides how the next break is presented, so a few seconds
-  // of staleness is invisible while each poll enumerates every window.
+
   static const Duration _pollInterval = Duration(seconds: 5);
 
   final DisplayManager _displayManager;
@@ -49,6 +45,7 @@ class PresentationDetectionService {
     debugPrint('PresentationDetectionService stopped');
   }
 
+  // Requires two consecutive hits so a briefly maximized window is not treated as a presentation.
   Future<void> _poll() async {
     try {
       final screen = _displayManager.getPrimaryDisplay();

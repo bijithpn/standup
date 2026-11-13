@@ -1,12 +1,6 @@
 import 'package:breakmate/core/storage/models/activity_segment.dart';
 
-/// Rolled-up views of the activity timeline.
-///
-/// Pure value types with no Flutter or database dependency, so aggregation can
-/// run on a background isolate and the UI can hold the result without keeping
-/// thousands of raw segments alive.
-
-/// One application's share of a day.
+/// Time and session stats for one app.
 class AppTotal {
   const AppTotal({
     required this.appKey,
@@ -22,7 +16,6 @@ class AppTotal {
   final String categoryName;
   final int seconds;
 
-  /// How many separate times this app was returned to.
   final int sessionCount;
 
   final int longestSessionSeconds;
@@ -33,7 +26,7 @@ class AppTotal {
       sessionCount == 0 ? 0 : seconds ~/ sessionCount;
 }
 
-/// A single day of activity.
+/// Aggregated active/idle/break time, per-app and hourly breakdown for one day.
 class DailyProductivitySummary {
   const DailyProductivitySummary({
     required this.date,
@@ -49,28 +42,20 @@ class DailyProductivitySummary {
     this.lastActivityAt,
   });
 
-  /// `YYYY-MM-DD`.
   final String date;
 
   final int activeSeconds;
   final int idleSeconds;
   final int breakSeconds;
 
-  /// How many times the active application changed.
   final int contextSwitches;
 
-  /// Applications, busiest first.
   final List<AppTotal> apps;
 
   final Map<String, int> categorySeconds;
 
-  /// Active seconds per hour of the day, index 0–23. The shape of the work
-  /// day, and the basis for every "when are you at your best" observation.
   final List<int> hourlyActiveSeconds;
 
-  /// Context switches per hour of the day, index 0–23. Separate from the day
-  /// total because "did my focus fall apart after lunch" is a question about
-  /// *when* the switching happened, which a single number cannot answer.
   final List<int> hourlySwitches;
 
   final DateTime? firstActivityAt;
@@ -89,27 +74,20 @@ class DailyProductivitySummary {
         hourlySwitches: List<int>.filled(24, 0),
       );
 
-  /// Everything the day accounted for, however it was spent.
   int get trackedSeconds => activeSeconds + idleSeconds + breakSeconds;
 
   bool get hasActivity => trackedSeconds > 0;
 
   AppTotal? get mostUsedApp => apps.isEmpty ? null : apps.first;
 
-  /// Switches per hour of *active* time, which is comparable between a long
-  /// day and a short one in a way the raw count is not.
   double get switchesPerActiveHour {
     if (activeSeconds <= 0) return 0;
     return contextSwitches / (activeSeconds / 3600);
   }
 
-  /// The share of tracked time actually spent working, 0–1.
   double get activeShare =>
       trackedSeconds == 0 ? 0 : activeSeconds / trackedSeconds;
 
-  /// Switches per active hour within [fromHour] (inclusive) and [toHour]
-  /// (exclusive), or null when that stretch holds too little activity to
-  /// compare fairly.
   double? switchRateBetween(int fromHour, int toHour, {int minSeconds = 900}) {
     var seconds = 0;
     var switches = 0;
@@ -122,7 +100,6 @@ class DailyProductivitySummary {
     return switches / (seconds / 3600);
   }
 
-  /// The busiest hour of the day, or null if nothing was recorded.
   int? get peakHour {
     var best = -1;
     var bestSeconds = 0;
@@ -136,7 +113,7 @@ class DailyProductivitySummary {
   }
 }
 
-/// Several days rolled together, for the week and month views.
+/// Aggregated summary over several days, plus the daily summaries.
 class RangeProductivitySummary {
   const RangeProductivitySummary({
     required this.days,
@@ -148,8 +125,6 @@ class RangeProductivitySummary {
     required this.categorySeconds,
   });
 
-  /// The days in the range, oldest first. Days with no activity are included
-  /// so charts keep an even spacing.
   final List<DailyProductivitySummary> days;
 
   final int activeSeconds;
@@ -171,8 +146,6 @@ class RangeProductivitySummary {
 
   bool get hasActivity => days.any((day) => day.hasActivity);
 
-  /// Days that recorded any activity at all — the denominator for "average
-  /// per day", which should not be diluted by weekends the machine was off.
   int get activeDayCount => days.where((day) => day.hasActivity).length;
 
   int get averageActiveSecondsPerDay =>
@@ -181,10 +154,7 @@ class RangeProductivitySummary {
   AppTotal? get mostUsedApp => apps.isEmpty ? null : apps.first;
 }
 
-/// A contiguous stretch ready to draw on a timeline.
-///
-/// Short flickers are merged away before this point, so the timeline shows the
-/// shape of the day rather than every poll.
+/// One row of the day timeline (merged segment).
 class TimelineEntry {
   const TimelineEntry({
     required this.kind,

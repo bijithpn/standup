@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:math';
 
+/// Kinds of guided break exercises.
 enum ExerciseCategory { eyeRest, stretch, posture, breathing, movement }
 
+/// A guided exercise shown during breaks; user can disable, favorite, hide or add custom ones (id prefixed `custom_`).
 class ExerciseModel {
   final String id;
   final String title;
@@ -24,17 +26,11 @@ class ExerciseModel {
     this.isHidden = false,
   });
 
-  /// Whether this exercise can be offered during a break. `enabled` (the
-  /// original switch) and `isHidden` (kept for exercises hidden in earlier versions) are two
-  /// flags for one idea, so an exercise is in rotation only when both agree.
   bool get isActive => enabled && !isHidden;
 
   bool get isCustom => id.startsWith('custom_');
 
-  /// Picks the exercise for a break from [all]. Favorites are preferred (about
-  /// 70% of the time when any exist) so starring something actually changes
-  /// what you see; hidden or disabled exercises are never chosen. Returns null
-  /// when nothing is active. [avoidId] avoids repeating the previous pick.
+  /// Random active exercise, skipping [avoidId] to avoid repeats and favoring favorites 70% of the time.
   static ExerciseModel? pickForBreak(
     List<ExerciseModel> all,
     Random random, {
@@ -104,7 +100,6 @@ class ExerciseModel {
       ExerciseModel.fromMap(jsonDecode(source) as Map<String, dynamic>);
 
   static List<ExerciseModel> get defaults => [
-    // Eye rest
     const ExerciseModel(
       id: 'eye_rest_20_20_20',
       title: '20-20-20 Eye Rest',
@@ -142,7 +137,6 @@ class ExerciseModel {
           'rewets dry eyes from staring at a screen.',
     ),
 
-    // Stretch
     const ExerciseModel(
       id: 'shoulder_rolls',
       title: 'Shoulder Rolls',
@@ -198,7 +192,6 @@ class ExerciseModel {
           'loose fist. Repeat 5 times to ease typing fatigue.',
     ),
 
-    // Posture
     const ExerciseModel(
       id: 'posture_reset',
       title: 'Posture Reset',
@@ -227,7 +220,6 @@ class ExerciseModel {
           'Slide them up and down slowly, keeping contact with the wall.',
     ),
 
-    // Breathing
     const ExerciseModel(
       id: 'stand_and_breathe',
       title: 'Stand & Breathe',
@@ -256,7 +248,6 @@ class ExerciseModel {
           'then a slow, long exhale through the mouth. Repeat 3 times.',
     ),
 
-    // Movement
     const ExerciseModel(
       id: 'quick_walk',
       title: 'Quick Walk',

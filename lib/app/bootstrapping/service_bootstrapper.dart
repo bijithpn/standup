@@ -24,7 +24,7 @@ import 'package:breakmate/features/companion/controllers/companion_overlay_contr
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
-/// Decoupling initialization from GetIt registration prevents circular dependency
+/// Initializes services in dependency order after DI registration; the order below matters.
 class ServiceBootstrapper {
   static Future<void> bootstrap() async {
     final sw = Stopwatch()..start();
@@ -34,6 +34,7 @@ class ServiceBootstrapper {
       }
     }
 
+    // Storage first: every later service reads persisted state from it.
     final storage = sl<StorageService>();
     await storage.init();
     mark('storage.init');
@@ -55,7 +56,6 @@ class ServiceBootstrapper {
     final notifications = sl<NotificationService>();
     final displayManager = sl<DisplayManager>();
 
-    // Parallelize initialization of independent I/O services to optimize startup time.
     await Future.wait([notifications.init(), displayManager.initialize()]);
     mark('notifications+display');
 
@@ -67,7 +67,7 @@ class ServiceBootstrapper {
     await sl<StatsService>().initialize();
     mark('stats.initialize');
 
-    // Analytics and insight trackers are not needed for the first frame.
+    // Analytics services are deferred so they don't slow the first frame.
     unawaited(
       Future<void>.delayed(const Duration(seconds: 2), () {
         try {
@@ -91,17 +91,18 @@ class ServiceBootstrapper {
     await Future.wait([trayManager.init(), companionOverlayController.init()]);
     mark('tray+companion init');
 
+    // Timers start only after tray and companion exist so they can react to state events.
     sl<TimerOrchestrator>().initialize();
     sl<DailyResetService>().start();
     sl<BreakController>().initialize();
-    // ponytail: fixed delay so the timer engine has started before we pause it
+
+    // Delay restoring a focus session until startup settles.
     Future<void>.delayed(
       const Duration(seconds: 3),
       sl<BreakController>().restoreFocusSession,
     );
     mark('orchestrator+break controller');
 
-    // Pre-cache tray animation frames on startup to avoid frame drops on macOS Menubar updates.
     try {
       final theme = PetTheme.getTheme(
         settingsRepo.currentSettings.companionPetTheme,

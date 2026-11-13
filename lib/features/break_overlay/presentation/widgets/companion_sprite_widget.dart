@@ -13,6 +13,7 @@ import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
 import 'package:breakmate/features/companion/presentation/widgets/companion_pet.dart';
 
+/// Renders an animated pet from a sprite sheet (or avatar) with an optional sky/ground/cloud scene behind it.
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;
   final PetAnimationState animationState;
@@ -96,6 +97,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     super.dispose();
   }
 
+  // Reuses cached sheets synchronously when available to avoid flicker; avatar themes skip sprite loading entirely.
   Future<void> _loadAndSetup() async {
     if (widget.petTheme.isAvatar ||
         widget.use3dAvatar ||
@@ -112,7 +114,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     if (path == _currentLoadedPath &&
         widget.backgroundImagePath == _currentBackgroundPath &&
         _loadedImage != null) {
-      // Fast path: sprite already loaded. Ground/cloud images are optional after asset migration.
       _setupTicker();
       return;
     }
@@ -155,12 +156,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     }
 
     try {
-      // asset-migration: background/ground/cloud assets removed.
-      // Only load the sprite itself; treat missing env assets as null (no background).
       final loadedSprite = await PetAssetLoader.loadImage(path);
       final double computedPadding = await _calculateImagePadding(loadedSprite);
 
-      // Only attempt sky/ground/cloud if paths are non-empty and backgroundImagePath is set.
       final hasBg =
           widget.backgroundImagePath != null &&
           widget.backgroundImagePath!.isNotEmpty;
@@ -277,6 +275,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     return '';
   }
 
+  // Maps the controller's 0..1 value to a sprite frame index: loops, plays once, or holds frame 0 when static.
   void _setupTicker() {
     if (widget.petTheme.isAvatar || widget.petTheme.animations.isEmpty) {
       return;
@@ -408,7 +407,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     _lastFrameCount = frameCount;
 
-    // animations (e.g. jumps) are never squished.
     double frameWidth = widget.petTheme.spriteSize.toDouble();
     double frameHeight = widget.petTheme.spriteSize.toDouble();
     if (widget.petTheme.type != PetType.composite && _loadedImage != null) {
@@ -498,6 +496,7 @@ class _SpritePainter extends CustomPainter {
   EnvironmentThemeConfig get config =>
       EnvironmentThemeConfig.getByPath(backgroundImagePath ?? '');
 
+  // Tints the scene by local time of day.
   Color _getAmbientTint() {
     final now = DateTime.now();
     final double hour = now.hour + now.minute / 60.0;
@@ -558,7 +557,6 @@ class _SpritePainter extends CustomPainter {
       );
     }
 
-    // Draw cloud if available
     if (cloudImage != null) {
       final cloudBaseTint = config.cloudTint;
       final finalCloudTint = _combineTints(
@@ -585,7 +583,6 @@ class _SpritePainter extends CustomPainter {
       );
     }
 
-    // Draw ground if available
     final double groundY = size.height - 20.0;
     if (groundImage != null) {
       final groundBaseTint = config.groundTint;
@@ -601,7 +598,6 @@ class _SpritePainter extends CustomPainter {
       final double groundTileWidth = 32.0;
       final double groundTileHeight = 22.0;
 
-      // Draw the dirt base at the very bottom
       final basePaint = Paint()
         ..color = config.baseColor.withValues(
           alpha: 0.95 * config.groundOpacity,
@@ -618,7 +614,6 @@ class _SpritePainter extends CustomPainter {
       );
 
       if (config.isGroundTiled) {
-        // Tiled ground
         double x = 0;
         while (x < size.width + groundTileWidth) {
           canvas.drawImageRect(
@@ -635,7 +630,6 @@ class _SpritePainter extends CustomPainter {
           x += groundTileWidth;
         }
       } else {
-        // Draw the ground as a single stretched image covering the width, anchored at the floorY (groundY)
         final double imgW = groundImage!.width.toDouble();
         final double imgH = groundImage!.height.toDouble();
 
@@ -655,7 +649,6 @@ class _SpritePainter extends CustomPainter {
       }
     }
 
-    // Draw pet
     final double srcX = frameIndex * frameWidth;
     final double srcY = row * frameHeight;
 
@@ -664,7 +657,6 @@ class _SpritePainter extends CustomPainter {
     double drawWidth = frameWidth * scale;
     double drawHeight = frameHeight * scale;
 
-    // If drawing dimensions exceed the widget's canvas size, scale down to fit.
     if (drawWidth > size.width || drawHeight > size.height) {
       final double fitScale =
           (size.width / drawWidth) < (size.height / drawHeight)
@@ -675,7 +667,6 @@ class _SpritePainter extends CustomPainter {
       drawHeight *= fitScale * paddingFactor;
     }
 
-    // Align pet's feet to groundY
     final dst = Rect.fromLTWH(
       (size.width - drawWidth) / 2 + petXOffset,
       groundY - drawHeight + petYOffset,
@@ -683,8 +674,7 @@ class _SpritePainter extends CustomPainter {
       drawHeight,
     );
 
-    final paint = Paint()
-      ..filterQuality = FilterQuality.none; // Pixel-perfect rendering style
+    final paint = Paint()..filterQuality = FilterQuality.none;
 
     canvas.drawImageRect(image, src, dst, paint);
   }

@@ -11,6 +11,7 @@ import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
+/// Stops and flushes all services on app quit; each step is isolated so one failure cannot block the rest.
 class ShutdownCoordinator {
   ShutdownCoordinator._();
   static final ShutdownCoordinator instance = ShutdownCoordinator._();
@@ -20,8 +21,7 @@ class ShutdownCoordinator {
   Future<void> shutdown() async {
     _logger.info('Initiating graceful shutdown...');
 
-    // Preferences are written a moment after they change; make sure the last
-    // ones are on disk before the process goes.
+    // Flush prefs first so settings survive even if a later step hangs.
     SimplePrefs.instance.flush();
 
     try {

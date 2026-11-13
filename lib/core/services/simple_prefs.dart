@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 
+/// Tiny JSON-file key-value store for settings needed before the database opens; writes are debounced and atomic.
 class SimplePrefs {
   SimplePrefs._();
 
@@ -62,17 +63,13 @@ class SimplePrefs {
   Timer? _writeTimer;
   bool _dirty = false;
 
-  /// Queues a write. Settings are saved as dozens of keys in a row, and
-  /// writing, fsyncing and renaming the whole file for each one blocked the UI
-  /// for hundreds of milliseconds on every toggle. A burst now costs one write.
+  // Debounce 120ms to batch bursts of writes; flush() forces it (e.g. on shutdown).
   void _persist() {
     if (_filePath == null) return;
     _dirty = true;
     _writeTimer ??= Timer(const Duration(milliseconds: 120), flush);
   }
 
-  /// Writes any pending changes now. Called on shutdown, and by anything that
-  /// needs the file to be current.
   void flush() {
     _writeTimer?.cancel();
     _writeTimer = null;
@@ -85,6 +82,7 @@ class SimplePrefs {
     if (_filePath == null) return;
     try {
       final json = jsonEncode(_data);
+      // Write to a temp file and rename so a crash cannot leave a half-written file.
       final tmp = File('$_filePath.tmp');
       tmp.writeAsStringSync(json, flush: true);
       tmp.renameSync(_filePath!);

@@ -8,21 +8,10 @@ import 'package:breakmate/features/analytics/break_focus_correlation.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 
-/// Surfaces [BreakFocusCorrelation] proactively, once, the first time
-/// there's enough data to say something real — rather than leaving it as a
-/// card the user has to go find on the Statistics screen. Everything it
-/// needs ([BreakHistoryService], [FocusSessionService]) already exists;
-/// this only decides when the comparison is worth interrupting for.
-///
-/// Fully local and one-shot: no network call, no license check, no
-/// recurring nag — a single `flutter_local_notifications` call, gated by a
-/// stored "already shown" flag so it never repeats even if the gap widens
-/// or narrows later.
+/// Polls every 15 min and fires the break-vs-focus insight notification once, when data is sufficient.
 class FocusInsightService {
   static const _checkInterval = Duration(minutes: 15);
 
-  /// Below this, the gap is too small to be worth interrupting the user
-  /// for — "about the same" isn't an insight.
   static const _minDifferencePoints = 5.0;
 
   final StorageService _storage;

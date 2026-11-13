@@ -23,6 +23,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/wind_dow
 import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_template_error_view.dart';
 
+/// Maps the "breakTemplate" id to its template widget; wind-down breaks and unknown ids are handled first/last.
 class BreakTemplateSwitcher extends StatelessWidget {
   final String breakTemplate;
   final BreakModel breakInfo;
@@ -31,7 +32,6 @@ class BreakTemplateSwitcher extends StatelessWidget {
   final int total;
   final VoidCallback? onSkip;
 
-  // Slide details for 'classic' slideshow mode
   final String currentTemplate;
   final String? classicImage;
   final PageController? pageController;
@@ -205,6 +205,7 @@ class BreakTemplateSwitcher extends StatelessWidget {
         );
       case 'wind_down':
         return const WindDownTemplate();
+      // These ids are variants rendered by the minimal focus template.
       case 'ring_only':
       case 'soft_arc':
       case 'pulse_dot':

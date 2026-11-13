@@ -7,9 +7,6 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 
 part 'daily_activity_bars.dart';
 
-/// The small, repeated pieces of the Productivity screens.
-
-/// A titled panel. Every section on the page sits in one of these.
 class ProductivitySection extends StatelessWidget {
   const ProductivitySection({
     super.key,
@@ -72,9 +69,6 @@ class ProductivitySection extends StatelessWidget {
   }
 }
 
-/// The headline numbers for a day or a range, in plain words: how long you
-/// worked, a sentence saying where the rest of the time went, and one bar that
-/// splits it into working, breaks and being away.
 class ProductivityOverviewCard extends StatelessWidget {
   const ProductivityOverviewCard({
     super.key,
@@ -93,13 +87,10 @@ class ProductivityOverviewCard extends StatelessWidget {
   final int contextSwitches;
   final double? switchesPerHour;
 
-  /// Sits under the headline, e.g. "across 5 days".
   final String? caption;
 
-  /// The day's focus goal in seconds; shows progress towards it when given.
   final int? focusGoalSeconds;
 
-  /// "Steady focus", "Some switching", "A lot of switching".
   static String? switchingVerdict(double? perHour, int switches) {
     if (perHour == null || switches == 0) return null;
     if (perHour < 6) return 'Steady focus';
@@ -107,7 +98,6 @@ class ProductivityOverviewCard extends StatelessWidget {
     return 'A lot of app switching';
   }
 
-  /// One sentence for the whole period.
   static String summarySentence({
     required int activeSeconds,
     required int breakSeconds,
@@ -237,7 +227,7 @@ class ProductivityOverviewCard extends StatelessWidget {
                             : '${switchesPerHour!.toStringAsFixed(1)}/hr'),
                   ),
                 ];
-                // Four across when there is room, otherwise two by two.
+
                 final columns = constraints.maxWidth >= 440 ? 4 : 2;
                 final gap = 12.0;
                 final width =
@@ -287,7 +277,6 @@ class _GoalPill extends StatelessWidget {
   }
 }
 
-/// One horizontal bar split into working / breaks / away.
 class _SplitBar extends StatelessWidget {
   const _SplitBar({
     required this.active,
@@ -389,8 +378,7 @@ class _Stat extends StatelessWidget {
   }
 }
 
-/// One finding: what it is, what it means, and — when there is one — the
-/// concrete thing to do about it. Confidence stays visible rather than implied.
+/// Renders one ProductivityInsight, hedging the wording when confidence is not high.
 class InsightCard extends StatelessWidget {
   const InsightCard({super.key, required this.insight});
 
@@ -417,7 +405,6 @@ class InsightCard extends StatelessWidget {
     }
   }
 
-  /// A short word for what kind of finding this is.
   String get _kind {
     switch (insight.type) {
       case InsightType.focusWindow:
@@ -456,9 +443,6 @@ class InsightCard extends StatelessWidget {
     }
   }
 
-  /// One finding, written as a plain entry in a list rather than a card: the
-  /// finding first, what it means under it, and the suggestion as a sentence.
-  /// The only colour is a small marker that says what kind of finding it is.
   @override
   Widget build(BuildContext context) {
     final accent = _accent;
@@ -548,10 +532,6 @@ class InsightCard extends StatelessWidget {
   }
 }
 
-/// Shown before there is enough recorded activity to say anything.
-///
-/// Deliberately not a dashboard of zeroes or a greyed-out chart: an empty
-/// state that imitates data teaches people to distrust the real thing.
 class ProductivityEmptyState extends StatelessWidget {
   const ProductivityEmptyState({
     super.key,

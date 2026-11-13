@@ -10,8 +10,7 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// "Break activity" on the front page: how today's breaks are going against
-/// the daily goal, what happened and when, and how long you have worked.
+/// Dashboard card summarizing today's completed/skipped breaks against the daily goal, plus the event timeline.
 class DailySummarySection extends StatelessWidget {
   const DailySummarySection({super.key});
 
@@ -248,10 +247,6 @@ class _RecommendationChip extends StatelessWidget {
     );
   }
 
-  /// Context-switch fragmentation takes priority when it's high — it's a
-  /// live, actionable signal (see [ContextSwitchTracker]) — otherwise falls
-  /// back to the existing skip-rate / intense-day heuristics. Purely
-  /// informational: it never changes break timing on its own.
   String _recommendationFor(int switchCount) {
     if (switchCount >= 12) {
       return "$switchCount app switches in the last hour — a short break might help you refocus.";

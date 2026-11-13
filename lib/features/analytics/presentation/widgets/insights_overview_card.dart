@@ -3,16 +3,9 @@ import 'package:breakmate/features/analytics/insights_overview.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
-/// Renders [buildOverviewInsights]' findings as the first thing on the
-/// Overview tab. Renders nothing when there's nothing worth saying yet
-/// (new install, or a genuinely uneventful stretch) rather than an empty
-/// card.
 class InsightsOverviewCard extends StatelessWidget {
   final List<OverviewInsight> insights;
 
-  /// Called with the transformed settings when the user taps an insight's
-  /// "Apply" action (see [InsightAction]). Optional — insights without an
-  /// action render without a button regardless.
   final ValueChanged<InsightAction>? onApply;
 
   const InsightsOverviewCard({super.key, required this.insights, this.onApply});

@@ -4,6 +4,7 @@ part 'overlay_window_config.freezed.dart';
 part 'overlay_window_config.g.dart';
 
 @freezed
+/// Everything the break overlay window needs to render a break, serialized by the main app and parsed in the overlay process.
 abstract class OverlayWindowConfig with _$OverlayWindowConfig {
   const factory OverlayWindowConfig({
     @Default("Time for a Break") String title,
@@ -34,13 +35,7 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     String? reminderType,
     int? breaksCompleted,
     int? targetEndTime,
-    // Whether a quickReminder may take over the whole screen as a full
-    // poster, or must stay the small low-opacity pill. Computed on the main
-    // engine (which has SettingsRepository and the meeting/presentation
-    // detection services registered) and handed to the overlay's own,
-    // separate Flutter isolate — that isolate only registers a minimal set
-    // of services (see `overlayMain()`), so it cannot look any of this up
-    // itself.
+
     @Default(false) bool allowFullPoster,
   }) = _OverlayWindowConfig;
 
@@ -48,7 +43,7 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
       _$OverlayWindowConfigFromJson(_normalize(json));
 }
 
-/// Accepts the legacy `type` and `template` keys.
+// Accepts legacy short keys ("type", "template") from older senders.
 Map<String, dynamic> _normalize(Map<String, dynamic> json) {
   final normalized = Map<String, dynamic>.from(json);
   if (normalized['overlayType'] == null && normalized['type'] != null) {

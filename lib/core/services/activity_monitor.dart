@@ -4,12 +4,12 @@ import 'package:breakmate/core/utils/logger.dart';
 
 typedef ActivityCallback = void Function(bool isActive);
 
+/// Facade over BackgroundPollingService: receives idle samples and notifies listeners when the user goes idle or returns.
 class ActivityMonitor {
   final AppLogger _logger = AppLogger();
 
   bool _isIdle = false;
 
-  /// Idle time reported with the most recent idle/active change.
   double lastIdleSeconds = 0;
   ActivityCallback? _onActivityChanged;
 
@@ -23,7 +23,6 @@ class ActivityMonitor {
 
   void Function(double idleSeconds)? _onIdleSample;
 
-  /// Called with the current idle time on every poll (a few seconds apart).
   void setIdleSampleCallback(void Function(double idleSeconds) callback) {
     _onIdleSample = callback;
   }
@@ -40,6 +39,7 @@ class ActivityMonitor {
     _logger.info('Activity monitor stopped');
   }
 
+  /// Called with each poll result; also feeds AwayBreakService and fires the callback only on idle/active transitions.
   void updateIdleStatus(bool isIdle, double idleSeconds) {
     final wasIdle = _isIdle;
     _isIdle = isIdle;

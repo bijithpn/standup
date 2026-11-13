@@ -1,8 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
-/// "I looked away" confirmation for eye-rest breaks. One tap, then it rests as
-/// a quiet acknowledgement.
+/// Pill button where the user confirms they looked away from the screen; disabled once confirmed.
 class LookedAwayButton extends StatelessWidget {
   final bool confirmed;
   final VoidCallback onPressed;

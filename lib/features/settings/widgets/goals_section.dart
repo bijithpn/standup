@@ -10,17 +10,11 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Personal targets and how you are doing against them.
-///
-/// Goals are measures, not rules: BreakMate shows progress here and on your
-/// stats, it never blocks you or forces a break when a goal is met. Anything
-/// about permissions or data collection lives in Privacy, and Calendar Sync has
-/// its own screen.
+/// Settings > Goals: daily focus/break targets with live progress from [TimerEngine] and [StatsService].
 class GoalsSection extends StatelessWidget {
   const GoalsSection({super.key});
 
-  /// Distinct days in the last 7 (including today) with at least one
-  /// completed break.
+  /// Days in the last 7 (including today) with at least one completed break.
   static int activeDaysThisWeek(List<DailyStats> weekly, DateTime now) {
     String key(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -138,7 +132,6 @@ class GoalsSection extends StatelessWidget {
 
 const _serif = ['Georgia', 'Times New Roman'];
 
-/// Hairline used between goals instead of boxing each one in a card.
 Widget _rule() =>
     Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle);
 
@@ -209,7 +202,6 @@ class _Summary extends StatelessWidget {
   }
 }
 
-/// Flat progress line: square ends, no rounded caps.
 class _Hairline extends StatelessWidget {
   final double value;
   final double height;

@@ -6,6 +6,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+/// Break template: a haiku card over layered mountains; the poem is picked by the current minute.
 class HaikuCardTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -46,7 +47,6 @@ class HaikuCardTemplate extends StatefulWidget {
 }
 
 class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
-  // Fixed for the whole break so the poem does not change at a minute rollover.
   late final List<String> _poem =
       HaikuCardTemplate._haikus[clock.now().minute % 4];
   final _MountainCache _mountains = _MountainCache();

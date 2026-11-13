@@ -5,10 +5,8 @@ import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:breakmate/features/themes/application/theme_controller.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// A widget that renders the BreakMate app SVG icon and dynamically updates
-/// its colors whenever the active theme or custom accent color changes.
+/// App logo drawn from inline SVG paths, tinted with the active accent color.
 class ThemedAppIcon extends StatelessWidget {
-  /// The SVG path data for the right wing/glyph of the logo.
   static const String rightGlyphPath =
       'M357.628 91.0922C364.647 90.5834 372.098 92.4897 378.499 95.328'
       'C382.966 97.3599 387.094 100.065 390.741 103.348C397.556 109.388 401.336 115.988 404.035 124.709'
@@ -33,7 +31,6 @@ class ThemedAppIcon extends StatelessWidget {
       'C312.326 145.528 312.057 135.965 313.685 128.567C315.302 121.152 318.683 114.236 323.54 108.404'
       'C332.598 97.5941 343.76 92.3166 357.628 91.0922Z';
 
-  /// The SVG path data for the left wing/glyph of the logo.
   static const String leftGlyphPath =
       'M239.134 90.7796C247.882 90.0146 254.858 91.1847 262.86 94.8834'
       'C274.501 100.31 283.487 110.169 287.817 122.261C289.244 126.174 290.172 130.251 290.579 134.396'
@@ -56,28 +53,20 @@ class ThemedAppIcon extends StatelessWidget {
       'C177.459 159.337 182.156 155.623 186.398 151.038C191.209 145.776 194.77 139.495 196.817 132.665'
       'C199.687 122.866 200.533 117.407 207.262 108.742C215.091 98.7724 226.552 92.3132 239.134 90.7796Z';
 
-  /// Total width/height of the widget.
   final double size;
 
-  /// Explicit icon color override. If null, uses [AppTheme.accentColor].
   final Color? color;
 
-  /// Explicit background color override for container/badge mode.
   final Color? backgroundColor;
 
-  /// Whether to render a styled container badge around the icon.
   final bool isBadge;
 
-  /// Optional custom size for the inner icon when [isBadge] is true.
   final double? innerIconSize;
 
-  /// Custom border radius for badge mode.
   final BorderRadius? borderRadius;
 
-  /// Custom box shadow for badge mode.
   final List<BoxShadow>? shadows;
 
-  /// Whether to show the DEV badge overlay in dev flavor.
   final bool showDevBadge;
 
   const ThemedAppIcon({
@@ -92,7 +81,6 @@ class ThemedAppIcon extends StatelessWidget {
     this.showDevBadge = false,
   });
 
-  /// Factory for a styled badge container (like in MainLayout sidebar and About section).
   const ThemedAppIcon.badge({
     super.key,
     this.size = 72,
@@ -116,16 +104,13 @@ class ThemedAppIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to theme changes if ThemeController is available in context
     Color resolvedAccent = color ?? AppTheme.accentColor;
     try {
       final themeCtrl = context.watch<ThemeController?>();
       if (themeCtrl != null && color == null) {
         resolvedAccent = themeCtrl.activeAccent;
       }
-    } catch (_) {
-      // Fallback to static AppTheme.accentColor
-    }
+    } catch (_) {}
 
     final effectiveColor = resolvedAccent;
     final effectiveBg = backgroundColor ?? AppTheme.surfaceElevated;
@@ -197,11 +182,10 @@ class ThemedAppIcon extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Background surface
                 Container(color: effectiveBg.withValues(alpha: 0.85)),
-                // Themed SVG logo
+
                 Center(child: iconWidget),
-                // Dev badge if development flavor
+
                 if (isDev)
                   Positioned(
                     bottom: 2,

@@ -16,10 +16,10 @@ import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
+/// Static cache + loader for pet sprite images/manifest and for extracting frame/icon PNGs to disk (tray/notification icons).
 class PetAssetLoader {
   static final Map<String, ByteData> _byteCache = {};
 
-  /// Decoded image cache — avoids re-decoding PNG bytes on every call.
   static final Map<String, ui.Image> _imageCache = {};
   static final Map<int, Uint8List?> _rgbaCache = {};
   static final Set<String> _failedAssets = {};
@@ -32,8 +32,6 @@ class PetAssetLoader {
     return _computeSpriteBottomPadding(image, rect);
   }
 
-  /// Scans alpha from bottom-up to find the first row that contains a visible
-  /// pixel (alpha > 15). Returns the count of empty rows below that row.
   static Future<double> _computeSpriteBottomPadding(
     ui.Image image,
     ui.Rect rect,
@@ -52,13 +50,11 @@ class PetAssetLoader {
       for (int x = left; x < right; x++) {
         final offset = rowOffset + x * 4;
         if (offset + 3 < bytes.length && bytes[offset + 3] > 15) {
-          // y is the bottom-most visible row (0-indexed, inclusive).
-          // Rows from y+1 to bottom-1 are transparent padding.
           return (bottom - 1 - y).toDouble();
         }
       }
     }
-    // Entire frame is blank — treat as no padding so we don't hide the pet.
+
     return 0.0;
   }
 
@@ -67,8 +63,6 @@ class PetAssetLoader {
   }
 
   static Future<ui.Image> loadImage(String path) async {
-    // Skip empty paths — environment asset paths are intentionally empty after
-    // the asset migration. Attempting to load '' causes Flutter to throw.
     if (path.isEmpty) {
       throw AppException(
         type: AppErrorType.assetLoadFailure,
@@ -76,7 +70,6 @@ class PetAssetLoader {
       );
     }
 
-    // Return cached decoded image — avoids codec instantiation overhead every tick.
     final cached = _imageCache[path];
     if (cached != null) return cached;
 
@@ -216,6 +209,7 @@ class PetAssetLoader {
     return '';
   }
 
+  /// Warms the image cache for a sprite profile; avatar-type pets are rendered from artwork and skipped.
   static Future<void> preCache(PetProfile profile) async {
     if (profile.theme?.isAvatar == true ||
         profile.variant.id.startsWith('avatar_')) {
@@ -235,7 +229,6 @@ class PetAssetLoader {
     return bytes;
   }
 
-  /// Pre-caches all tray icon frames for the selected theme to avoid runtime lag.
   static Future<void> preCacheTrayIcons(PetTheme theme) async {
     if (theme.type == PetType.avatar || theme.isAvatar) {
       await extractPetFramePath(
@@ -268,6 +261,7 @@ class PetAssetLoader {
     }
   }
 
+  /// Writes a white-tinted, resized copy of an asset to outputPath (monochrome tray icons); returns '' on failure.
   static Future<String> extractAndWhitenAsset(
     String assetPath,
     String outputPath, {
@@ -293,7 +287,6 @@ class PetAssetLoader {
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
 
-      // Template icons MUST be solid black with alpha.
       const tintColor = ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
@@ -409,6 +402,7 @@ class PetAssetLoader {
     return '';
   }
 
+  /// Crops one sprite-sheet frame to a PNG in app support dir and returns its path, reusing it if already extracted.
   static Future<String> extractPetFramePath({
     required PetTheme theme,
     required PetAnimationState state,
@@ -496,7 +490,6 @@ class PetAssetLoader {
         if (bytes != null) {
           final width = sourceImage.width;
 
-          // Process in small chunks to avoid blocking the UI thread for too long
           for (int y = sourceY.toInt(); y < sourceY + cropH; y++) {
             if (y % 20 == 0) await Future.delayed(Duration.zero);
             final yOffset = y * width * 4;
@@ -597,7 +590,6 @@ class PetAssetLoader {
   }
 
   static Future<void> preCacheBackgrounds() async {
-    // asset-migration: background/environment assets removed — nothing to pre-cache
     const List<String> paths = [];
     for (final path in paths) {
       try {

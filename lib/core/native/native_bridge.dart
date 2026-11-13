@@ -8,6 +8,7 @@ import 'package:breakmate/core/native/windows_bridge.dart';
 
 export 'package:breakmate/core/native/native_bridge_types.dart';
 
+/// Static facade over the per-OS [NativeBridgePlatform] (window/overlay control, idle time, calendar, displays).
 class NativeBridge {
   static final NativeBridgePlatform _platform = _getPlatformBridge();
 
@@ -83,6 +84,7 @@ class NativeBridge {
     List<String>? calendarIds,
   ) => _platform.getEvents(startMs, endMs, calendarIds);
 
+  // Native display info has no work area or refresh rate, so bounds are reused and 60Hz is assumed.
   static Future<List<DisplayInfo>> enumerateDisplays() async {
     final nativeDisplays = await _platform.enumerateDisplays();
     return nativeDisplays.map((nativeDisplay) {
@@ -105,7 +107,7 @@ class NativeBridge {
           nativeDisplay.height,
         ),
         position: Offset(nativeDisplay.x, nativeDisplay.y),
-        refreshRate: 60.0, // Default value since not available in native bridge
+        refreshRate: 60.0,
       );
     }).toList();
   }
@@ -136,8 +138,7 @@ class NativeBridge {
             nativeDisplay.height,
           ),
           position: Offset(nativeDisplay.x, nativeDisplay.y),
-          refreshRate:
-              60.0, // Default value since not available in native bridge
+          refreshRate: 60.0,
         );
       }).toList();
       cb(displays);

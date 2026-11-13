@@ -5,6 +5,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// Settings > Smart Detection toggles (meetings, presentations, focus) that adapt breaks without resetting the timer.
 class FocusDetectionSection extends StatelessWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -37,7 +38,7 @@ class FocusDetectionSection extends StatelessWidget {
             (v) => onSave(settings.copyWith(detectVideoCalls: v)),
           ),
           divider(),
-          // Meeting detection from the calendar is configured in one place.
+
           actionRow(
             label: 'Meetings from your calendar',
             subtitle: settings.detectMeetings && settings.calendarEnabled

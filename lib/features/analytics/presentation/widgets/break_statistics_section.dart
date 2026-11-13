@@ -5,14 +5,10 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Break-taking statistics: a handful of period-scoped metric rows plus a
-/// GitHub-style yearly heatmap built from [StatsModel.weeklyData] (which
-/// retains up to 365 daily entries — see `StatsService._refreshStatsAsync`).
+/// Break completion stats for the selected filter, plus a yearly heatmap of daily adherence.
 class BreakStatisticsSection extends StatelessWidget {
   final StatsModel stats;
 
-  /// 0 = Today, 1 = This Week, 2 = Month — same convention as
-  /// `AnalyticsSettingsSection._selectedFilter`.
   final int selectedFilter;
 
   const BreakStatisticsSection({
@@ -60,7 +56,7 @@ class BreakStatisticsSection extends StatelessWidget {
 
     final completed = rangeData.fold<int>(0, (s, d) => s + d.breaksCompleted);
     final skipped = rangeData.fold<int>(0, (s, d) => s + d.breaksSkipped);
-    // Days elapsed in the period, so the average matches what is selected.
+
     final days = selectedFilter == 2 ? now.day : 7;
     return (completed: completed, skipped: skipped, days: days);
   }
@@ -183,7 +179,6 @@ class BreakStatisticsSection extends StatelessWidget {
   }
 }
 
-/// How a day reads on the grid, from the share of that day's breaks taken.
 enum _HeatLevel {
   none(Color(0x0FFFFFFF), 'No breaks recorded'),
   mostlySkipped(Color(0xFFEF4444), 'Mostly skipped (under half taken)'),
@@ -209,8 +204,6 @@ String _dateKey(DateTime d) =>
     '${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';
 
-/// The 53 weeks ending with the current one, Monday first. A rolling window
-/// (rather than the calendar year) means recent activity is always on screen.
 ({DateTime start, DateTime today}) _heatmapWindow() {
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
@@ -264,7 +257,6 @@ class _HeatmapSummary extends StatelessWidget {
   }
 }
 
-/// The last 12 months as a calendar grid, with what the colours mean.
 class _BreakActivityCard extends StatelessWidget {
   final List<DailyStats> days;
 
@@ -326,11 +318,9 @@ class _BreakActivityCard extends StatelessWidget {
   }
 }
 
-/// Columns are weeks, rows are Monday to Sunday.
 class _YearlyHeatmap extends StatefulWidget {
   final List<DailyStats> days;
 
-  /// First and last day to draw (inclusive); other days in the grid are blank.
   final DateTime from;
   final DateTime to;
 
@@ -374,15 +364,12 @@ class _YearlyHeatmapState extends State<_YearlyHeatmap> {
 
   final ScrollController _scroll = ScrollController();
 
-  /// Columns that get a month name: the week a month begins. The partial
-  /// month at the left edge is skipped when the next month starts within three
-  /// weeks, otherwise two names would be drawn on top of each other.
   static List<int> _labelledWeeks(List<DateTime> weekStarts) {
     final starts = <int>[
       for (var i = 1; i < weekStarts.length; i++)
         if (weekStarts[i].month != weekStarts[i - 1].month) i,
     ];
-    // Name the partial first month only when there is room before the next.
+
     if (starts.isEmpty || starts.first >= 3) starts.insert(0, 0);
     return starts;
   }
@@ -407,15 +394,13 @@ class _YearlyHeatmapState extends State<_YearlyHeatmap> {
 
     return LayoutBuilder(
       builder: (context, box) {
-        // The square size is worked out from the 53 weeks so the whole year
-        // fits; on a narrow window it keeps a readable minimum and scrolls.
         const yearWeeks = 53;
         final fit =
             (box.maxWidth - _labelWidth - _gap * (yearWeeks - 1)) / yearWeeks;
         final cellW = fit.clamp(9.0, 24.0);
         final cellH = cellW;
         final gridWidth = weeks * cellW + (weeks - 1) * _gap;
-        // Open on the newest week rather than on the oldest.
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scroll.hasClients) {
             _scroll.jumpTo(_scroll.position.maxScrollExtent);
@@ -537,7 +522,7 @@ class _YearlyHeatmapState extends State<_YearlyHeatmap> {
       height: height,
       margin: const EdgeInsets.only(bottom: _gap),
     );
-    // Outside the selected period, or not happened yet: leave blank.
+
     if (date.isBefore(widget.from) ||
         date.isAfter(widget.to) ||
         date.isAfter(today)) {

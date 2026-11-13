@@ -3,9 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:breakmate/features/analytics/focus_trend.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Daily Focus Score over [points]: a smooth line with a soft gradient fill,
-/// faint 0/50/100 guides, and a marker only on the latest day. Touch a point
-/// for its exact value.
 class FocusTrendChart extends StatelessWidget {
   final List<FocusTrendPoint> points;
 
@@ -37,7 +34,7 @@ class FocusTrendChart extends StatelessWidget {
       for (var i = 0; i < points.length; i++)
         FlSpot(i.toDouble(), (points[i].focusScore * 100).clamp(0, 100)),
     ];
-    // Weekday names crowd the axis past ~10 points; fall back to day numbers.
+
     final weekly = points.length <= 10;
     final step = weekly ? 1 : (points.length / 6).ceil();
     String label(int i) => weekly

@@ -3,8 +3,10 @@ import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 
+/// Rendering family of a theme: sprite sheet, separate frames, 3D avatar or Blobatar.
 enum PetType { composite, separate, avatar, blobatar }
 
+/// A selectable companion look (id, assets, species, unlock days) and the registry entry point via PetTheme.getTheme.
 class PetTheme {
   final String id;
   final String name;
@@ -92,10 +94,8 @@ class PetTheme {
   static const String keyFlamingo = 'flamingo';
 
   static final List<PetTheme> themes = [
-    // Dynamic Blobatar Companion (Generative from Name)
     PetTheme.blobatar(),
 
-    // Primary 3D Avatars (All 33 OneWorks Species)
     PetTheme.avatar(
       id: 'avatar_cat',
       name: 'Cat',
@@ -179,7 +179,7 @@ class PetTheme {
       petSpecies: PetSpecies.cat,
       requiredConsistencyDays: 30,
     ),
-    // All remaining OneWorks species
+
     for (final s in AvatarSpecies.values)
       if (![
         AvatarSpecies.cat,
@@ -222,7 +222,6 @@ class PetTheme {
       }
     }
 
-    // Map legacy sprite IDs to appropriate 3D Avatar species
     if (id.contains('cat')) {
       return getTheme('avatar_cat');
     } else if (id.contains('dog') ||
@@ -240,6 +239,7 @@ class PetTheme {
   }
 }
 
+/// Per-state frame-file animation settings for themes with separate frame images.
 class SeparateAnimationConfig {
   final String fileName;
   final int frameCount;

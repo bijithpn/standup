@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 
+/// One app color theme; ThemeController selects it and it converts itself to Material and macOS theme data.
 class AppThemePreset {
   final String id;
   final String name;
@@ -303,9 +304,6 @@ class AppThemePreset {
     isDark: true,
   );
 
-  /// A soft, everyday light theme — warm-gray surface, muted slate accent —
-  /// for people who want "not dark mode" without E-Ink's high-contrast
-  /// newsprint look.
   static const softLight = AppThemePreset(
     id: 'soft_light',
     name: 'Soft Light',
@@ -327,10 +325,7 @@ class AppThemePreset {
     isDark: false,
   );
 
-  /// Translucent preset that pairs with the OS's native window vibrancy
-  /// (`WindowEffect.sidebar` on macOS, `WindowEffect.acrylic` on Windows 11 —
-  /// see `ThemeController._applyWindowEffect`). Surface colors here carry
-  /// low alpha so the blurred desktop shows through beneath the app chrome.
+  // Semi-transparent surfaces so the native blur set by ThemeController shows through.
   static const nativeVibrancy = AppThemePreset(
     id: 'native_vibrancy',
     name: 'Native Vibrancy',
@@ -352,11 +347,7 @@ class AppThemePreset {
     isDark: true,
   );
 
-  /// Meta-preset: not a static palette. [ThemeController] resolves this to
-  /// a concrete preset at runtime — following the OS's dark/light setting
-  /// where available, and otherwise a Nordic Slate (day) / Solarized Amber
-  /// (evening) circadian split by time of day. Its own colors are unused for
-  /// rendering; they only back the preset-picker card's default preview.
+  // Placeholder look; ThemeController swaps in nordicSlate or solarizedAmber based on system appearance.
   static const auto = AppThemePreset(
     id: 'auto',
     name: 'Auto',
@@ -396,6 +387,7 @@ class AppThemePreset {
     auto,
   ];
 
+  // Unknown or missing ids fall back to the default preset.
   static AppThemePreset findById(String? id) {
     if (id == null) return nordicSlate;
     return allPresets.firstWhere((p) => p.id == id, orElse: () => nordicSlate);

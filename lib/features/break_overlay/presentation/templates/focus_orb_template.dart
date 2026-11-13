@@ -19,6 +19,7 @@ const _night = BreakPalette(
 const _ink = Color(0xFF1A1440);
 const _sun = Color(0xFFFF9E6B);
 
+/// Break template: a softly pulsing sun orb over a night sky, with a progress ring.
 class FocusOrbTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -41,7 +42,6 @@ class FocusOrbTemplate extends StatefulWidget {
 
 class _FocusOrbTemplateState extends State<FocusOrbTemplate>
     with SingleTickerProviderStateMixin {
-  /// Scale 0.97 -> 1.03 over 6s.
   late final AnimationController _breath = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 6),

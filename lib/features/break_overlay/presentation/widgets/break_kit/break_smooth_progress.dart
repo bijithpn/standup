@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_helpers.dart';
 
-/// Turns per-second progress updates into a smooth 0..1 [Animation] for
-/// painters, without rebuilding anything per frame.
+/// Interpolates the once-per-second progress value into a continuous Animation for custom painters.
 class BreakSmoothProgress extends StatefulWidget {
   final double progress;
   final Widget Function(BuildContext context, Animation<double> progress)

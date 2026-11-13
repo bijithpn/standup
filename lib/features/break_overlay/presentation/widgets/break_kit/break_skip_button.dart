@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
-/// Stadium-shaped "Skip" action with a 64x44 minimum hit target, hover
-/// emphasis and a visible 2px focus ring.
+/// Accessible pill-shaped Skip button with hover and focus states.
 class BreakSkipButton extends StatefulWidget {
   final VoidCallback onPressed;
   final Color? accent;
@@ -54,7 +53,6 @@ class _BreakSkipButtonState extends State<BreakSkipButton> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             alignment: Alignment.center,
             decoration: ShapeDecoration(
-              // Opaque enough to stay legible over photos and bright waves.
               color: palette.surface.withValues(alpha: _hovered ? 0.92 : 0.74),
               shape: StadiumBorder(
                 side: _focused

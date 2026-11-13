@@ -18,12 +18,13 @@ import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 
-/// Renders the user's real companion avatar into small animated tray frames.
+/// Pre-renders the 3D companion avatar into looping PNG frames per animation state for the menu-bar icon.
 class TrayAvatarRenderer {
+  // Frames per loop; rendered once up front because the tray can only be updated with bitmaps.
   static const int frameCount = 16;
   static const double _px = 72;
 
-  /// Frames per animation state, or null when [def] has no 3D scene.
+  /// Returns frames for idle/sleep/excited/notification, or null if the species has no 3D scene.
   static Future<Map<PetAnimationState, List<Uint8List>>?> render(
     AvatarDefinition def,
   ) async {
@@ -64,7 +65,8 @@ class TrayAvatarRenderer {
       final frames = <Uint8List>[];
       for (var i = 0; i < frameCount; i++) {
         frames.add(await _frame(scene, rest, fit, state, i / frameCount));
-        // Yield so the UI thread keeps drawing between frames.
+
+        // Yield between frames so rendering doesn't jank the UI thread.
         await Future<void>.delayed(const Duration(milliseconds: 16));
       }
       out[state] = frames;
@@ -72,6 +74,7 @@ class TrayAvatarRenderer {
     return out;
   }
 
+  /// Draws one frame; [t] is loop phase in 0..1 driving bounce, squash, tilt, yaw, blink and expression per state.
   static Future<Uint8List> _frame(
     AvatarScene scene,
     AvatarViewState rest,

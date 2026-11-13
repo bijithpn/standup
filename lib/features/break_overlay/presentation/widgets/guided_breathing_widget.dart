@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
+/// 4-7-8 style guided breathing: steps through phases on a 1s ticker for targetCycles cycles, then shows a done state.
 class GuidedBreathingWidget extends StatefulWidget {
   final int targetCycles;
 
@@ -36,28 +37,28 @@ const _phases = [
     durationSeconds: 4,
     label: 'Breathe in',
     sublabel: 'Fill your lungs slowly',
-    color: Color(0xFF93C5FD), // Muted sky blue
+    color: Color(0xFF93C5FD),
   ),
   _PhaseData(
     phase: _BreathPhase.holdIn,
     durationSeconds: 7,
     label: 'Hold',
     sublabel: 'Keep the air inside',
-    color: Color(0xFFD8B4FE), // Muted purple
+    color: Color(0xFFD8B4FE),
   ),
   _PhaseData(
     phase: _BreathPhase.exhale,
     durationSeconds: 8,
     label: 'Breathe out',
     sublabel: 'Release all tension',
-    color: Color(0xFFA7F3D0), // Muted sage green
+    color: Color(0xFFA7F3D0),
   ),
   _PhaseData(
     phase: _BreathPhase.holdOut,
     durationSeconds: 1,
     label: 'Rest',
     sublabel: 'Prepare for the next breath',
-    color: Color(0xFFFDE047), // Muted warm amber
+    color: Color(0xFFFDE047),
   ),
 ];
 
@@ -91,6 +92,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
     super.dispose();
   }
 
+  // Per-phase ring animation: grow on inhale, gentle pulse on hold, shrink on exhale, still on rest.
   void _applyPhaseAnimation() {
     final phase = _phases[_phaseIndex];
     _ringController.duration = Duration(seconds: phase.durationSeconds);
@@ -156,6 +158,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
     }
   }
 
+  // Wrapping past the last phase completes a cycle; finishing the final cycle ends the exercise.
   void _advancePhase() {
     final nextPhaseIndex = (_phaseIndex + 1) % _phases.length;
 

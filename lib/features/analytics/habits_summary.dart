@@ -1,26 +1,8 @@
-/// Ties the two streak axes BreakMate tracks — break-taking consistency
-/// ([CompanionStreakService]) and focus-day consistency ([FocusStreakService])
-/// — together into one small comparison, rather than requiring the user to
-/// remember both numbers from two different settings screens (Companion
-/// Settings vs. the Focus tab). See the workflow-analysis plan doc §7/
-/// PROJECT_ANALYSIS_AND_IMPROVEMENTS.md §3.1.
 library;
 
-/// How the two streaks currently relate to each other.
-enum HabitsSyncStatus {
-  /// Both streaks are 0 — nothing to compare yet.
-  none,
+enum HabitsSyncStatus { none, inSync, breakStreakAhead, focusStreakAhead }
 
-  /// Both streaks are equal (and at least one day).
-  inSync,
-
-  /// The break streak is ahead of the focus streak.
-  breakStreakAhead,
-
-  /// The focus streak is ahead of the break streak.
-  focusStreakAhead,
-}
-
+/// Compares break-streak and focus-streak lengths to produce a one-line sync message.
 class HabitsSummary {
   final int breakStreakDays;
   final int focusStreakDays;
@@ -42,8 +24,6 @@ class HabitsSummary {
         : HabitsSyncStatus.focusStreakAhead;
   }
 
-  /// One sentence describing how the two streaks relate — the thing a user
-  /// would otherwise have to compute themselves from two separate screens.
   String describe() {
     switch (syncStatus) {
       case HabitsSyncStatus.none:

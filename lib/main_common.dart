@@ -30,15 +30,14 @@ import 'core/utils/file_permissions.dart';
 import 'features/features.dart';
 import 'shared/shared.dart';
 
+/// Routes Flutter and async errors to ErrorHandler and a toast; used by every engine.
 void _setupGlobalErrors() {
   FlutterError.onError = (FlutterErrorDetails details) {
     final exceptionStr = details.exceptionAsString();
-    // A stale pressed-key state makes this assertion fire on every replayed
-    // key event; the flood of logging froze the app. Drop the stale state
-    // once and stay quiet so the next event goes through.
+
+    // Known Flutter desktop keyboard glitch: reset key state and swallow the error.
     if (exceptionStr.contains('_pressedKeys.containsKey') ||
         exceptionStr.contains('physical key is already pressed')) {
-      // ignore: invalid_use_of_visible_for_testing_member
       HardwareKeyboard.instance.clearState();
       return;
     }
@@ -50,9 +49,6 @@ void _setupGlobalErrors() {
     if (!details.silent) {
       ErrorHandler().handleError(details.exception, details.stack);
       ErrorToastService.showError('Oops! An internal error occurred.');
-
-      // Unhandled layout exceptions do not immediately terminate the process;
-      // however, UI instability may require recovery triggers.
     }
     FlutterError.presentError(details);
   };
@@ -80,7 +76,6 @@ void _setupGlobalErrors() {
       return const Material(color: Color(0xFF0A0A0F), child: SizedBox.shrink());
     }
 
-    // Override the default Flutter red screen of death with a styled recovery widget.
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
@@ -179,8 +174,10 @@ void _setupGlobalErrors() {
   };
 }
 
+/// Loopback socket that enforces a single running instance and accepts authenticated IPC commands.
 ServerSocket? _globalSingleInstanceServer;
 
+/// Saves settings, resets overlay windows, releases the instance port, then exits the process.
 Future<void> _gracefulShutdown(
   ServerSocket? serverSocket, [
   String? reason,
@@ -289,6 +286,7 @@ Future<void> _gracefulShutdown(
   exit(0);
 }
 
+/// Finds other processes holding the port, used to kill stale instances.
 Future<List<int>> _getPidsListeningOnPort(int port) async {
   final pids = <int>[];
   if (Platform.isWindows) {
@@ -337,14 +335,12 @@ Future<List<int>> _getPidsListeningOnPort(int port) async {
   return pids;
 }
 
+/// Public shutdown entry point using the global single-instance socket.
 Future<void> gracefulShutdown([String? reason]) async {
   await _gracefulShutdown(_globalSingleInstanceServer, reason);
 }
 
-/// Linux hosts the break overlay, companion and picture-in-picture pet in extra
-/// windows of the same executable, each with its own engine. The runner tells
-/// them apart with `--breakmate-role=<role>` because the embedder cannot choose
-/// a Dart entrypoint. Returns true when [args] selected one and it was started.
+/// Starts the overlay/companion/pip engine matching --breakmate-role; returns false for the main app.
 bool runSecondaryEntrypoint(List<String> args) {
   const prefix = '--breakmate-role=';
   for (final arg in args) {
@@ -364,6 +360,7 @@ bool runSecondaryEntrypoint(List<String> args) {
   return false;
 }
 
+/// Shared entrypoint for all flavors: single-instance check, window setup, bootstrap, then runApp.
 void mainCommon(FlavorConfig config) async {
   final isolateName = Isolate.current.debugName ?? '';
   final isMainIsolate =
@@ -390,7 +387,6 @@ void mainCommon(FlavorConfig config) async {
             startupMarks.add(MapEntry(label, ms));
             debugPrint('[Startup] +${ms}ms — $label');
             if (label == 'first dashboard frame rendered') {
-              // Slowest steps = largest gap to the previous checkpoint.
               final gaps = <MapEntry<String, int>>[
                 for (var i = 1; i < startupMarks.length; i++)
                   MapEntry(
@@ -408,12 +404,10 @@ void mainCommon(FlavorConfig config) async {
 
         WidgetsFlutterBinding.ensureInitialized();
         logStartup('WidgetsFlutterBinding.ensureInitialized');
-        // A key held across a relaunch leaves a stale pressed state and trips a
-        // "KeyDownEvent ... already pressed" assertion on every later event.
+
         unawaited(HardwareKeyboard.instance.syncKeyboardState());
 
         if (kDebugMode && Platform.isMacOS) {
-          // Diagnostic only; must never delay startup.
           unawaited(
             const MethodChannel('com.breakmate.desktop/bridge')
                 .invokeMethod<Map<dynamic, dynamic>>('debugCalendarState')
@@ -425,6 +419,7 @@ void mainCommon(FlavorConfig config) async {
         }
 
         logStartup('debug calendar call dispatched');
+        // macOS spawns secondary Flutter engines that also call main(); only the main engine continues.
         bool isActualMain = true;
         if (Platform.isMacOS) {
           try {
@@ -450,8 +445,6 @@ void mainCommon(FlavorConfig config) async {
         MemoryCheckpoints.instance.logCheckpoint('startup');
         _setupGlobalErrors();
 
-        // Window plugins are independent of the services below, so start them
-        // now and join once the dependencies are ready.
         final Future<void> windowInit =
             (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
             ? Window.initialize()
@@ -464,8 +457,7 @@ void mainCommon(FlavorConfig config) async {
         ServerSocket? singleInstanceServer;
 
         if (isMainIsolate) {
-          // One loopback port per flavor, so a dev build never talks to (or
-          // force-kills) a running production app.
+          // Dev and prod use different ports so they can run side by side.
           final int port = config.isDev ? 10426 : 10425;
           bool bound = false;
 
@@ -481,6 +473,7 @@ void mainCommon(FlavorConfig config) async {
               'Startup: Primary port $port in use. Attempting process replacement...',
             );
 
+            // Ask the existing instance to shut down so this one can take over.
             try {
               final socket = await Socket.connect(
                 InternetAddress.loopbackIPv4,
@@ -525,6 +518,7 @@ void mainCommon(FlavorConfig config) async {
               );
             }
 
+            // Graceful handoff failed: kill the stale process holding the port.
             if (!bound) {
               debugPrint(
                 'Startup: Graceful shutdown failed. Force terminating stale process on port $port...',
@@ -597,8 +591,6 @@ void mainCommon(FlavorConfig config) async {
         _globalSingleInstanceServer = singleInstanceServer;
         logStartup('single-instance port ready');
 
-        // The permissions fix and the IPC token only share the support
-        // directory, so run them side by side.
         final supportDir = await getApplicationSupportDirectory();
         String? ipcToken;
         await Future.wait([
@@ -633,7 +625,6 @@ void mainCommon(FlavorConfig config) async {
         await Future.wait([windowInit, windowManagerInit]);
         logStartup('window plugins ready');
 
-        // Prefs only need the file system; read them while the window opens.
         final Future<void> prefsInit = SimplePrefs.instance.init();
         prefsInit.ignore();
 
@@ -664,12 +655,11 @@ void mainCommon(FlavorConfig config) async {
               })
               .timeout(const Duration(seconds: 5));
         } on TimeoutException {
-          // A stuck native call used to leave the app without a widget tree.
           debugPrint('[Startup] Window setup timed out; continuing to runApp.');
         }
         logStartup('window ready');
 
-        // Paint something immediately; the real app replaces it once ready.
+        // Show the splash immediately; heavy bootstrapping happens behind it.
         runApp(const StartupSplash());
         logStartup('splash shown');
 
@@ -677,6 +667,7 @@ void mainCommon(FlavorConfig config) async {
           await prefsInit;
           logStartup('SimplePrefs.init');
 
+          // Order matters: DI registration, then service init, then IPC wiring.
           await initDependencies();
           await ServiceBootstrapper.bootstrap();
           IpcCoordinator.coordinate();
@@ -692,6 +683,7 @@ void mainCommon(FlavorConfig config) async {
           return;
         }
 
+        // Native macOS/Windows layer calls back into Dart for tray, overlay and power events.
         MethodChannel('com.breakmate.desktop/bridge').setMethodCallHandler((
           call,
         ) async {
@@ -715,9 +707,10 @@ void mainCommon(FlavorConfig config) async {
             );
           } else if (call.method == 'systemWake') {
             final engine = sl<TimerEngine>();
+            // After wake, ask the user whether to restart the timer.
             engine.onNeedsRestart ??= _promptRestartTimer;
             engine.handleSystemWake();
-            // The overlay window keeps its own end time; send the extended one.
+
             sl<BreakController>().refreshSettings();
             sl<DailyResetService>().onSystemWake();
           } else if (call.method == 'onPipBackgroundStyleChanged') {
@@ -826,6 +819,7 @@ void mainCommon(FlavorConfig config) async {
   );
 }
 
+/// IPC handler for secondary engines: forwards main-isolate events onto the local EventBus.
 void _setupMinimalIpc() {
   final eventBus = EventBus.instance;
   IpcBridge.instance.setTypedEventHandler((event) {
@@ -880,6 +874,7 @@ void _setupMinimalIpc() {
 }
 
 @pragma('vm:entry-point')
+/// Entry for the break overlay engine; uses fake stats/controller that forward actions to the main app.
 Future<void> overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SimplePrefs.instance.init();
@@ -914,6 +909,7 @@ Future<void> overlayMain() async {
 }
 
 @pragma('vm:entry-point')
+/// Entry for the companion (pet) overlay engine.
 Future<void> companionMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SimplePrefs.instance.init();
@@ -932,8 +928,6 @@ Future<void> companionMain() async {
     }
   }
 
-  // The companion is the first thing these windows draw, so have its scenes
-  // parsed before the first frame rather than a beat after it.
   unawaited(AvatarSceneCatalog.instance.load());
 
   try {
@@ -951,6 +945,7 @@ Future<void> companionMain() async {
 }
 
 @pragma('vm:entry-point')
+/// Entry for the picture-in-picture timer overlay engine.
 Future<void> pipMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SimplePrefs.instance.init();
@@ -969,8 +964,6 @@ Future<void> pipMain() async {
     }
   }
 
-  // The companion is the first thing these windows draw, so have its scenes
-  // parsed before the first frame rather than a beat after it.
   unawaited(AvatarSceneCatalog.instance.load());
 
   try {
@@ -987,6 +980,7 @@ Future<void> pipMain() async {
   );
 }
 
+/// Stand-in for StatsService in the overlay engine, which has no real storage.
 class FakeStatsService extends ChangeNotifier implements StatsService {
   StatsModel _stats = const StatsModel();
 
@@ -1002,6 +996,7 @@ class FakeStatsService extends ChangeNotifier implements StatsService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Stand-in BreakController that relays skip/complete to the main engine over the bridge channel.
 class FakeBreakController extends ChangeNotifier implements BreakController {
   @override
   Future<void> completeCurrentBreak({bool lookedAway = false}) async {
@@ -1023,8 +1018,7 @@ class FakeBreakController extends ChangeNotifier implements BreakController {
 
 bool _restartPromptOpen = false;
 
-/// Centers the main window on the display the cursor is on, so the prompt
-/// appears where the user is actually looking.
+/// Centers the dashboard on the display containing the cursor.
 Future<void> _moveWindowToActiveDisplay() async {
   try {
     final cursor = await screenRetriever.getCursorScreenPoint();
@@ -1046,7 +1040,7 @@ Future<void> _moveWindowToActiveDisplay() async {
   } catch (_) {}
 }
 
-/// After a long sleep/lock the timer is reset to idle; ask the user to restart.
+/// Shows a restart-timer dialog after system wake; guarded so only one is open.
 Future<void> _promptRestartTimer() async {
   if (_restartPromptOpen) return;
   await sl<OverlayWindowService>().showDashboard(forceShow: true);

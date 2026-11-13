@@ -19,6 +19,7 @@ const _graphite = BreakPalette(
 
 const _amber = Color(0xFFE8A33D);
 
+/// Break template: camera-aperture iris that opens and closes slowly as a focus point for resting the eyes.
 class IrisRestTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -41,7 +42,6 @@ class IrisRestTemplate extends StatefulWidget {
 
 class _IrisRestTemplateState extends State<IrisRestTemplate>
     with SingleTickerProviderStateMixin {
-  /// Dilate over 2.5s, constrict over 2.5s: a 5s cycle.
   late final AnimationController _iris = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2500),
@@ -53,10 +53,11 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
+    // Fixed apertures for preview and reduced motion; otherwise the iris loops back and forth.
     if (BreakPreviewScope.isPreview(context)) {
-      _iris.value = 0.546; // opening ~80px
+      _iris.value = 0.546;
     } else if (BreakMotion.reduced(context)) {
-      _iris.value = 0.6415; // opening ~90px, held
+      _iris.value = 0.6415;
     } else {
       _iris.repeat(reverse: true);
     }
@@ -271,7 +272,7 @@ class _AperturePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final eased = fixed ? 0.5 : Curves.easeInOutSine.transform(open.value);
-    // Opening radius 0 (fully shut) -> 104px; completion opens it fully.
+
     final base = fixed ? 85.0 : 104 * eased;
     final r = base + (125 - base) * finish;
     final dotR = fixed ? 4.0 : 5 - 3 * eased;
@@ -294,8 +295,7 @@ class _AperturePainter extends CustomPainter {
     const reach = _outer * 2.2;
     for (var i = 0; i < _blades; i++) {
       final a = i * step + twist;
-      // Each leaf is the half-plane beyond one tangent edge of the opening,
-      // so leaves tile the annulus and fully overlap when the iris shuts.
+
       final v0 = _p(vertexR, a - step / 2);
       final v1 = _p(vertexR, a + step / 2);
       final along = _p(reach, a + math.pi / 2);

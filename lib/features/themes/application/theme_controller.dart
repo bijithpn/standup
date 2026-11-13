@@ -7,14 +7,12 @@ import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import '../domain/app_theme_preset.dart';
 
+/// Owns the selected theme preset and custom accent, persists them, and pushes them into AppTheme and the native window effect.
 class ThemeController extends ChangeNotifier {
   final StorageService _storage;
   static const String _kPresetStorageKey = 'app_theme_preset_id';
   static const String _kCustomAccentStorageKey = 'app_theme_custom_accent';
 
-  /// The user's selected preset — may be the [AppThemePreset.auto] meta
-  /// preset, in which case [AppTheme.activePreset] holds the *resolved*
-  /// concrete preset actually being rendered.
   AppThemePreset _currentPreset = AppThemePreset.nordicSlate;
   Color? _customAccent;
   Timer? _autoResolveTimer;
@@ -76,17 +74,14 @@ class ThemeController extends ChangeNotifier {
     unawaited(_storage.setInt(_kCustomAccentStorageKey, 0));
   }
 
-  /// Applies [_currentPreset], resolving the [AppThemePreset.auto] meta
-  /// preset to a concrete palette and (re-)arming its periodic re-check.
+  // The Auto preset has no fixed look; it re-resolves light/dark every 15 minutes.
   void _applyCurrentPreset() {
     _autoResolveTimer?.cancel();
     _autoResolveTimer = null;
 
     if (_currentPreset.id == AppThemePreset.auto.id) {
       unawaited(_resolveAndApplyAuto());
-      // Circadian/system-appearance switch is coarse — a 15 min recheck is
-      // frequent enough to catch both a day/night crossing and the user
-      // toggling their OS appearance mid-session.
+
       _autoResolveTimer = Timer.periodic(
         const Duration(minutes: 15),
         (_) => unawaited(_resolveAndApplyAuto()),
@@ -104,17 +99,13 @@ class ThemeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Nordic Slate ↔ Solarized Amber, chosen by the OS's reported appearance
-  /// where available (`getAppearance()` is implemented on both macOS and
-  /// Windows already), falling back to a time-of-day circadian split.
+  // Prefers the OS appearance; falls back to time of day (dark from 19:00 to 07:00).
   Future<AppThemePreset> _resolveAutoPreset() async {
     try {
       final appearance = await NativeBridge.getAppearance();
       if (appearance == 'light') return AppThemePreset.nordicSlate;
       if (appearance == 'dark') return AppThemePreset.solarizedAmber;
-    } catch (_) {
-      // Fall through to the time-of-day heuristic below.
-    }
+    } catch (_) {}
 
     final hour = DateTime.now().hour;
     final isEvening = hour >= 19 || hour < 7;
@@ -123,11 +114,7 @@ class ThemeController extends ChangeNotifier {
         : AppThemePreset.nordicSlate;
   }
 
-  /// Syncs the main window's native blur/vibrancy with the selected preset.
-  /// Only [AppThemePreset.nativeVibrancy] requests OS blur; every other
-  /// preset restores a fully opaque window. `flutter_acrylic` is already a
-  /// dependency used elsewhere for overlay transparency, so this reuses it
-  /// rather than adding new platform surface.
+  // Vibrancy/acrylic only applies to the native-vibrancy preset on macOS/Windows.
   Future<void> _applyWindowEffect(AppThemePreset preset) async {
     if (!Platform.isMacOS && !Platform.isWindows) return;
     try {

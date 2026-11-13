@@ -5,7 +5,6 @@ import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
-/// `MM:SS`, zero padded.
 String breakFormatTime(int seconds) {
   final s = seconds < 0 ? 0 : seconds;
   final m = s ~/ 60;
@@ -13,31 +12,26 @@ String breakFormatTime(int seconds) {
   return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
 }
 
-/// 0 before 18:00, ramping to 0.6 by 21:00, held until 06:00, then gone.
+/// 0..0.6 warmth that ramps up from 18:00 to 21:00 and stays at max overnight; used to shift accents toward amber.
 double breakEveningTint(DateTime now) {
   final h = now.hour + now.minute / 60;
   if (h < 6) return 0.6;
   return (((h - 18) / 3).clamp(0.0, 1.0)) * 0.6;
 }
 
-/// [accent] warmed toward amber in the evening, so late breaks do not glare
-/// blue. Unchanged during the day.
 Color breakTimeTinted(Color accent, {DateTime? now}) => Color.lerp(
   accent,
   BreakOverlayTheme.amber,
   breakEveningTint(now ?? clock.now()),
 )!;
 
-/// Whether a template should show its finished state: the countdown reached
-/// zero, or the overlay has begun its completion hold.
+/// True once the countdown has finished or the overlay is already in its completion state.
 bool breakIsComplete(BuildContext context, int remaining, int total) =>
     (remaining <= 0 && total > 0) || BreakCompletionScope.isCompleting(context);
 
-/// Elapsed fraction of the break, 0..1.
 double breakProgress(int remaining, int total) =>
     total > 0 ? (1 - remaining / total).clamp(0.0, 1.0) : 0.0;
 
-/// Human duration such as `1 min 30 sec`, `45 sec`.
 String breakDurationLabel(int totalSeconds) {
   final mins = totalSeconds ~/ 60;
   final secs = totalSeconds % 60;
@@ -45,7 +39,7 @@ String breakDurationLabel(int totalSeconds) {
   return '$totalSeconds sec';
 }
 
-/// Short vs long break presentation: label, icon and default accent.
+/// Eye-rest (short) vs recovery (long) label, icon and accent for a break.
 class BreakKind {
   final bool isShort;
   final String label;
@@ -72,9 +66,7 @@ class BreakKind {
   }
 }
 
-/// Accent for [templateId]: the user's per-template pin wins, then the
-/// legacy "clock color" setting when it was changed from white, then
-/// [fallback].
+/// Template accent: the user's per-template override wins, else the custom clock color, else the fallback.
 Color breakAccent(
   SettingsModel settings,
   String templateId,
@@ -91,8 +83,6 @@ Color breakAccent(
   );
 }
 
-/// Countdown color: the user's clock color when customised, otherwise the
-/// palette's primary text so light themes stay legible.
 Color breakClockColor(
   SettingsModel settings,
   BreakPalette palette, {
@@ -101,17 +91,14 @@ Color breakClockColor(
     ? Color(settings.clockFaceTextColorHex)
     : (fallback ?? palette.textPrimary);
 
-/// Whether the skip affordance should be offered at all.
 bool breakCanSkip(SettingsModel settings, VoidCallback? onSkip) =>
     !settings.strictMode && onSkip != null;
 
-/// Whether decorative loops should be parked on a static frame: reduced
-/// motion or a gallery thumbnail.
+/// True when animations should be parked (reduced motion or settings preview).
 bool breakShouldFreeze(BuildContext context) =>
     BreakMotion.reduced(context) || BreakPreviewScope.isPreview(context);
 
-/// Starts [c] looping, or parks it at [park] when motion should be frozen.
-/// Call from `didChangeDependencies` so it reacts to setting changes.
+// Parks looping animations at a still frame when frozen, otherwise (re)starts the loop.
 void breakSyncLoop(
   AnimationController c,
   BuildContext context, {

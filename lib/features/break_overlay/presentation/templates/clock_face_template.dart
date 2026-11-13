@@ -23,6 +23,7 @@ const _ivory = Color(0xFFF4EEDC);
 const _navy = Color(0xFF1B2A4A);
 const _lacquer = Color(0xFFC8452D);
 
+/// Break template: analog dial whose second hand tracks break progress, next to the current wall-clock time.
 class ClockFaceTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -59,7 +60,7 @@ class _ClockFaceTemplateState extends State<ClockFaceTemplate> {
       widget.totalSeconds,
     );
     final preview = BreakPreviewScope.isPreview(context);
-    // The seconds hand makes one turn per minute; thumbnails freeze it at 10s.
+
     final turn = preview ? 10 / 60 : (elapsed % 60) / 60;
     final now = clock.now();
     final complete = breakIsComplete(

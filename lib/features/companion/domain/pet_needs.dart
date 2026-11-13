@@ -9,6 +9,7 @@ import '../../../core/utils/logger.dart';
 import '../../../features/settings/settings_repository.dart';
 import 'pet_state_machine.dart';
 
+/// Immutable snapshot of the sprite pet's needs; affection/energy are 0-1 while hunger/boredom/happiness are 0-100.
 @immutable
 class PetNeeds {
   const PetNeeds({
@@ -142,6 +143,7 @@ class PetNeeds {
       'boredom: $boredom, happiness: $happiness, breakMode: $breakMode)';
 }
 
+/// Mutates and persists PetNeeds: tick applies time-based decay/regen, on* methods apply interaction and break effects.
 class NeedsEngine {
   NeedsEngine({SettingsRepository? settingsRepository, AppLogger? logger})
     : _logger = logger ?? AppLogger();
@@ -197,6 +199,7 @@ class NeedsEngine {
     _needs = _needs.copyWith(breakMode: active);
   }
 
+  /// Per-frame update; drain/regen depend on the pet's current state, petting, and how long the user has been working.
   void tick(
     double dt,
     PetState currentState,
@@ -231,7 +234,6 @@ class NeedsEngine {
       restfulnessDelta += _decayDelta(_needs.restfulness, decayAmount);
     }
 
-    // Passive hunger and boredom tick
     if (currentState != PetState.eating) {
       hungerDelta += 0.15 * dt;
     }
@@ -244,7 +246,6 @@ class NeedsEngine {
       boredomDelta -= 0.5 * dt;
     }
 
-    // Happiness decays slowly towards 50
     if (_needs.happiness > 50.0) {
       happinessDelta -= (0.1 * dt).clamp(0.0, _needs.happiness - 50.0);
     } else if (_needs.happiness < 50.0) {
@@ -360,6 +361,7 @@ class NeedsEngine {
     );
   }
 
+  /// Saved through StorageService when registered, else SimplePrefs (e.g. in the separate PiP process).
   void persist() {
     try {
       final json = jsonEncode(_needs.toJson());

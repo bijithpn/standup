@@ -5,9 +5,7 @@ import 'package:breakmate/core/services/calendar_permission_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
 
-/// Presents Calendar Sync state to the Today screen. The state itself lives in
-/// [CalendarSyncController]; this class only adapts it and nudges a throttled
-/// refresh while the screen is visible.
+/// Dashboard view-model: exposes calendar state from [CalendarSyncController] and refreshes it every 2 minutes and on app resume.
 class DashboardController extends ChangeNotifier with WidgetsBindingObserver {
   final CalendarSyncController _calendar = sl<CalendarSyncController>();
   Timer? _refreshTimer;

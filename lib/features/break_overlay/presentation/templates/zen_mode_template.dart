@@ -19,6 +19,7 @@ const _forest = BreakPalette(
 const _sage = Color(0xFF9DB8A0);
 const _moss = Color(0xFF2F4A3A);
 
+/// Break template: a morphing blob that grows and shrinks with the selected breathing preset, labeled Breathe in/out/Hold.
 class ZenModeTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -45,8 +46,6 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     widget.settings.breathPreset,
   );
 
-  /// One controller drives both the breath and the blob morph; one value
-  /// spans one cycle of the current preset.
   late final AnimationController _breath = AnimationController(
     vsync: this,
     duration: Duration(seconds: _preset.cycleSeconds),
@@ -67,7 +66,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Preview frame: peak inhale (scale 1.0).
+
     breakSyncLoop(_breath, context, park: 0.249);
     _updatePhase();
   }
@@ -208,7 +207,6 @@ class _BlobPainter extends CustomPainter {
     ..strokeWidth = 1.5;
   final List<Offset> _ctrl = List.filled(_points, Offset.zero);
 
-  /// Outer to inner: size, phase offset, fill.
   static const _layers = [
     (1.0, 0.0, _moss, 0.55),
     (0.8, 0.35, _sage, 0.22),
@@ -223,15 +221,13 @@ class _BlobPainter extends CustomPainter {
     required this.reduced,
   }) : super(repaint: breath);
 
-  /// 0.75 empty, 1.0 full.
   double _scale() => 0.75 + 0.25 * fullness.value;
 
   @override
   void paint(Canvas canvas, Size size) {
     final v = breath.value;
     final scale = reduced ? 1.0 : _scale();
-    // Morph in whole periods per cycle (about 8 s each), so the loop is
-    // seamless whatever the preset.
+
     final cycle = cycleSeconds();
     final periods = (cycle / 8).round().clamp(1, 4);
     final t = v * periods;
@@ -239,7 +235,7 @@ class _BlobPainter extends CustomPainter {
     canvas.save();
     canvas.translate(size.width / 2, size.height / 2);
     canvas.scale(scale);
-    // Reduced motion trades the scale change for a 60% -> 100% opacity swell.
+
     final fade = reduced ? 0.6 + 0.4 * fullness.value : 1.0;
     for (final (span, phase, color, alpha) in _layers) {
       _shape(t + phase, span);
@@ -259,7 +255,7 @@ class _BlobPainter extends CustomPainter {
       final r = _baseRadius * size * (1 + noise);
       _ctrl[i] = Offset(math.cos(a) * r, math.sin(a) * r);
     }
-    // Closed Catmull-Rom spline as cubic Beziers.
+
     _path.reset();
     _path.moveTo(_ctrl[0].dx, _ctrl[0].dy);
     for (var i = 0; i < _points; i++) {

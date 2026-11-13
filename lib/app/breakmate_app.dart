@@ -24,6 +24,7 @@ import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/onboarding/presentation/onboarding_page.dart';
 import 'package:breakmate/features/themes/application/theme_controller.dart';
 
+/// Root widget of the main window: providers, theme, onboarding gate and window-event handling.
 class BreakMateApp extends StatefulWidget {
   const BreakMateApp({super.key});
 
@@ -59,6 +60,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     });
   }
 
+  // Closes a leftover break overlay window once the break is no longer active.
   void _setupTrayActions() {
     final controller = sl<BreakController>();
 
@@ -66,8 +68,6 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
       final overlayService = sl<OverlayWindowService>();
       if (!controller.isBreakActive &&
           overlayService.currentOverlayType == OverlayType.breakScreen) {
-        // Break ended automatically or was skipped: tear the overlay down
-        // without activating the main window.
         overlayService.hideOverlay();
       }
     });
@@ -79,6 +79,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
       textDirection: TextDirection.ltr,
       children: [
         Positioned.fill(child: _buildApp()),
+        // Splash cover hides the first-frame layout and fades out.
         const Positioned.fill(child: StartupSplashCover()),
       ],
     );
@@ -150,8 +151,8 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
   }
 
   @override
+  // Close hides to tray unless close prevention is off, in which case the app quits.
   void onWindowClose() async {
-    // `preventClose` is true by default (menu-bar app – closing hides it).
     final prevent = await windowManager.isPreventClose();
     if (!prevent) {
       await gracefulShutdown('onWindowClose (prevent=false)');
@@ -163,6 +164,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
   }
 
   @override
+  // Strict mode: pull the window back to the front so the break can't be ignored.
   void onWindowBlur() async {
     final controller = sl<BreakController>();
     final settings = sl<SettingsRepository>().currentSettings;

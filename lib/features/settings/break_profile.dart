@@ -1,3 +1,4 @@
+/// Named preset of short/long break intervals and durations (see [presets]); picked in onboarding and settings.
 class BreakProfile {
   final String id;
   final String name;
@@ -44,13 +45,13 @@ class BreakProfile {
       id: 'pomodoro',
       name: 'Pomodoro',
       shortIntervalMinutes: 25,
-      shortDurationSeconds: 300, // 5 min
-      longIntervalMinutes: 100, // 4 sessions
+      shortDurationSeconds: 300,
+      longIntervalMinutes: 100,
       longDurationMinutes: 15,
     ),
   ];
 
-  /// Picks a preset from what the user does and how long they sit at a screen.
+  /// Maps the onboarding answers (work type, daily hours) to a preset.
   static BreakProfile recommend({required String work, required int hours}) {
     final id = switch (work) {
       'coding' => 'developer',

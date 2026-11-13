@@ -7,7 +7,7 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_calculator.dart';
 
-/// Optimized using background Isolate Pooling for heavy JSON parsing and scoring math.
+/// Daily/weekly break and usage counters in prefs; writers record events here, the heavy recompute is delegated to StatsCalculator.
 class StatsService extends ChangeNotifier {
   final StorageService _storage;
 
@@ -32,7 +32,6 @@ class StatsService extends ChangeNotifier {
   ProductivityInsights get insights => _cachedInsights;
 
   StatsService({required StorageService storage}) : _storage = storage {
-    // Fast synchronous baseline load from memory-cached primitives to avoid zero-values on startup
     _cachedStats = StatsModel(
       breaksCompleted: _storage.getInt(AppConstants.keyBreaksCompleted),
       breaksSkipped: _storage.getInt(AppConstants.keyBreaksSkipped),
@@ -51,15 +50,12 @@ class StatsService extends ChangeNotifier {
     await _refreshStatsAsync();
   }
 
-  /// Zeroes the daily counters when the local calendar day has changed since
-  /// the last recorded activity. Idempotent: a second call on the same day is
-  /// a no-op. Returns true when a rollover happened.
+  /// On a new calendar day resets daily counters and appends a blank day to weekly data; returns true if it rolled over.
   Future<bool> rolloverIfNeeded() async {
     final today = _todayString();
     final lastDate = _storage.getString(AppConstants.keyLastActiveDate);
 
     if (lastDate != today) {
-      // calculation will always see lastActive == today.
       _checkAndUpdateStreak(today);
 
       _storage.setString(AppConstants.keyLastActiveDate, today);
@@ -114,7 +110,7 @@ class StatsService extends ChangeNotifier {
 
   void recordCompletedBreak() {
     _pendingBreaksCompleted++;
-    _flushImmediately(); // Break completion is important, flush immediately
+    _flushImmediately();
   }
 
   void recordSkippedBreak() {
@@ -137,6 +133,7 @@ class StatsService extends ChangeNotifier {
     _scheduleFlush();
   }
 
+  // Deltas are batched and flushed after 10s (completed breaks flush immediately) to limit writes.
   void _scheduleFlush() {
     _statsFlushTimer?.cancel();
     _statsFlushTimer = Timer(const Duration(seconds: 10), _flushPendingStats);
@@ -313,8 +310,7 @@ class StatsService extends ChangeNotifier {
   }
 }
 
-// Note: Isolate handlers have been removed in favor of StatsCalculator
-
+// Result carriers for StatsCalculator.
 class StatsCalculationResult {
   final StatsModel stats;
   final ProductivityInsights insights;
@@ -345,6 +341,7 @@ class StatsUpdateResult {
   });
 }
 
+/// One day's break and usage numbers, stored as JSON in weekly data.
 class DailyStats {
   final String date;
   final int breaksCompleted;

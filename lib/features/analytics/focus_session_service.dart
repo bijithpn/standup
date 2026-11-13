@@ -6,10 +6,7 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 
-/// Local, opt-in deep-work session history: a JSON blob in [StorageService],
-/// keyed by date, pruned to a 30-day rolling window — same shape and
-/// lifecycle as [AppUsageService], since sessions are derived from the same
-/// tracking the user already opted into.
+/// Persisted focus sessions grouped by date (30-day retention); written by AppUsageTracker, read by scores, streaks and insights.
 class FocusSessionService extends ChangeNotifier {
   final StorageService _storage;
   final Map<String, List<FocusSession>> _cache = {};
@@ -26,7 +23,6 @@ class FocusSessionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Deletes all stored focus sessions, in memory and on disk.
   void clear() {
     _cache.clear();
     _persist();
@@ -39,17 +35,12 @@ class FocusSessionService extends ChangeNotifier {
   int focusSecondsForDate(String date) =>
       (_cache[date] ?? const []).fold(0, (sum, s) => sum + s.durationSeconds);
 
-  /// Share (0.0-1.0) of [totalActiveSeconds] spent in a deep-work session on
-  /// [date]. The denominator comes from [AppUsageService] — this service
-  /// only knows the numerator.
+  /// Focus score = focus seconds / total active seconds for the day, 0..1.
   double focusScore(String date, {required int totalActiveSeconds}) {
     if (totalActiveSeconds <= 0) return 0.0;
     return (focusSecondsForDate(date) / totalActiveSeconds).clamp(0.0, 1.0);
   }
 
-  /// All sessions falling within [period] (relative to [now]) — same
-  /// today/week/month semantics as [AppUsageService.topApps], so a Statistics
-  /// screen filter applies to both consistently.
   List<FocusSession> sessionsForPeriod(UsagePeriod period, {DateTime? now}) {
     final today = now ?? clock.now();
     final result = <FocusSession>[];
@@ -89,9 +80,6 @@ class FocusSessionService extends ChangeNotifier {
     }
   }
 
-  /// Sessions that started within `[start, end)`, across every tracked day —
-  /// used to look at a window that may span midnight (e.g. "the hour after
-  /// a break").
   List<FocusSession> sessionsBetween(DateTime start, DateTime end) {
     final result = <FocusSession>[];
     for (final list in _cache.values) {

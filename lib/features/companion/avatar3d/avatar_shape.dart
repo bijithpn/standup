@@ -2,12 +2,6 @@ import 'dart:math' as math;
 
 import 'package:breakmate/features/companion/avatar3d/avatar_math.dart';
 
-/// The primitive solids an avatar is built from, and how to sample them.
-///
-/// Ported from `avatarGeometry.ts`. Every radius and exponent below is authored
-/// data from the editor — the shapes only read as the same creatures if these
-/// match exactly.
-
 enum AvatarBodyShape {
   sphere,
   ellipse,
@@ -21,7 +15,6 @@ enum AvatarBodyShape {
   frustum,
   halfCone;
 
-  /// The wire name used by the scene data.
   String get wireName => this == AvatarBodyShape.halfCone ? 'half-cone' : name;
 
   static AvatarBodyShape fromWire(String? value) {
@@ -39,7 +32,6 @@ enum AvatarBodyShape {
   }
 }
 
-/// How a primitive's surface is generated.
 enum ShapeProfile {
   superellipsoid,
   cone,
@@ -49,6 +41,7 @@ enum ShapeProfile {
   trapezoid,
 }
 
+/// Superellipsoid parameters for one body shape; surfacePoint/surfaceNormal sample it.
 class ShapeSpec {
   const ShapeSpec({
     required this.exponent,
@@ -172,7 +165,6 @@ const Map<AvatarBodyShape, ShapeSpec> kShapeSpecs =
       ),
     };
 
-/// Per-part modifiers that change how its primitive is sampled.
 class ShapeOptions {
   const ShapeOptions({
     this.bottomTaper = 0,
@@ -185,7 +177,6 @@ class ShapeOptions {
   final double bottomTaper;
   final double cutAngle;
 
-  /// Null means "use this profile's own default", which differs per profile.
   final double? roundness;
   final double? topScale;
   final double faceOffsetY;
@@ -193,8 +184,6 @@ class ShapeOptions {
   static const ShapeOptions none = ShapeOptions();
 }
 
-/// Keeps the ellipse profile's lower pole rounded instead of collapsing it
-/// into a sharp V when a bottom taper is applied.
 double _ellipseLowerTaper(
   ShapeSpec spec,
   double vertical,
@@ -209,7 +198,7 @@ double _ellipseLowerTaper(
   return 1 - intensity * 0.62 * math.pow(math.max(vertical, 0), 2).toDouble();
 }
 
-/// A point on the primitive's surface at the given longitude and latitude.
+/// Point on a part's superellipsoid surface at the given latitude/longitude.
 Vec3 surfacePoint(
   ShapeSpec spec,
   double longitude,
@@ -284,8 +273,7 @@ Vec3 surfacePoint(
         final progress = clampDouble((latitude + math.pi / 2) / math.pi, 0, 1);
         final roundness = clampDouble(options.roundness ?? 24, 0, 100) / 100;
         final eased = progress * progress * (3 - 2 * progress);
-        // A sub-linear radius keeps a true zero-radius apex while giving the
-        // tip a rounded shoulder; a frustum instead eases toward a flat top.
+
         final tapered = spec.profile == ShapeProfile.frustum
             ? interpolate(progress, eased, roundness * 0.55)
             : math.pow(progress, interpolate(1, 0.56, roundness)).toDouble();
@@ -330,7 +318,6 @@ Vec3 surfacePoint(
 
 const double _normalDelta = 0.006;
 
-/// The outward normal, taken from two neighbouring surface samples.
 Vec3 surfaceNormal(
   ShapeSpec spec,
   double longitude,
@@ -365,12 +352,7 @@ Vec3 surfaceNormal(
   );
 }
 
-/// Lifts a point from the flat face chart onto the primitive's surface.
-///
-/// The face is authored in 2D and then bowed outward by `faceCurvature`, which
-/// is what keeps eyes sitting *on* a round head rather than floating in front
-/// of it. The extra 0.8 lifts the feature clear of the body so it never
-/// z-fights with the surface underneath.
+/// Maps a face-plane coordinate onto the curved surface so eyes/mouth wrap the head.
 Vec3 facePoint(
   ShapeSpec spec,
   Vec2 point, {

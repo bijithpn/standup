@@ -4,37 +4,26 @@ import 'package:breakmate/features/companion/behavior/companion_mood_machine.dar
 import 'package:breakmate/features/companion/behavior/gaze_sector.dart';
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 
-/// What the pet is doing right now, at the coarse level a viewer would name.
+/// Coarse activity label derived from the engine state.
 enum PetActivity {
-  /// Eyes shut, breathing deep and slow.
   sleeping,
 
-  /// Lids heavy, losing interest, one nudge from sleep.
   drowsy,
 
-  /// Awake and settled, looking around of its own accord.
   idle,
 
-  /// Something caught its eye and it is deciding whether to care.
   curious,
 
-  /// Locked onto the cursor and following it.
   watching,
 
-  /// Wound up — quick movements, exaggerated follow.
   playful,
 
-  /// Just got a fright.
   startled,
 
-  /// Being petted.
   delighted,
 }
 
-/// One frame of pet motion.
-///
-/// Everything is a plain number in a normalised range so the same snapshot can
-/// drive the illustrated avatar, the generative blob, or anything added later.
+/// Immutable per-frame pose/emotion output of PetBehaviorEngine consumed by the avatar views.
 class PetBehaviorSnapshot {
   const PetBehaviorSnapshot({
     this.gaze = Offset.zero,
@@ -53,50 +42,34 @@ class PetBehaviorSnapshot {
     this.mood = CompanionMood.idle,
   });
 
-  /// Where the eyes point, each axis -1..1. Positive is right and down.
   final Offset gaze;
 
-  /// Where the head points, -1..1. Lags [gaze]: a real animal's eyes arrive
-  /// first and the head catches up.
   final Offset headTurn;
 
-  /// Whole-body lean, -1..1. Lags [headTurn] again, and much more heavily.
   final Offset bodyLean;
 
-  /// Lid closure, 0 fully open .. 1 fully shut.
   final double blink;
 
-  /// Breathing phase, -1..1.
   final double breath;
 
-  /// Vertical offset in logical pixels, negative is up.
   final double bounce;
 
-  /// Uniform scale, 1.0 at rest. Pairs with [bounce] for squash and stretch.
   final double squash;
 
-  /// Head roll in radians.
   final double tilt;
 
-  /// How wound up the pet is, 0..1. Drives breath rate and motion scale.
   final double arousal;
 
-  /// How locked onto the cursor it is, 0..1.
   final double attention;
 
   final PetActivity activity;
 
-  /// What the companion is feeling. Drives its face, and nothing else needs to
-  /// say it out loud.
   final PetEmotionState emotion;
 
-  /// Which of the nine sectors the pet is looking toward.
   final GazeDirection gazeDirection;
 
-  /// The event-driven mood behind [emotion], for labels and assistive tech.
   final CompanionMood mood;
 
-  /// True when the pet is alert enough to react to things.
   bool get isAwake =>
       activity != PetActivity.sleeping && activity != PetActivity.drowsy;
 

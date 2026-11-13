@@ -1,5 +1,6 @@
 import 'package:objectbox/objectbox.dart';
 
+/// Generic string key/value row; [type] records how [value] was encoded so it can be parsed back.
 @Entity()
 class KeyValueRecord {
   @Id()
@@ -9,7 +10,7 @@ class KeyValueRecord {
   String key;
 
   String value;
-  String type; // 'int', 'bool', 'string', 'double'
+  String type;
 
   KeyValueRecord({
     this.id = 0,

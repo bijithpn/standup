@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
 
+/// Toggles native strict mode (blocks dismissing the break overlay); never engages while a meeting is active.
 class StrictModeController {
   final _overlayChannel = const MethodChannel('com.breakmate/overlay');
   final MeetingDetectionService _meetingService;
@@ -24,7 +25,7 @@ class StrictModeController {
   Future<void> enableStrictMode() async {
     if (_isInMeeting) {
       debugPrint('Break suppressed: User is in a meeting.');
-      return; // Meeting-aware suppression
+      return;
     }
 
     _isStrictModeActive = true;

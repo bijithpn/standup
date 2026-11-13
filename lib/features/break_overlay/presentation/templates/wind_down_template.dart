@@ -5,6 +5,7 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+/// Break template: end-of-day sunset screen summarizing today's stats from StatsService.
 class WindDownTemplate extends StatelessWidget {
   const WindDownTemplate({super.key});
 
@@ -101,7 +102,6 @@ class WindDownTemplate extends StatelessWidget {
   }
 }
 
-/// Autofocused, so Enter finishes the evening.
 class _DoneButton extends StatefulWidget {
   final VoidCallback onPressed;
 

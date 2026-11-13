@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:blobatar_flutter/blobatar_flutter.dart';
 import 'package:breakmate/features/companion/domain/blobatar_emotion_mapper.dart';
 
-/// Interactive Flutter Companion widget rendering a generative Blobatar.
-/// Dynamically updates its silhouette, colors, and features from its name,
-/// and animates smoothly between emotional expressions.
+/// Blobatar companion with a tap bounce and a short temporary expression override.
 class BlobatarCompanionWidget extends StatefulWidget {
   final String name;
   final double size;

@@ -1,13 +1,10 @@
-// ignore_for_file: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
 part of 'companion_overlay_controller.dart';
 
+/// Setting mutators for the Companion settings UI; each saves to SettingsRepository, which triggers _handleSettingsChanged.
 extension CompanionOverlaySettingActions on CompanionOverlayController {
   Future<void> toggleCompanion(bool enabled) async {
     if (_companionEnabled == enabled || _isTransitioning) return;
 
-    // Show the loader now. Saving settings and starting the companion's own
-    // engine both take a moment, and a switch that appears to do nothing for a
-    // second is worse than one that visibly works.
     final showLoader = enabled && !_isTransitioning;
     if (showLoader) {
       _isTransitioning = true;
@@ -22,8 +19,6 @@ extension CompanionOverlaySettingActions on CompanionOverlayController {
     try {
       await _settingsRepo.save(updated);
     } finally {
-      // If the change did not lead to a transition of its own (nothing needed
-      // starting), nobody else will clear the loader.
       if (_loaderFromToggle) {
         _loaderFromToggle = false;
         _isTransitioning = false;
@@ -32,11 +27,10 @@ extension CompanionOverlaySettingActions on CompanionOverlayController {
     }
   }
 
+  /// Switches pet theme, picks a new random name suited to the species, and retries the tray breed update up to 3 times.
   Future<void> changeTheme(String themeId) async {
     if (_companionPetTheme == themeId || _isTransitioning) return;
 
-    // Evict existing pet assets and clear cached SpriteSheets to release memory before loading the new theme.
-    // This prevents GPU memory overhead from accumulative sprite sheets when the breed is toggled.
     PetAssetLoader.clearCache();
 
     final species = PetTheme.getTheme(themeId).species;
@@ -147,8 +141,7 @@ extension CompanionOverlaySettingActions on CompanionOverlayController {
     final updated = current.copyWith(
       companionClickThrough: enabled ? true : current.companionClickThrough,
       companionFollowMouse: enabled ? false : current.companionFollowMouse,
-      // Wandering is the single most distracting thing the companion does, so
-      // low-distraction mode has to stop it as well.
+
       companionWanderingEnabled: enabled
           ? false
           : current.companionWanderingEnabled,

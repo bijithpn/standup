@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge_types.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
+/// macOS implementation: forwards each call to the Swift side over a MethodChannel; failures degrade to defaults.
 class MacOSBridge implements NativeBridgePlatform {
   final MethodChannel _channel = const MethodChannel(
     'com.breakmate.desktop/bridge',
@@ -228,7 +229,6 @@ class MacOSBridge implements NativeBridgePlatform {
     );
   }
 
-  /// macOS uses screen-bottom origin; the caller is responsible for
   @override
   Future<Offset> getCursorPosition() async {
     final Map<dynamic, dynamic>? result =
@@ -294,6 +294,7 @@ class MacOSBridge implements NativeBridgePlatform {
     await _invokeSafely('hidePipWindow');
   }
 
+  // Swallows missing/failed native methods (logging each missing one once) so callers always get a null/default.
   Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

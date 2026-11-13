@@ -9,10 +9,7 @@ import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_loader.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 
-/// Builds the recipe that draws [definition].
-///
-/// The breed artwork wins when the definition names one, because a breed is a
-/// finished illustration rather than a variation applied to the species.
+/// Builds the render recipe for a definition; the default palette is skipped so the authored colors stay untouched.
 AvatarArtworkRecipe avatarRecipeFor(
   AvatarDefinition definition, {
   bool transparentBackdrop = true,
@@ -24,8 +21,6 @@ AvatarArtworkRecipe avatarRecipeFor(
       ? null
       : AvatarBreed.find(definition.species, breedId);
 
-  // Both base species snapshots and breed snapshots carry authored colouring.
-  // Only recolour when the user has explicitly moved off the default palette.
   final isDefaultPalette =
       definition.palette == AvatarPalette.defaultPalette ||
       definition.palette.name == 'default';
@@ -39,11 +34,7 @@ AvatarArtworkRecipe avatarRecipeFor(
   );
 }
 
-/// Draws one piece of avatar artwork.
-///
-/// Prefer this over `SvgPicture.asset` anywhere a pet is shown: it strips the
-/// opaque plate the snapshots ship with, applies the definition's palette, and
-/// keeps the raster between frames instead of replaying the paths.
+/// Displays a compiled avatar SVG through AvatarArtworkLoader, so heavy SVG prep runs off the UI thread.
 class AvatarArtwork extends StatelessWidget {
   const AvatarArtwork({
     super.key,
@@ -56,7 +47,6 @@ class AvatarArtwork extends StatelessWidget {
     this.semanticsLabel,
   });
 
-  /// Convenience constructor for the common case of drawing a definition.
   AvatarArtwork.definition(
     AvatarDefinition definition, {
     Key? key,
@@ -89,8 +79,6 @@ class AvatarArtwork extends StatelessWidget {
   final BoxFit fit;
   final Alignment alignment;
 
-  /// Shown while the artwork compiles. Defaults to nothing — a spinner over a
-  /// transparent desktop overlay draws more attention than the gap it fills.
   final Widget? placeholder;
 
   final String? semanticsLabel;
@@ -105,8 +93,7 @@ class AvatarArtwork extends StatelessWidget {
       alignment: alignment,
       semanticsLabel: semanticsLabel,
       excludeFromSemantics: semanticsLabel == null,
-      // The artwork is complex and redrawn every frame by the pet's motion, so
-      // keeping a raster is dramatically cheaper than replaying its paths.
+
       renderingStrategy: RenderingStrategy.raster,
       placeholderBuilder: (_) =>
           placeholder ?? SizedBox(width: width, height: height),

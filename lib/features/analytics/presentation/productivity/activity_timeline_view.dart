@@ -7,14 +7,7 @@ import 'package:breakmate/features/analytics/presentation/productivity/productiv
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// The day laid out end to end.
-///
-/// Three layers, each answering one question:
-///  * a row of facts — when the day started, the longest unbroken stretch of
-///    work, how many breaks;
-///  * the ribbon — what was open at any moment, against an hour scale, with a
-///    "now" marker and honest gaps where nothing was recorded;
-///  * hour-by-hour bars — which hours the work actually happened in.
+/// Day timeline of active/idle/break stretches with hover readout, hourly bars and key facts.
 class ActivityTimelineView extends StatefulWidget {
   const ActivityTimelineView({
     super.key,
@@ -25,10 +18,8 @@ class ActivityTimelineView extends StatefulWidget {
 
   final List<TimelineEntry> entries;
 
-  /// Height of the ribbon itself (the axis labels sit beneath it).
   final double height;
 
-  /// The current time, for the "now" marker. Defaults to the real clock.
   final DateTime? now;
 
   @override
@@ -49,8 +40,6 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
         first.day == now.day;
   }
 
-  /// The hours the timeline spans, padded out to whole hours so the scale
-  /// reads sensibly, and stretched to "now" when looking at today.
   (int, int) get _bounds {
     if (widget.entries.isEmpty) return (9, 18);
 
@@ -67,7 +56,7 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
       final now = _now;
       last = math.max(last, now.minute > 0 ? now.hour + 1 : now.hour);
     }
-    // Always show at least three hours, or a short day looks like a glitch.
+
     if (last - first < 3) last = first + 3;
     if (last > 24) {
       first = math.max(0, first - (last - 24));
@@ -183,7 +172,6 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
   }
 }
 
-/// Seconds of active work in each hour of the day (0–23).
 Map<int, int> activeSecondsByHour(List<TimelineEntry> entries) {
   final perHour = <int, int>{};
   for (final entry in entries) {
@@ -207,8 +195,6 @@ Map<int, int> activeSecondsByHour(List<TimelineEntry> entries) {
   return perHour;
 }
 
-/// "Most active around 11am (1h 20m)" — the hour of the day with the most
-/// time spent actively working, or null when there is no active time.
 String? busiestHourCaption(List<TimelineEntry> entries) {
   final perHour = activeSecondsByHour(entries);
   if (perHour.isEmpty) return null;
@@ -218,7 +204,6 @@ String? busiestHourCaption(List<TimelineEntry> entries) {
       '(${formatDuration(best.value)})';
 }
 
-/// The longest single stretch of work, in seconds (0 when there is none).
 int longestFocusSeconds(List<TimelineEntry> entries) {
   var best = 0;
   for (final entry in entries) {
@@ -228,8 +213,6 @@ int longestFocusSeconds(List<TimelineEntry> entries) {
   }
   return best;
 }
-
-// ── Facts ───────────────────────────────────────────────────────────────────
 
 class _FactsRow extends StatelessWidget {
   const _FactsRow({required this.entries});
@@ -327,10 +310,6 @@ class _Fact extends StatelessWidget {
   }
 }
 
-// ── Hour bars ───────────────────────────────────────────────────────────────
-
-/// One bar per hour, lined up under the ribbon: how much of each hour was
-/// spent working. The tallest hour is highlighted and labelled.
 class _HourBars extends StatelessWidget {
   const _HourBars({
     required this.byHour,
@@ -357,8 +336,7 @@ class _HourBars extends StatelessWidget {
         peakHour = hour;
       }
     });
-    // Scale to a full hour, so a few minutes looks like a few minutes rather
-    // than being stretched into a tall bar.
+
     const scale = 3600;
 
     return Column(
@@ -467,15 +445,11 @@ class _HourBar extends StatelessWidget {
   }
 }
 
-// ── Readout and legend ──────────────────────────────────────────────────────
-
-/// What the pointer is over, or the day's shape when it is over nothing.
 class _Readout extends StatelessWidget {
   const _Readout({this.entry, this.idleHint});
 
   final TimelineEntry? entry;
 
-  /// Shown when the pointer is not over a stretch of the day.
   final String? idleHint;
 
   @override
@@ -588,8 +562,6 @@ class _TimelineLegend extends StatelessWidget {
   }
 }
 
-// ── Ribbon ──────────────────────────────────────────────────────────────────
-
 class _TimelinePainter extends CustomPainter {
   _TimelinePainter({
     required this.entries,
@@ -634,7 +606,6 @@ class _TimelinePainter extends CustomPainter {
       return (seconds / span) * size.width;
     }
 
-    // The empty track: anything not covered by a stretch was not recorded.
     final track = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, ribbonHeight),
       const Radius.circular(10),
@@ -648,8 +619,7 @@ class _TimelinePainter extends CustomPainter {
     for (final entry in entries) {
       final left = xFor(entry.startedAt).clamp(0.0, size.width);
       final right = xFor(entry.endedAt).clamp(0.0, size.width);
-      // Below a couple of pixels a span would vanish; give it a sliver so a
-      // real stretch is never invisible.
+
       final width = math.max(right - left, 2.5);
 
       final colour = activityColor(entry.kind, entry.categoryName);
@@ -684,8 +654,6 @@ class _TimelinePainter extends CustomPainter {
         );
       }
 
-      // Only label a span wide enough to read; anything narrower is explained
-      // by the readout beneath instead.
       if (isActive && width > 56) {
         _paintLabel(canvas, entry.appName, left + 8, width - 16);
       } else if (entry.kind == ActivityKind.onBreak && width > 44) {
@@ -730,7 +698,7 @@ class _TimelinePainter extends CustomPainter {
 
   void _paintHourGrid(Canvas canvas, Size size) {
     final hours = endHour - startHour;
-    // Thin the labels out rather than letting them collide on a narrow window.
+
     final step = size.width / hours < 48 ? math.max(1, (hours / 6).round()) : 1;
 
     final line = Paint()

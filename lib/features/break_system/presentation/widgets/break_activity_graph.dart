@@ -1,14 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
+/// Smooth line graph of per-interval activity counts, drawn with a gradient between per-point colors.
 class BreakActivityGraph extends StatelessWidget {
   final List<int> dataPoints;
 
-  /// One color per entry in [dataPoints]. When supplied (and matching
-  /// [dataPoints]'s length), each line segment is drawn as a gradient
-  /// between its two endpoint colors and the trailing flame dot uses the
-  /// last color — used to show a red/amber/green completion trend. Falls
-  /// back to a single [color] otherwise.
   final List<Color>? pointColors;
   final Color color;
 
@@ -60,6 +56,7 @@ class _GraphPainter extends CustomPainter {
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
+    // Y axis floors at 5 so tiny values do not stretch to full height.
     final stepX = size.width / (dataPoints.length - 1);
     final maxVal = dataPoints
         .reduce(max)

@@ -9,6 +9,7 @@ import 'package:breakmate/features/break_system/presentation/standalone_overlay/
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+/// Break template: full-screen photo (custom image, single image, or built-in rotation) with a slow Ken Burns drift and countdown.
 class ClassicSlideshowTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -45,11 +46,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
 
   ImageProvider? _image;
 
-  /// The bundled photo on screen, or null for a custom photo / none.
   String? _assetKey;
   Timer? _rotator;
 
-  /// How long each bundled photo stays before the next dissolves in.
   static const Duration _slideEvery = Duration(seconds: 20);
   static const Duration _dissolve = Duration(milliseconds: 1200);
 
@@ -67,8 +66,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     _syncRotation();
   }
 
-  /// Cycles the bundled photos with a cross-dissolve. Not for a custom photo,
-  /// a PageView-driven slideshow, or frozen (preview / reduced motion) frames.
+  // Rotates built-in photos every 20s, preloading the next so the dissolve never shows a blank frame; off for custom or paged images and when frozen.
   void _syncRotation() {
     _rotator?.cancel();
     _rotator = null;
@@ -111,8 +109,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     super.dispose();
   }
 
-  /// The user's custom photo when enabled and present, else the single
-  /// slideshow asset. Null leaves the gradient fallback on screen.
+  // Priority: user's custom image (unless disabled), then the pager-driven slides (null here), then single/first built-in asset.
   ImageProvider? _resolveImage() {
     _assetKey = null;
     final path = widget.settings.customImagePath;
@@ -128,7 +125,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     }
     if (widget.pageController != null &&
         AppConstants.wellnessSlideshow.isNotEmpty) {
-      return null; // the PageView below supplies the photos
+      return null;
     }
     final s = widget.singleImage;
     final img = (s != null && s.isNotEmpty)
@@ -141,8 +138,6 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     return ResizeImage(AssetImage(img), width: 2560);
   }
 
-  /// Slow zoom and 2% pan across the photo's lifetime, from the overlay's
-  /// shared Ken Burns controller. Static in thumbnails and reduced motion.
   Widget _kenBurns(Widget photo) {
     if (breakShouldFreeze(context)) return photo;
     return AnimatedBuilder(
@@ -167,7 +162,6 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     final hasExercise =
         widget.exerciseTitle != null && widget.exerciseInstructions != null;
 
-    // Each photo is keyed by its asset, so a change cross-dissolves.
     Widget photo = AnimatedSwitcher(
       duration: breakShouldFreeze(context) ? Duration.zero : _dissolve,
       child: KeyedSubtree(
@@ -179,8 +173,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
         ),
       ),
     );
-    // No photo and no bundled slideshow: paint misty ridges instead of a flat
-    // gradient, so the tile still reads as a landscape.
+
     if (_image == null) {
       photo = Stack(
         fit: StackFit.expand,
@@ -340,7 +333,6 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
   }
 }
 
-/// Four layered ridge lines fading into haze, with a low sun glow.
 class _RidgesPainter extends CustomPainter {
   const _RidgesPainter();
 

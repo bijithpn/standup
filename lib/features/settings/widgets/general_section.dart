@@ -11,6 +11,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 
+/// Settings > General: launch at startup, menu-bar display, session resume, quiet-mode presets and global hotkey.
 class GeneralSection extends StatelessWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -31,8 +32,7 @@ class GeneralSection extends StatelessWidget {
           _buildLaunchAtStartup(context),
           divider(),
           _buildMenuBarDisplay(),
-          // divider(),
-          // _buildStrictMode(),
+
           divider(),
           _buildSessionResume(),
           divider(),
@@ -84,7 +84,7 @@ class GeneralSection extends StatelessWidget {
             return;
           }
         } catch (_) {}
-        // Couldn't change it: put the toggle back and tell the user.
+
         onSave(settings.copyWith(autoStart: !v));
         if (context.mounted) {
           await showCupertinoDialog<void>(
@@ -109,7 +109,6 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-  // Windows tray uses a static .ico, so only the modes that work there show.
   static final _menuBarModes = Platform.isWindows
       ? const {'companion': 'Companion', 'countdown': 'Countdown timer'}
       : const {
@@ -159,19 +158,6 @@ class GeneralSection extends StatelessWidget {
       ],
     );
   }
-
-  // Widget _buildStrictMode() {
-  //   return buildListRow(
-  //     'Strict Mode',
-  //     'No skipping breaks',
-  //     settings.strictMode,
-  //     CupertinoIcons.lock_shield,
-  //     (v) {
-  //       onSave(settings.copyWith(strictMode: v));
-  //       sl<TrayManagerService>().triggerActionAnimation();
-  //     },
-  //   );
-  // }
 
   Widget _buildQuietModePresets() {
     return buildListRow(

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Maps a picker mode to the persisted (trayIconStyle, menuBarStyle) pair.
+/// Maps a picker mode to the stored (trayIconStyle, menuBarStyle) pair; inverse of [menuBarModeFromStyles].
 ({String iconStyle, String menuStyle}) menuBarModeToStyles(String mode) => (
   iconStyle: mode == 'companion' ? 'companion' : 'default',
   menuStyle: switch (mode) {
@@ -15,7 +15,6 @@ import 'package:breakmate/shared/theme/app_theme.dart';
   },
 );
 
-/// Inverse of [menuBarModeToStyles], tolerant of values older builds saved.
 String menuBarModeFromStyles(String trayIconStyle, String menuBarStyle) {
   if (trayIconStyle == 'companion' || trayIconStyle == 'cat') {
     return 'companion';
@@ -28,8 +27,7 @@ String menuBarModeFromStyles(String trayIconStyle, String menuBarStyle) {
   };
 }
 
-/// Tiles that show each menu bar display option animating live, so the
-/// choice is visible before it is picked.
+/// Tile picker for menu-bar display modes with an animated preview of each.
 class MenuBarModePicker extends StatefulWidget {
   const MenuBarModePicker({
     super.key,
@@ -38,7 +36,6 @@ class MenuBarModePicker extends StatefulWidget {
     required this.onSelected,
   });
 
-  /// Mode id -> label.
   final Map<String, String> modes;
   final String selected;
   final ValueChanged<String> onSelected;
@@ -151,7 +148,6 @@ class _PreviewPainter extends CustomPainter {
 
   final String mode;
 
-  /// 0..1 over the whole loop.
   final double t;
 
   static const _white = Color(0xFFFFFFFF);
@@ -169,7 +165,7 @@ class _PreviewPainter extends CustomPainter {
     final c = size.center(Offset.zero);
     final progress = Curves.easeInOut.transform(t);
     final color = _accent(progress);
-    final breathe = (1 - math.cos(t * 6 * math.pi * 2)) / 2; // 6 pulses
+    final breathe = (1 - math.cos(t * 6 * math.pi * 2)) / 2;
     final pulse = (t * 6) % 1.0;
 
     switch (mode) {
@@ -240,7 +236,7 @@ class _PreviewPainter extends CustomPainter {
         );
         canvas.drawRRect(rr, Paint()..color = color);
         canvas.drawCircle(c, 4, Paint()..color = _white);
-      default: // companion: a small bobbing, blinking face
+      default:
         final bob = math.sin(t * 6 * math.pi * 2) * 1.2;
         final f = c.translate(0, bob);
         final body = Paint()..color = const Color(0xFFFFB86B);

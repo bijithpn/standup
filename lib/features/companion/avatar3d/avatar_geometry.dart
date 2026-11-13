@@ -5,24 +5,15 @@ import 'package:breakmate/features/companion/avatar3d/avatar_math.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_shape.dart';
 
-/// Turns a scene plus a camera pose into drawable geometry.
-///
-/// Ported from `buildAvatarBodyGeometry` and `projectDefaultFace`. Where the
-/// original emits SVG path strings, this builds `ui.Path` directly — the paths
-/// are the output, so there is no reason to go through text.
-
-/// One quad of a primitive's surface, with how lit it is and how far away.
 class SurfaceCell {
   const SurfaceCell(this.path, this.shade, this.depth);
 
   final ui.Path path;
 
-  /// -1 fully shadowed, 0 edge-on, 1 fully lit.
   final double shade;
   final double depth;
 }
 
-/// Everything needed to draw one part.
 class PartGeometry {
   const PartGeometry({
     required this.part,
@@ -34,14 +25,11 @@ class PartGeometry {
   final AvatarPart part;
   final List<SurfaceCell> cells;
 
-  /// The silhouette, used for the outline stroke and the drop shadow.
   final ui.Path outline;
 
-  /// Mean depth of the part, for sorting parts against each other.
   final double depth;
 }
 
-/// A projected face feature.
 class FaceFeature {
   const FaceFeature(this.path, this.depth);
 
@@ -65,7 +53,7 @@ class FaceGeometry {
   bool get isEmpty => eyes.isEmpty && nose == null && mouth == null;
 }
 
-/// The whole companion, ready to paint.
+/// Projected 2D output of the 3D scene: per-part outlines/surface cells, face features, and overall bounds, ready for AvatarScenePainter.
 class AvatarGeometry {
   const AvatarGeometry({
     required this.parts,
@@ -78,7 +66,6 @@ class AvatarGeometry {
   final FaceGeometry face;
   final String? facePartId;
 
-  /// Union of every part's silhouette, in authored scene units.
   final ui.Rect bounds;
 }
 
@@ -88,12 +75,10 @@ const int _outlineLatitudeSteps = 28;
 const int _outlineLongitudeSteps = 72;
 const int _ellipseSteps = 40;
 const int _faceEdgeSteps = 8;
+// Cells facing away from the camera below this threshold are culled.
 const double _minimumFacing = 0.015;
 
-/// Builds the drawable geometry for [scene] at its current pose.
-///
-/// [densityScale] trims the tessellation for small or always-on surfaces; 1.0
-/// is what the editor uses. Pure computation, so it is safe on any isolate.
+/// Rotates each part by view yaw/pitch, tessellates its surface, culls back-facing cells and projects to 2D; densityScale trades detail for speed.
 AvatarGeometry buildAvatarGeometry(
   AvatarScene scene, {
   double densityScale = 1.0,
@@ -140,7 +125,6 @@ AvatarGeometry buildAvatarGeometry(
     maxY = math.max(maxY, box.bottom);
   }
 
-  // Far parts first, so nearer ones paint over them.
   parts.sort((left, right) => left.depth.compareTo(right.depth));
 
   final facePart = scene.facePart;
@@ -170,7 +154,6 @@ PartGeometry _buildPart(
   final spec = kShapeSpecs[part.shape]!;
   final options = part.shapeOptions;
 
-  // The part's own scale and rotation, then its offset, then the camera.
   Vec3 transformPoint(Vec3 point) {
     final scaled = Vec3(
       point.x * part.scaleX,
@@ -191,7 +174,6 @@ PartGeometry _buildPart(
     return rotateByPose(placed, view.yaw, view.pitch);
   }
 
-  // Normals scale inversely, or a squashed primitive lights as if it were not.
   Vec3 transformNormal(Vec3 normal) {
     final scaled = normalize(
       Vec3(
@@ -229,8 +211,7 @@ PartGeometry _buildPart(
           options: options,
         ),
       );
-      // Back-facing cells are simply not drawn; that is the hidden-surface
-      // removal, and it is why the silhouette stays clean while turning.
+
       if (normal.z <= _minimumFacing) continue;
 
       final corners = <Vec3>[
@@ -270,8 +251,6 @@ PartGeometry _buildPart(
 
   cells.sort((left, right) => left.depth.compareTo(right.depth));
 
-  // The silhouette comes from the hull of a denser ring sampling, which is
-  // both smoother and cheaper than unioning every cell.
   final silhouettePoints = <Vec2>[];
   for (var latIndex = 0; latIndex <= _outlineLatitudeSteps; latIndex++) {
     final latitude = -math.pi / 2 + latIndex / _outlineLatitudeSteps * math.pi;
@@ -369,7 +348,6 @@ List<Vec2> _roundedRectBoundary(
     return points;
   }
 
-  // A stadium/rounded rectangle traced as four arcs joined by four edges.
   final points = <Vec2>[];
   final insetX = halfWidth - cornerRadius;
   final insetY = halfHeight - cornerRadius;
@@ -403,12 +381,6 @@ List<Vec2> _roundedRectBoundary(
   return points;
 }
 
-/// A smile: a constant-thickness stroke along a parabola, with rounded ends.
-///
-/// Ported from the editor, which sweeps the stroke along the curve's normal and
-/// sizes the arc from the mouth's *width*. The earlier version offset the edges
-/// vertically and sized the arc from the height, so a tall mouth collapsed into
-/// a sharp black V instead of a smile.
 List<Vec2> _mouthBoundary(
   double centerX,
   double centerY,
@@ -469,9 +441,6 @@ List<Vec2> _mouthBoundary(
   ];
 }
 
-/// An open mouth: flat along the top, rounded below, like a happy "D".
-///
-/// [curve] lifts the corners a little, so it can read as a grin or a gasp.
 List<Vec2> _openMouthBoundary(
   double centerX,
   double centerY,
@@ -493,8 +462,7 @@ List<Vec2> _openMouthBoundary(
       ),
     );
   }
-  // The top edge, from the left corner back to the right. Sagging in the
-  // middle lifts the corners, so it reads as a smile rather than a flat lid.
+
   for (var step = 1; step < steps; step++) {
     final x = centerX - width / 2 + width * step / steps;
     final nx = (x - centerX) / (width / 2);
@@ -550,7 +518,6 @@ FaceGeometry _buildFace(
     return rotateByPose(rotated, view.yaw, view.pitch);
   }
 
-  /// Lifts a face outline onto the head and drops it if it has turned away.
   FaceFeature? projectFeature(
     double centerX,
     double centerY,
@@ -649,9 +616,6 @@ FaceGeometry _buildFace(
 
   FaceFeature? mouth;
   if (style.mouthEnabled) {
-    // An open mouth is a shape, not a stroke. Drawing surprise as a thick
-    // curved band reads as a smear across the chin; an ellipse reads as a
-    // mouth that is open.
     final boundary = style.mouthShape == 'ellipse'
         ? _ellipseBoundary(
             0,

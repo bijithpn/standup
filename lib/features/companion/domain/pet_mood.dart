@@ -1,5 +1,6 @@
 import 'pet_needs.dart';
 
+/// Mood of the legacy sprite pet.
 enum PetMood {
   happy,
   playful,
@@ -15,6 +16,7 @@ enum PetMood {
   mischievous,
 }
 
+/// Derives a mood from PetNeeds; first matching rule wins (break mode, tired, hungry, bored, happy, then affection/play).
 extension PetMoodCalculator on PetMood {
   static PetMood fromNeeds(PetNeeds needs) {
     if (needs.breakMode) return PetMood.happy;
@@ -34,9 +36,10 @@ extension PetMoodCalculator on PetMood {
   }
 }
 
+/// A mood with intensity that decays linearly over decayDuration from since.
 class PetMoodState {
   final PetMood mood;
-  final double intensity; // 0.0 to 1.0
+  final double intensity;
   final DateTime since;
   final Duration decayDuration;
 

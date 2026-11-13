@@ -2,8 +2,7 @@ import 'package:flutter/cupertino.dart';
 
 enum AppCategory { coding, writing, browsing, meeting, design, general }
 
-/// Matches an app's name/bundle id to a broad usage category, shared between
-/// [WellnessEngine] (contextual break tips) and app-usage tracking/insights.
+/// Maps an app's name/bundle id to a coarse category via substring heuristics (first match wins).
 class AppCategorizer {
   AppCategorizer._();
 
@@ -49,7 +48,6 @@ class AppCategorizer {
   }
 }
 
-/// Display metadata for a category, shared by app-usage UI widgets.
 extension AppCategoryUi on AppCategory {
   String get label {
     switch (this) {
@@ -88,17 +86,17 @@ extension AppCategoryUi on AppCategory {
   Color get color {
     switch (this) {
       case AppCategory.coding:
-        return const Color(0xFF3B82F6); // AppTheme.info
+        return const Color(0xFF3B82F6);
       case AppCategory.writing:
-        return const Color(0xFF14B8A6); // teal
+        return const Color(0xFF14B8A6);
       case AppCategory.browsing:
-        return const Color(0xFFF59E0B); // AppTheme.warning
+        return const Color(0xFFF59E0B);
       case AppCategory.meeting:
-        return const Color(0xFF10B981); // AppTheme.success
+        return const Color(0xFF10B981);
       case AppCategory.design:
-        return const Color(0xFF8B5CF6); // purple
+        return const Color(0xFF8B5CF6);
       case AppCategory.general:
-        return const Color(0xFF71717A); // AppTheme.gray500
+        return const Color(0xFF71717A);
     }
   }
 }

@@ -1,45 +1,27 @@
-/// What the companion is feeling, and how strongly.
-///
-/// Kept deliberately small. A face has a handful of legible states, and a pet
-/// that cycles through twenty subtly different moods reads as broken rather
-/// than nuanced — the point is that someone glancing at the corner of their
-/// screen understands it instantly, without a caption.
+/// Visible emotion that picks the avatar's face expression.
 enum PetEmotion {
-  /// The resting state: awake, unbothered, quietly present.
   content,
 
-  /// Pleased. Follows attention, play, or a break well taken.
   happy,
 
-  /// Wound up and wanting to play.
   excited,
 
-  /// Something caught its interest and it is working out what.
   curious,
 
-  /// Being petted. The warmest state, and short-lived on purpose.
   affectionate,
 
-  /// Ignored for a long stretch. Not distress — the look of a pet waiting by
-  /// the door.
   lonely,
 
-  /// Worn out. Comes from a long unbroken working stretch, not from boredom.
   weary,
 
-  /// Eyes shut, breathing slow.
   sleepy,
 
-  /// A fright, from sudden movement nearby. Always brief.
   startled,
 
-  /// In the middle of a game: cheeky, a little lopsided, up to something.
   playful,
 
-  /// Properly tickled. Eyes screwed shut, mouth wide open.
   laughing;
 
-  /// Whether the emotion is a pleasant one, for choosing warm or cool accents.
   bool get isPositive =>
       this == PetEmotion.happy ||
       this == PetEmotion.excited ||
@@ -48,11 +30,10 @@ enum PetEmotion {
       this == PetEmotion.laughing ||
       this == PetEmotion.content;
 
-  /// Whether this state should hold the face still rather than animate it.
   bool get isRestful => this == PetEmotion.sleepy || this == PetEmotion.weary;
 }
 
-/// An emotion together with how strongly it is felt.
+/// Emotion plus intensity.
 class PetEmotionState {
   const PetEmotionState({
     required this.emotion,
@@ -64,12 +45,8 @@ class PetEmotionState {
 
   final PetEmotion emotion;
 
-  /// 0..1. Drives how far the face moves from its resting shape, so a mild
-  /// feeling is a hint and a strong one is unmistakable.
   final double intensity;
 
-  /// The slow-moving drives behind the emotion, exposed for the settings and
-  /// diagnostics rather than for the face.
   final double affection;
   final double loneliness;
   final double fatigue;
@@ -100,26 +77,4 @@ class PetEmotionState {
       'PetEmotionState(${emotion.name} @ ${intensity.toStringAsFixed(2)})';
 }
 
-/// What the companion would most appreciate right now.
-///
-/// The emotion says how the pet feels; this says what to do about it. The two
-/// are deliberately separate: a lonely pet and a bored one wear different
-/// faces but both want the same thing, and a face alone never tells a new user
-/// which button to press.
-enum PetWish {
-  /// Asleep, or settled enough that the kind thing is to leave it be.
-  none,
-
-  /// Wants attention — a touch, a scratch.
-  petting,
-
-  /// Wound up and looking for a game.
-  play,
-
-  /// Peckish. The small pleasant default.
-  treat,
-
-  /// Not the pet's need but the user's: it has watched them work without a
-  /// break for a long time.
-  rest,
-}
+enum PetWish { none, petting, play, treat, rest }

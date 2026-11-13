@@ -3,11 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Shared formatting and colour for the Productivity screens, so a duration
-/// reads the same everywhere and a category keeps one colour across the
-/// timeline, the application list and the charts.
-
-/// `6h 42m`, `48m`, `—` for nothing.
 String formatDuration(int seconds) {
   if (seconds <= 0) return '—';
   final totalMinutes = seconds ~/ 60;
@@ -18,7 +13,6 @@ String formatDuration(int seconds) {
   return '${hours}h ${minutes}m';
 }
 
-/// `6h 42m` written out for a screen reader.
 String describeDuration(int seconds) {
   if (seconds <= 0) return 'no time';
   final totalMinutes = seconds ~/ 60;
@@ -31,12 +25,10 @@ String describeDuration(int seconds) {
   return parts.isEmpty ? 'under a minute' : parts.join(' ');
 }
 
-/// `09:20`.
 String formatClock(DateTime time) =>
     '${time.hour.toString().padLeft(2, '0')}:'
     '${time.minute.toString().padLeft(2, '0')}';
 
-/// `9am`, `12pm`.
 String formatHour(int hour) {
   final wrapped = hour % 24;
   final suffix = wrapped < 12 ? 'am' : 'pm';
@@ -44,7 +36,6 @@ String formatHour(int hour) {
   return '$display$suffix';
 }
 
-/// `Monday 20 September`.
 String formatDateKey(String date) {
   final parsed = DateTime.tryParse(date);
   if (parsed == null) return date;
@@ -77,7 +68,6 @@ String formatDateKey(String date) {
       '${months[parsed.month - 1]}';
 }
 
-/// `Mon`, for chart axes.
 String shortWeekday(String date) {
   final parsed = DateTime.tryParse(date);
   if (parsed == null) return '';
@@ -85,7 +75,6 @@ String shortWeekday(String date) {
   return short[parsed.weekday - 1];
 }
 
-/// A readable name for one of [AppCategorizer]'s categories.
 String categoryLabel(String categoryName) {
   switch (categoryName) {
     case 'coding':
@@ -105,10 +94,6 @@ String categoryLabel(String categoryName) {
   }
 }
 
-/// One colour per category, used wherever that category appears.
-///
-/// Drawn from the theme's own palette rather than invented, so the screens
-/// still read correctly when the user changes theme.
 Color categoryColor(String categoryName) {
   switch (categoryName) {
     case 'coding':
@@ -126,10 +111,7 @@ Color categoryColor(String categoryName) {
   }
 }
 
-/// The colour a stretch of the timeline is drawn in.
-///
-/// Idle and breaks are deliberately quiet: they are context for the work, not
-/// competing with it.
+// Idle and break get fixed colours; active uses the category colour.
 Color activityColor(ActivityKind kind, String categoryName) {
   switch (kind) {
     case ActivityKind.active:

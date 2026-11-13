@@ -10,6 +10,7 @@ import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart
 import 'package:breakmate/features/break_overlay/domain/break_tips.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+/// Break template: a draggable pet companion that snaps to screen edges and cycles through tips.
 class CompanionInteractiveTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -43,17 +44,14 @@ class _CompanionInteractiveTemplateState
 
   static const double _widgetSize = 130.0;
 
-  /// Idle bob: one full sine period every 2.4s.
   late final AnimationController _bob = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2400),
   );
 
-  /// One-shot effects: landing squash (260ms) and the completion hop (400ms).
   late final AnimationController _fx = AnimationController(vsync: this);
   bool _hopping = false;
 
-  /// The break's own tip first, then library tips that rotate every 12 s.
   late final List<String> _tips = [
     if (widget.breakInfo.tip.isNotEmpty) widget.breakInfo.tip,
     ...BreakTips.extra(widget.breakInfo),
@@ -79,6 +77,7 @@ class _CompanionInteractiveTemplateState
     const Color(0xFF1F9D78),
   );
 
+  // Tips rotate every 12s unless frozen or the user is dragging the pet.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -91,6 +90,7 @@ class _CompanionInteractiveTemplateState
     }
   }
 
+  // Hops once when the countdown hits zero.
   @override
   void didUpdateWidget(covariant CompanionInteractiveTemplate old) {
     super.didUpdateWidget(old);
@@ -111,6 +111,7 @@ class _CompanionInteractiveTemplateState
     super.dispose();
   }
 
+  // Snaps to whichever screen edge is nearest.
   void _snapToEdge(double sw, double sh) {
     if (_x == null || _y == null) return;
     final dists = {
@@ -239,7 +240,7 @@ class _CompanionInteractiveTemplateState
                 curve: Curves.easeOutCubic,
                 left: 0,
                 right: 0,
-                // Below the pet, unless the tip bubble is there: then above.
+
                 top: bubbleAbove
                     ? _y! + _widgetSize + 32
                     : math.max(8.0, _y! - 32),
@@ -343,7 +344,6 @@ class _CompanionInteractiveTemplateState
   }
 }
 
-/// Pastel room: mint wall, a sunlit window, a wooden floor and a round rug.
 class _RoomPainter extends CustomPainter {
   const _RoomPainter();
 

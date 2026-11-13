@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/core/display/models/display_info.dart';
 import 'package:breakmate/core/display/models/overlay_display_config.dart';
 
+/// Computes overlay window bounds per display and how content (e.g. a background image) fits into them.
 class OverlayFitService {
+  // Origin is 0,0 because bounds are relative to the overlay window, not the screen.
   Rect calculateBounds(DisplayInfo display, OverlayDisplayConfig config) {
     if (config.ignoreSafeAreas) {
       return Rect.fromLTWH(0, 0, display.bounds.width, display.bounds.height);
@@ -16,7 +18,7 @@ class OverlayFitService {
     }
   }
 
-  /// Adaptive fit for rendering background images/videos to avoid stretching
+  /// Returns the rect content occupies inside [targetSize] for the given fit mode (contain letterboxes, cover crops, fill stretches).
   Rect calculateAdaptiveContentRect(
     Size contentSize,
     Size targetSize,

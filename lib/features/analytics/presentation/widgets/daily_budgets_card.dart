@@ -4,8 +4,6 @@ import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Today's time per category against the soft daily budgets set in Personal
-/// Goals. Nothing is ever blocked. Renders nothing when no budget is set.
 class DailyBudgetsCard extends StatelessWidget {
   const DailyBudgetsCard({
     super.key,
@@ -15,7 +13,6 @@ class DailyBudgetsCard extends StatelessWidget {
 
   final Map<AppCategory, int> usedSecondsByCategory;
 
-  /// `AppCategory.name` -> minutes (0 or missing means no budget).
   final Map<String, int> budgetMinutes;
 
   @override

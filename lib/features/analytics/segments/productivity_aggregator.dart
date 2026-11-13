@@ -1,24 +1,12 @@
 import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 
-/// Turns raw segments into the summaries the UI reads.
-///
-/// Every function here is pure, so a month of history can be rolled up on a
-/// background isolate. It deliberately holds no reference to ObjectBox — the
-/// store rejects access from secondary isolates, so segments are read on the
-/// main isolate and only the plain data crosses over.
-
-/// Stretches shorter than this are absorbed into their neighbour on the
-/// timeline. At a 10-second poll these are apps that were passed through
-/// rather than used, and drawing each one turns the day into confetti.
+// Timeline: same-app segments shorter than this are merged into neighbours; gaps up to the tolerance are bridged.
 const int kTimelineMergeThresholdSeconds = 45;
 
-/// Two stretches further apart than this are not joined: the time between them
-/// was not recorded (asleep, tracking off), and stretching one across it would
-/// draw time that never happened.
 const int kTimelineGapToleranceSeconds = 90;
 
-/// Rolls one day's segments into a summary.
+/// Folds one day's segments into totals, per-app stats, hourly buckets and context-switch counts.
 DailyProductivitySummary aggregateDay(
   String date,
   List<ActivitySegment> segments,
@@ -57,13 +45,9 @@ DailyProductivitySummary aggregateDay(
         firstActivityAt ??= segment.startedAt;
         lastActivityAt = segment.endedAt;
 
-        // A switch is a move between two *different* applications. Coming back
-        // from idle or a break to the same app is a resumption, not a switch,
-        // and counting it would make a quiet day look fragmented.
         if (previousAppKey != null && previousAppKey != segment.appKey) {
           contextSwitches++;
-          // Attributed to the hour the switch happened, which is the start of
-          // the stretch being switched *into*.
+
           final hour = segment.startedAt.hour;
           if (hour >= 0 && hour < 24) hourlySwitches[hour]++;
         }
@@ -106,10 +90,7 @@ DailyProductivitySummary aggregateDay(
   );
 }
 
-/// Adds a segment's seconds to the hours it actually covers.
-///
-/// A stretch that runs from 09:50 to 10:20 belongs to both hours, and putting
-/// all of it in whichever hour it started would bend the shape of the day.
+// Splits a segment across hour boundaries so each hour bucket gets its share.
 void _spreadAcrossHours(ActivitySegment segment, List<int> hourly) {
   var cursor = segment.startedAt;
   final end = segment.endedAt;
@@ -133,7 +114,7 @@ void _spreadAcrossHours(ActivitySegment segment, List<int> hourly) {
   }
 }
 
-/// Rolls several already-aggregated days into one range summary.
+/// Combines daily summaries into one multi-day summary.
 RangeProductivitySummary aggregateRange(List<DailyProductivitySummary> days) {
   if (days.isEmpty) return RangeProductivitySummary.empty();
 
@@ -185,11 +166,7 @@ RangeProductivitySummary aggregateRange(List<DailyProductivitySummary> days) {
   );
 }
 
-/// Prepares a day's segments for drawing.
-///
-/// Adjacent stretches in the same state are joined, and anything too short to
-/// read is absorbed into whatever came before it, so the timeline shows the
-/// shape of the day rather than every individual poll.
+/// Converts raw segments into display-friendly timeline rows, merging tiny fragments.
 List<TimelineEntry> buildTimeline(
   List<ActivitySegment> segments, {
   int mergeThresholdSeconds = kTimelineMergeThresholdSeconds,
@@ -218,7 +195,6 @@ List<TimelineEntry> buildTimeline(
       continue;
     }
 
-    // Too brief to see, and there is something to fold it into.
     if (adjacent && segment.seconds < mergeThresholdSeconds) {
       last.endedAt = segment.endedAt;
       continue;

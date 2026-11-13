@@ -2,7 +2,7 @@ import 'package:flutter/animation.dart';
 
 enum BreathPhase { inhale, holdFull, exhale, holdEmpty }
 
-/// A breathing pattern in whole seconds: in, hold, out, hold.
+/// Breathing pattern in seconds per phase; maps elapsed time to a phase and a 0..1 lung fullness.
 class BreathPreset {
   final String id;
   final String label;
@@ -52,7 +52,6 @@ class BreathPreset {
 
   int get cycleSeconds => inhale + holdFull + exhale + holdEmpty;
 
-  /// The phase [seconds] into a cycle. Zero-length phases are skipped.
   BreathPhase phaseAt(double seconds) {
     final t = seconds % cycleSeconds;
     if (t < inhale) return BreathPhase.inhale;
@@ -61,7 +60,6 @@ class BreathPreset {
     return BreathPhase.holdEmpty;
   }
 
-  /// 0 (empty) to 1 (full) [seconds] into a cycle, eased on inhale and exhale.
   double fullnessAt(double seconds) {
     final t = seconds % cycleSeconds;
     const ease = Curves.easeInOutSine;
@@ -73,8 +71,7 @@ class BreathPreset {
   }
 }
 
-/// Maps a controller value (0..1 over one cycle of the current preset) to
-/// breath fullness, so painters can listen to the controller directly.
+/// Adapts a BreathPreset to an Animatable so a 0..1 controller value drives the breath.
 class BreathFullness extends Animatable<double> {
   final BreathPreset Function() preset;
 

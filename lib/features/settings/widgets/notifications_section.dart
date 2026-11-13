@@ -18,6 +18,7 @@ import 'package:breakmate/core/services/health_reminder_copy.dart';
 import 'package:breakmate/core/services/native_enhancements_service.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 
+/// Settings > Notifications: sounds, health reminders (eye, posture, hydration...) and user-defined custom reminders.
 class NotificationsSection extends StatelessWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -193,10 +194,6 @@ class NotificationsSection extends StatelessWidget {
     );
   }
 
-  // Native system-notification reminders were unreliable in practice, so
-  // reminders always show the (dismissable, low-opacity) overlay now — see
-  // `_handleHealthReminder` in timer_orchestrator.dart for the same choice
-  // on the real, non-preview path.
   void _previewRandom() {
     const types = ['eyeblink', 'posture', 'hydration', 'stretch', 'standup'];
     _showPreview(types[Random().nextInt(types.length)]);
@@ -212,18 +209,12 @@ class NotificationsSection extends StatelessWidget {
       );
       return;
     }
-    // `type` (above) only picks the native window's behavior — the Dart
-    // overlay itself reads `overlayType` from the JSON payload to decide
-    // which widget to render, and defaults to the full break-timer
-    // template ('breakScreen') when that key is missing. Without this,
-    // "Preview" was silently showing the wrong overlay entirely.
+
     sl<OverlayWindowService>().showOverlay(
       type: OverlayType.quickReminder,
       reminderType: reminderType,
       isPreview: true,
-      // A brief reminder only needs to appear on the active display —
-      // spinning up a full Flutter engine per connected monitor for a
-      // 2-second poster is wasted CPU, more so on multi-monitor setups.
+
       showOnAllDisplays: false,
       builder: (context) => const SizedBox(),
       overlayData: {
@@ -231,9 +222,7 @@ class NotificationsSection extends StatelessWidget {
         'reminderType': reminderType,
         'durationSeconds': 2,
         'remainingSeconds': 2,
-        // Previewing is an explicit, in-the-moment action from Settings —
-        // always show the real full-screen poster design, not the
-        // meeting-safe fallback pill.
+
         'allowFullPoster': true,
       },
     );
@@ -245,10 +234,6 @@ class NotificationsSection extends StatelessWidget {
     });
   }
 
-  // No manual interval anymore — timing is automatic, tied to the actual
-  // break cycle (see `TimerEngine._checkHealthReminders`) rather than a
-  // separately configured countdown. Enable/disable above is the only
-  // control; this row is just the explanation + a way to preview the look.
   Widget _buildReminderPreviewRow({
     required VoidCallback onPreview,
     String label = 'Preview a random reminder',
@@ -306,6 +291,7 @@ class NotificationsSection extends StatelessWidget {
   }
 }
 
+// Adds a reminder only when the title is non-empty and interval is at least 1 minute.
 class _CustomReminderForm extends StatefulWidget {
   final ValueChanged<CustomReminder> onAdd;
   const _CustomReminderForm({required this.onAdd});
