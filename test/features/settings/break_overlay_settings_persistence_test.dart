@@ -13,10 +13,14 @@ class _MockSettingsBox extends Mock implements Box<SettingsSnapshot> {}
 
 class _MockCompanionBox extends Mock implements Box<CompanionPreferences> {}
 
-FakeStorageService _storage() {
+FakeStorageService _storage({bool readSnapshot = false}) {
+  SettingsSnapshot? snapshot;
   final box = _MockSettingsBox();
-  when(() => box.put(any())).thenReturn(1);
-  when(() => box.get(any())).thenReturn(null);
+  when(() => box.put(any())).thenAnswer((invocation) {
+    snapshot = invocation.positionalArguments.single as SettingsSnapshot;
+    return 1;
+  });
+  when(() => box.get(any())).thenAnswer((_) => readSnapshot ? snapshot : null);
   final companion = _MockCompanionBox();
   when(() => companion.put(any())).thenReturn(1);
   when(() => companion.get(any())).thenReturn(null);
@@ -52,6 +56,28 @@ void main() {
     expect(s.breakChimeEnabled, isTrue);
     expect(s.lookedAwayPromptEnabled, isTrue);
   });
+
+  for (final readSnapshot in [false, true]) {
+    test(
+      'mouse dismissal persists on and off (snapshot: $readSnapshot)',
+      () async {
+        final storage = _storage(readSnapshot: readSnapshot);
+        final first = SettingsRepository(storage: storage);
+        await first.save(
+          first.currentSettings.copyWith(dismissReminderOnMouseMove: true),
+        );
+        final second = SettingsRepository(storage: storage);
+        await second.load();
+        expect(second.currentSettings.dismissReminderOnMouseMove, isTrue);
+        await second.save(
+          second.currentSettings.copyWith(dismissReminderOnMouseMove: false),
+        );
+        final third = SettingsRepository(storage: storage);
+        await third.load();
+        expect(third.currentSettings.dismissReminderOnMouseMove, isFalse);
+      },
+    );
+  }
 
   test('a fresh install keeps the old look and stays quiet', () async {
     final repo = SettingsRepository(storage: _storage());

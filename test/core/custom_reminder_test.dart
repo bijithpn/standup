@@ -1,4 +1,4 @@
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,9 +13,9 @@ void main() {
   });
 
   test('custom reminder copy uses the user text', () {
-    const type = '${HealthReminderCopy.customPrefix}Take meds';
-    expect(HealthReminderCopy.text(type), 'Take meds');
-    expect(HealthReminderCopy.pill(type), 'Take meds');
-    expect(HealthReminderCopy.poster(type), 'Take meds');
+    const type = '${HealthReminderMessages.customPrefix}Take meds';
+    expect(HealthReminderMessages.text(type), 'Take meds');
+    expect(HealthReminderMessages.pill(type), 'Take meds');
+    expect(HealthReminderMessages.poster(type), 'Take meds');
   });
 }

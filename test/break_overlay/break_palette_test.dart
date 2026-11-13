@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'break_test_harness.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_helpers.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
 
 double _lum(Color c) {
   double f(double v) =>
@@ -51,6 +53,29 @@ void main() {
       contrast(BreakPalette.light.accentOn(a), BreakPalette.light.canvas),
       greaterThan(contrast(a, BreakPalette.light.canvas)),
     );
+  });
+
+  test(
+    'custom countdown colors remain readable on light and dark surfaces',
+    () {
+      for (final palette in [BreakPalette.dark, BreakPalette.light]) {
+        for (final hex in [0xFF000000, 0xFFFAFAFA, 0xFF202530, 0x00444444]) {
+          final color = breakClockColor(
+            SettingsModel(clockFaceTextColorHex: hex),
+            palette,
+          );
+          expect(
+            breakContrast(color, palette.surface),
+            greaterThanOrEqualTo(4.5),
+          );
+        }
+      }
+    },
+  );
+
+  test('readable custom colors are preserved', () {
+    const color = Color(0xFFB6C8BC);
+    expect(breakReadableColor(color, BreakPalette.dark.surface), color);
   });
 
   group('overlay window defaults', () {

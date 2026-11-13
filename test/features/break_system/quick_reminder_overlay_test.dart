@@ -5,7 +5,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
 
 void main() {
@@ -42,7 +42,7 @@ void main() {
   Finder pillText(String type) {
     final variants = <String>{
       for (var seed = 0; seed < 200; seed++)
-        HealthReminderCopy.pill(type, Random(seed)),
+        HealthReminderMessages.pill(type, Random(seed)),
     };
     return find.byWidgetPredicate(
       (w) => w is Text && variants.contains(w.data),
@@ -112,7 +112,7 @@ void main() {
   ) async {
     await pumpReminder(tester, reminderType: 'posture', allowFullPoster: true);
 
-    expect(find.text('Watch your posture!'), findsOneWidget);
+    expect(find.text('Sit up'), findsOneWidget);
     // Icon names what the reminder is about, not the app's own logo.
     expect(find.byIcon(Icons.accessibility_new_rounded), findsOneWidget);
     // The poster has no 0.36-alpha pill container — it's full-bleed.
@@ -172,10 +172,10 @@ void main() {
       'standup',
     ]) {
       final pills = {
-        for (var s = 0; s < 100; s++) HealthReminderCopy.pill(type, Random(s)),
+        for (var s = 0; s < 100; s++) HealthReminderMessages.pill(type, Random(s)),
       };
       final lines = {
-        for (var s = 0; s < 100; s++) HealthReminderCopy.text(type, Random(s)),
+        for (var s = 0; s < 100; s++) HealthReminderMessages.text(type, Random(s)),
       };
       expect(pills.length, greaterThan(1), reason: '$type pill');
       expect(lines.length, greaterThan(1), reason: '$type text');
