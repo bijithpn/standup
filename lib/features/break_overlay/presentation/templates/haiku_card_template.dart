@@ -52,15 +52,15 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
   final _MountainCache _mountains = _MountainCache();
 
   static const _washi = BreakPalette(
-    canvas: Color(0xFFEFE6D2),
-    canvasRaised: Color(0xFFF4ECDA),
-    surface: Color(0xFFF4ECDA),
-    border: Color(0x261B1A17),
-    track: Color(0x331B1A17),
-    textPrimary: Color(0xFF1B1A17),
-    textSecondary: Color(0xFF4A463E),
-    textMuted: Color(0xFF6B665B),
-    isDark: false,
+    canvas: Color(0xFF202724),
+    canvasRaised: Color(0xFF29322C),
+    surface: Color(0xFF29322C),
+    border: Color(0x426B746B),
+    track: Color(0x426B746B),
+    textPrimary: Color(0xFFDFE4D8),
+    textSecondary: Color(0xFFBBC7B7),
+    textMuted: Color(0xFFA3B29E),
+    isDark: true,
   );
   static const _vermilion = Color(0xFFC8402B);
 
@@ -114,11 +114,11 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
                         scale: false,
                         duration: const Duration(milliseconds: 900),
                         child: Padding(
-                          padding: EdgeInsets.only(left: 56.0 * i),
+                          padding: EdgeInsets.only(left: 0),
                           child: Text(
                             _poem[i],
                             style: BreakOverlayTheme.serif.copyWith(
-                              fontSize: 44,
+                              fontSize: 36,
                               fontWeight: FontWeight.w300,
                               fontStyle: FontStyle.italic,
                               height: 1.55,
@@ -142,7 +142,8 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
                   height: 124,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: seal,
+                    color: _washi.surface,
+                    border: Border.all(color: _washi.border),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Container(
@@ -165,7 +166,7 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
                       color: breakClockColor(
                         widget.settings,
                         _washi,
-                        fallback: _washi.canvas,
+                        fallback: _washi.textPrimary,
                       ),
                     ),
                   ),
@@ -223,10 +224,10 @@ class _MountainPainter extends CustomPainter {
   final Animation<double>? progress;
 
   static const _ridgeColors = [
-    Color(0xFFD9D2BE),
-    Color(0xFFB3B2A3),
-    Color(0xFF7C8582),
-    Color(0xFF3A413F),
+    Color(0xFF354038),
+    Color(0xFF2C3831),
+    Color(0xFF25312B),
+    Color(0xFF1A241F),
   ];
   final Paint _p = Paint();
 
@@ -236,7 +237,7 @@ class _MountainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     cache.build(size);
-    _p.color = const Color(0xFFE2CDA3);
+    _p.color = const Color(0xFF626951);
     canvas.drawCircle(
       Offset(size.width * 0.66, size.height * 0.5),
       size.height * 0.13,
@@ -253,7 +254,7 @@ class _MountainPainter extends CustomPainter {
         _p.shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0x00EFE6D2), const Color(0xB3EFE6D2)],
+          colors: [const Color(0x00202724), const Color(0xB3202724)],
         ).createShader(Rect.fromLTWH(0, top, size.width, size.height * 0.2));
         canvas.drawRect(
           Rect.fromLTWH(-20, top, size.width + 40, size.height * 0.2),

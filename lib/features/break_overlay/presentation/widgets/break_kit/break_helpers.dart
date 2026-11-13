@@ -83,13 +83,43 @@ Color breakAccent(
   );
 }
 
+/// Contrast after compositing translucent foregrounds on the actual surface.
+double breakContrast(Color foreground, Color background) {
+  final fg = Color.alphaBlend(foreground, background).computeLuminance();
+  final bg = background.computeLuminance();
+  return ((fg > bg ? fg : bg) + 0.05) / ((fg < bg ? fg : bg) + 0.05);
+}
+
+/// Preserve custom colors when readable; fall back to the template's ink.
+Color breakReadableColor(
+  Color color,
+  Color background, {
+  double minimum = 4.5,
+}) {
+  if (breakContrast(color, background) >= minimum) return color;
+  const light = Color(0xFFE2E5DD);
+  const dark = Color(0xFF202521);
+  final target =
+      breakContrast(light, background) > breakContrast(dark, background)
+      ? light
+      : dark;
+  for (var i = 1; i <= 20; i++) {
+    final candidate = Color.lerp(color.withValues(alpha: 1), target, i / 20)!;
+    if (breakContrast(candidate, background) >= minimum) return candidate;
+  }
+  return target;
+}
+
 Color breakClockColor(
   SettingsModel settings,
   BreakPalette palette, {
   Color? fallback,
-}) => settings.clockFaceTextColorHex != 0xFFFFFFFF
-    ? Color(settings.clockFaceTextColorHex)
-    : (fallback ?? palette.textPrimary);
+}) {
+  final requested = settings.clockFaceTextColorHex != 0xFFFFFFFF
+      ? Color(settings.clockFaceTextColorHex)
+      : (fallback ?? palette.textPrimary);
+  return breakReadableColor(requested, palette.surface);
+}
 
 bool breakCanSkip(SettingsModel settings, VoidCallback? onSkip) =>
     !settings.strictMode && onSkip != null;

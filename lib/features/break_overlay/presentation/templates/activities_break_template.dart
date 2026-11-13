@@ -36,21 +36,21 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate> {
   final FocusNode _controlFocus = FocusNode(debugLabel: 'activity switch');
 
   static const BreakPalette _lavender = BreakPalette(
-    canvas: Color(0xFFEDE7FF),
-    canvasRaised: Color(0xFFF6F2FF),
-    surface: Color(0xFFFFFFFF),
-    border: Color(0x1F3B2F8F),
-    track: Color(0x263B2F8F),
-    textPrimary: Color(0xFF2B2370),
-    textSecondary: Color(0xFF4B4290),
-    textMuted: Color(0xFF6B63A8),
-    isDark: false,
+    canvas: Color(0xFF1D202A),
+    canvasRaised: Color(0xFF272B38),
+    surface: Color(0xFF272B38),
+    border: Color(0x426B746B),
+    track: Color(0x426B746B),
+    textPrimary: Color(0xFFDFE2EB),
+    textSecondary: Color(0xFFBCC4D8),
+    textMuted: Color(0xFFA5AEC7),
+    isDark: true,
   );
 
   static const BreakPalette _stage = BreakPalette(
-    canvas: Color(0xFF2B2A6E),
-    canvasRaised: Color(0xFF35348A),
-    surface: Color(0xFF3B3A96),
+    canvas: Color(0xFF171C27),
+    canvasRaised: Color(0xFF222938),
+    surface: Color(0xFF222938),
     border: Color(0x33FFFFFF),
     track: Color(0x33FFFFFF),
     textPrimary: Color(0xFFF4F2FF),
@@ -62,7 +62,7 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate> {
   Color get _accent => BreakOverlayTheme.resolveAccent(
     widget.settings.templateAccentOverrides,
     'activities',
-    const Color(0xFF6C5CE7),
+    const Color(0xFFA6B4D4),
   );
 
   @override
@@ -109,7 +109,7 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate> {
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
-      background: const CustomPaint(painter: _BlobsPainter()),
+
       child: Padding(
         padding: const EdgeInsets.fromLTRB(72, 72, 72, 96),
         child: Row(
@@ -131,6 +131,20 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate> {
                     ),
                     color: breakClockColor(widget.settings, _lavender),
                   ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'A moment to reset',
+                    style: BreakOverlayTheme.title.copyWith(
+                      color: _lavender.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Choose a gentle exercise and follow at your own pace.',
+                    style: BreakOverlayTheme.body.copyWith(
+                      color: _lavender.textSecondary,
+                    ),
+                  ),
                   const Spacer(),
                   _buildSwitch(),
                 ],
@@ -143,10 +157,11 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: _stage.canvas,
-                    borderRadius: BorderRadius.circular(48),
+                    border: Border.all(color: _stage.border),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(48),
+                    borderRadius: BorderRadius.circular(20),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
@@ -253,8 +268,11 @@ class _Choice extends StatelessWidget {
             duration: BreakMotion.fast,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
             decoration: BoxDecoration(
-              color: selected ? accent : Colors.white.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(28),
+              color: selected
+                  ? accent.withValues(alpha: 0.12)
+                  : palette.surface,
+              border: Border.all(color: selected ? accent : palette.border),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,16 +281,14 @@ class _Choice extends StatelessWidget {
                   label,
                   style: BreakOverlayTheme.title.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: selected ? Colors.white : palette.textPrimary,
+                    color: palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   hint,
                   style: BreakOverlayTheme.body.copyWith(
-                    color: selected
-                        ? Colors.white.withValues(alpha: 0.85)
-                        : palette.textMuted,
+                    color: palette.textSecondary,
                   ),
                 ),
               ],
@@ -282,41 +298,4 @@ class _Choice extends StatelessWidget {
       ),
     );
   }
-}
-
-class _BlobsPainter extends CustomPainter {
-  const _BlobsPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFEDE7FF), Color(0xFFC9D3FF)],
-        ).createShader(Offset.zero & size),
-    );
-    void blob(Offset c, double r, Color color) =>
-        canvas.drawCircle(c, r, Paint()..color = color);
-    blob(
-      Offset(size.width * 0.04, size.height * 0.92),
-      260,
-      const Color(0x66B7A6F5),
-    );
-    blob(
-      Offset(size.width * 0.96, size.height * 0.04),
-      200,
-      const Color(0x66FFFFFF),
-    );
-    blob(
-      Offset(size.width * 0.22, size.height * 0.34),
-      90,
-      const Color(0x40FFFFFF),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _BlobsPainter old) => false;
 }

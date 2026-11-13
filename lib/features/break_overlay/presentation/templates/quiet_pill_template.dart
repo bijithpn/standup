@@ -37,7 +37,8 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
   bool _pinned = false;
 
   // Expands on hover, keyboard focus, or when pinned open.
-  bool get _expanded => _hover || _focus || _pinned;
+  bool get _expanded =>
+      _hover || _focus || _pinned || BreakPreviewScope.isPreview(context);
 
   late final AnimationController _size = AnimationController.unbounded(
     vsync: this,
@@ -92,14 +93,16 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
     final pill = AnimatedBuilder(
       animation: _size,
       builder: (context, _) {
-        final t = _size.value;
+        final t = BreakPreviewScope.isPreview(context)
+            ? 1.0
+            : _size.value.clamp(0.0, 1.0);
         final w = 200 + 120 * t;
-        final h = 36 + 20 * t;
+        final h = 44 + 20 * t;
         return Opacity(
-          opacity: 0.7 + 0.3 * t.clamp(0.0, 1.0),
+          opacity: 1,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: _smoke.withValues(alpha: 0.82),
+              color: _smoke,
               borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
               border: Border.all(color: _mist.withValues(alpha: 0.10)),
             ),
@@ -141,19 +144,24 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                             child: const SizedBox.square(dimension: 6),
                           ),
                           const SizedBox(width: 10),
-                          BreakCountdown(
-                            seconds: widget.remainingSeconds,
-                            style: const TextStyle(
-                              fontFamily: BreakOverlayTheme.monoFamily,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              fontFeatures: BreakOverlayTheme.tabular,
-                              height: 1.0,
-                            ),
-                            color: breakClockColor(
-                              widget.settings,
-                              BreakPalette.dark,
-                              fallback: _mist,
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: BreakCountdown(
+                                seconds: widget.remainingSeconds,
+                                style: const TextStyle(
+                                  fontFamily: BreakOverlayTheme.monoFamily,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  fontFeatures: BreakOverlayTheme.tabular,
+                                  height: 1.0,
+                                ),
+                                color: breakClockColor(
+                                  widget.settings,
+                                  BreakPalette.dark,
+                                  fallback: _mist,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -164,16 +172,18 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                               softWrap: false,
                               overflow: TextOverflow.ellipsis,
                               style: BreakOverlayTheme.micro.copyWith(
-                                color: _mist.withValues(alpha: 0.55),
+                                color: _mist.withValues(alpha: 0.85),
                                 height: 1.0,
                               ),
                             ),
                           ),
-                          if (t > 0.6 && canSkip)
+                          if (canSkip) ...[
+                            const SizedBox(width: 8),
                             BreakSkipIcon(
                               onPressed: widget.onSkip!,
                               accent: _accent,
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -195,8 +205,10 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
       strictMode: widget.settings.strictMode,
       accent: _accent,
       child: BreakDraggable(
-        initialAnchor: Alignment.bottomCenter,
-        inset: 40,
+        initialAnchor: BreakPreviewScope.isPreview(context)
+            ? Alignment.center
+            : Alignment.bottomCenter,
+        inset: BreakPreviewScope.isPreview(context) ? 12 : 40,
         child: Semantics(
           container: true,
           label: 'Break timer, ${widget.remainingSeconds} seconds remaining',
@@ -228,7 +240,7 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                               constraints: const BoxConstraints(maxWidth: 320),
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: _smoke.withValues(alpha: 0.82),
+                                  color: _smoke,
                                   borderRadius: BorderRadius.circular(
                                     BreakOverlayTheme.radiusMd,
                                   ),

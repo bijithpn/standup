@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
@@ -35,33 +34,9 @@ class BreakAppearanceSettings extends StatefulWidget {
 }
 
 class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
-  void _selectAccentOverrideTemplate(String id) {
-    setState(() => _accentOverrideTemplateId = id);
-  }
-
-  static const _themeModeLabels = {
-    'dark': 'Dark',
-    'light': 'Light',
-    'system': 'Match system',
-  };
-
-  // Hovered card shows its live preview; selected id mirrors settings.breakTemplate.
   String? _hoveredId;
   String? _selectedTemplateId;
 
-  static const _overridableTemplates = [
-    (id: 'iris_rest', name: 'Iris Rest'),
-    (id: 'split_view', name: 'Split View'),
-    (id: 'breathe_line', name: 'Breathe Line'),
-    (id: 'activities', name: 'Activities'),
-    (id: 'companion', name: 'Companion'),
-    (id: 'minimal', name: 'Minimal Focus'),
-    (id: 'hud', name: 'Productivity HUD'),
-    (id: 'floating', name: 'Soft Floating'),
-    (id: 'quiet_pill', name: 'Quiet Pill'),
-    (id: 'zen', name: 'Zen Mode'),
-  ];
-  String _accentOverrideTemplateId = 'iris_rest';
   final ScrollController _gridScrollController = ScrollController();
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -101,14 +76,33 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionHeader('Break Templates'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+        Text(
+          'Make room for a better break.',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Choose a scene, preview the experience, and make it yours.',
+          style: TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 13,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (_selectedTemplateId != null) ...[
               Text(
-                'Selected: ',
+                'Selected · ',
                 style: TextStyle(
                   color: AppTheme.textSecondary.withValues(alpha: 0.6),
                   fontSize: 12,
@@ -135,16 +129,33 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             ],
             const Spacer(),
             Tooltip(
-              message: 'Preview Selected',
+              message: 'Preview selected template',
               child: MinimalButton(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 onPressed: () => _showBreakTemplatePreview(_selectedTemplateId),
-                child: Icon(
-                  CupertinoIcons.eye,
-                  size: 16,
-                  color: AppTheme.accentColor,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      CupertinoIcons.eye,
+                      size: 15,
+                      color: AppTheme.accentColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Preview',
+                      style: TextStyle(
+                        color: AppTheme.accentColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -154,9 +165,12 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                 final bool hasChanges =
                     _selectedTemplateId != widget.settings.breakTemplate;
                 return Tooltip(
-                  message: 'Update Template',
+                  message: 'Apply selected template',
                   child: MinimalButton(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     backgroundColor: AppTheme.accentColor,
                     disabledColor: AppTheme.accentColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -173,12 +187,28 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                             );
                           }
                         : null,
-                    child: Icon(
-                      CupertinoIcons.checkmark,
-                      size: 16,
-                      color: hasChanges
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.5),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.checkmark,
+                          size: 15,
+                          color: hasChanges
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Apply',
+                          style: TextStyle(
+                            color: hasChanges
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -253,8 +283,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         const SizedBox(height: 32),
         ..._buildColorsSection(context),
         const SizedBox(height: 32),
-        ..._buildAccentPinSection(context),
-        const SizedBox(height: 32),
         sectionHeader('Accessibility'),
         buildCard([
           toggleRow(
@@ -298,9 +326,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppTheme.accentColor
-                      : AppTheme.contentBackground.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(20),
+                      ? AppTheme.accentColor.withValues(alpha: 0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected
                         ? AppTheme.accentColor
@@ -311,7 +339,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                 child: Text(
                   category,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.textSecondary,
+                    color: isSelected
+                        ? AppTheme.accentColor
+                        : AppTheme.textSecondary,
                     fontSize: 12,
                     fontWeight: isSelected
                         ? FontWeight.w600
@@ -339,7 +369,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     }).toList();
 
     return Container(
-      height: 420,
+      height: 520,
       decoration: BoxDecoration(
         color: AppTheme.contentBackground.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
@@ -362,12 +392,24 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'No templates found matching "$_searchQuery"',
+                      'No matching templates',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppTheme.textSecondary.withValues(alpha: 0.5),
                         fontSize: 13,
                         fontFamily: 'Inter',
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _selectedCategory = 'All';
+                        });
+                      },
+                      child: const Text('Clear filters'),
                     ),
                   ],
                 ),
@@ -379,10 +421,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   controller: _gridScrollController,
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 220,
-                    mainAxisSpacing: 20,
+                    maxCrossAxisExtent: 300,
+                    mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
-                    mainAxisExtent: 195,
+                    mainAxisExtent: 264,
                   ),
                   itemCount: filteredTemplates.length,
                   itemBuilder: (context, index) {
@@ -412,141 +454,107 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   ) {
     final isHovered = _hoveredId == id;
 
+    final animationDuration = widget.settings.reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 160);
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredId = id),
       onExit: (_) => setState(() => _hoveredId = null),
       cursor: SystemMouseCursors.click,
       child: TapTarget(
+        semanticLabel: '$name. $description',
+        selected: isSelected,
         onTap: onTap,
-        child: SizedBox(
-          width: double.infinity,
+        child: AnimatedContainer(
+          duration: animationDuration,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.accentColor.withValues(alpha: 0.05)
+                : AppTheme.contentBackground,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? AppTheme.accentColor
+                  : isHovered
+                  ? AppTheme.textSecondary.withValues(alpha: 0.5)
+                  : AppTheme.borderColor,
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AnimatedScale(
-                scale: isHovered ? 1.02 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: double.infinity,
-                  height: 120,
-                  clipBehavior: Clip.none,
-                  decoration: BoxDecoration(
-                    color: AppTheme.contentBackground,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppTheme.accentColor
-                          : isHovered
-                          ? AppTheme.accentColor.withValues(alpha: 0.4)
-                          : AppTheme.borderColor.withValues(alpha: 0.6),
-                      width: isSelected ? 2.0 : 1.0,
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: ExcludeSemantics(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: _LiveTemplatePreview(
+                      id: id,
+                      settings: widget.settings,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withValues(
-                                alpha: 0.25,
-                              ),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : isHovered
-                        ? [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withValues(
-                                alpha: 0.1,
-                              ),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      _LiveTemplatePreview(id: id, settings: widget.settings),
-                      if (isSelected)
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Icon(
-                            CupertinoIcons.checkmark_circle_fill,
-                            color: AppTheme.accentColor,
-                            size: 18,
-                          ),
-                        ),
-                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Flexible(
-                    flex: 3,
-                    child: Text(
-                      name,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        color: isSelected
-                            ? AppTheme.accentColor
-                            : isHovered
-                            ? Colors.white
-                            : AppTheme.textPrimary.withValues(alpha: 0.9),
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w600,
-                        fontSize: 13,
-                        fontFamily: 'Inter',
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            isSelected
+                                ? CupertinoIcons.checkmark_circle_fill
+                                : CupertinoIcons.circle,
+                            size: 18,
+                            color: isSelected
+                                ? AppTheme.accentColor
+                                : AppTheme.textSecondary.withValues(alpha: 0.4),
+                          ),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                      const SizedBox(height: 6),
+                      Expanded(
+                        child: Text(
+                          description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                            height: 1.45,
+                          ),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.textSecondary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        category.toUpperCase(),
+                      const SizedBox(height: 8),
+                      Text(
+                        category,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: AppTheme.textSecondary,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
-                  fontSize: 11,
-                  height: 1.3,
-                  fontFamily: 'Inter',
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

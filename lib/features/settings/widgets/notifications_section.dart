@@ -57,8 +57,9 @@ class NotificationsSection extends StatelessWidget {
               divider(),
               toggleRow(
                 'Dismiss on mouse movement',
-                'Off: reminders stay for the full duration so they are easy '
-                    'to read. On: moving the mouse dismisses them.',
+                settings.dismissReminderOnMouseMove
+                    ? 'On: moving the mouse dismisses new reminders after a brief pause.'
+                    : 'Off: reminders stay visible for their full duration.',
                 settings.dismissReminderOnMouseMove,
                 (v) => onSave(settings.copyWith(dismissReminderOnMouseMove: v)),
               ),
@@ -144,11 +145,24 @@ class NotificationsSection extends StatelessWidget {
           for (final r in settings.customReminders) ...[
             ListTile(
               dense: true,
-              title: Text(r.title),
-              subtitle: Text('Every ${r.minutes} min'),
+              title: Text(
+                r.title,
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                'Every ${r.minutes} min',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
               trailing: IconButton(
                 tooltip: 'Remove',
-                icon: const Icon(CupertinoIcons.delete, size: 16),
+                icon: Icon(
+                  CupertinoIcons.delete,
+                  size: 16,
+                  color: AppTheme.textSecondary,
+                ),
                 onPressed: () => onSave(
                   settings.copyWith(
                     customReminders: [...settings.customReminders]..remove(r),
@@ -303,6 +317,7 @@ class _CustomReminderForm extends StatefulWidget {
 class _CustomReminderFormState extends State<_CustomReminderForm> {
   final _title = TextEditingController();
   final _minutes = TextEditingController(text: '60');
+  String? _error;
 
   @override
   void dispose() {
@@ -314,46 +329,132 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
   void _add() {
     final title = _title.text.trim();
     final minutes = int.tryParse(_minutes.text);
-    if (title.isEmpty || minutes == null || minutes < 1) return;
+    if (title.isEmpty || minutes == null || minutes < 1) {
+      setState(
+        () => _error = title.isEmpty
+            ? 'Enter a reminder message.'
+            : 'Enter an interval of at least 1 minute.',
+      );
+      return;
+    }
+    setState(() => _error = null);
     widget.onAdd(CustomReminder(title: title, minutes: minutes));
     _title.clear();
   }
 
+  InputDecoration _decoration(String label, {String? hint, String? suffix}) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(color: AppTheme.border),
+    );
+    return InputDecoration(
+      labelText: label,
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+      labelStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+      floatingLabelStyle: TextStyle(
+        color: AppTheme.textSecondary,
+        fontSize: 13,
+      ),
+      hintText: hint,
+      hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+      suffixText: suffix,
+      suffixStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+      filled: true,
+      fillColor: AppTheme.surfaceElevated,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+      enabledBorder: border,
+      border: border,
+      focusedBorder: border.copyWith(
+        borderSide: BorderSide(color: AppTheme.accentColor, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final style = TextStyle(
+      color: AppTheme.textPrimary,
+      fontSize: 14,
+      fontFamily: 'Inter',
+      height: 1.4,
+    );
+    final message = TextField(
+      controller: _title,
+      style: style,
+      cursorColor: AppTheme.accentColor,
+      decoration: _decoration(
+        'Reminder message',
+        hint: 'e.g. Rest your shoulders',
+      ),
+      onSubmitted: (_) => _add(),
+    );
+    final interval = SizedBox(
+      width: 124,
+      child: TextField(
+        controller: _minutes,
+        style: style.copyWith(fontFeatures: [FontFeature.tabularFigures()]),
+        cursorColor: AppTheme.accentColor,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        decoration: _decoration('Repeat every', suffix: 'min'),
+        onSubmitted: (_) => _add(),
+      ),
+    );
+    final add = OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppTheme.textPrimary,
+        backgroundColor: AppTheme.surfaceElevated,
+        side: BorderSide(color: AppTheme.border),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      icon: const Icon(CupertinoIcons.add, size: 16),
+      label: const Text('Add reminder'),
+      onPressed: _add,
+    );
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _title,
-              decoration: const InputDecoration(
-                hintText: 'Reminder text',
-                isDense: true,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 560) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    message,
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [interval, add],
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: message),
+                  const SizedBox(width: 12),
+                  interval,
+                  const SizedBox(width: 12),
+                  add,
+                ],
+              );
+            },
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                _error!,
+                style: TextStyle(color: AppTheme.textPrimary, fontSize: 12),
               ),
-              onSubmitted: (_) => _add(),
             ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 72,
-            child: TextField(
-              controller: _minutes,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                suffixText: 'min',
-                isDense: true,
-              ),
-              onSubmitted: (_) => _add(),
-            ),
-          ),
-          IconButton(
-            tooltip: 'Add',
-            icon: const Icon(CupertinoIcons.add_circled),
-            onPressed: _add,
-          ),
+          ],
         ],
       ),
     );

@@ -310,6 +310,9 @@ class SettingsRepository extends ChangeNotifier {
       eveningEyeCare: _storage.getBool('evening_eye_care'),
       focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
       blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      dismissReminderOnMouseMove: _storage.getBool(
+        'dismiss_reminder_on_mouse_move',
+      ),
       avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
@@ -580,6 +583,9 @@ class SettingsRepository extends ChangeNotifier {
       eveningEyeCare: _storage.getBool('evening_eye_care'),
       focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
       blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      dismissReminderOnMouseMove: _storage.getBool(
+        'dismiss_reminder_on_mouse_move',
+      ),
       avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
@@ -855,6 +861,10 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('overlay_theme_mode', settings.overlayThemeMode);
     await _storage.setString('breath_preset', settings.breathPreset);
     await _storage.setBool('break_chime_enabled', settings.breakChimeEnabled);
+    await _storage.setBool(
+      'dismiss_reminder_on_mouse_move',
+      settings.dismissReminderOnMouseMove,
+    );
     await _storage.setBool('reduce_motion', settings.reduceMotion);
     await _storage.setBool('evening_eye_care', settings.eveningEyeCare);
     await _storage.setBool('focus_dnd_enabled', settings.focusDndEnabled);

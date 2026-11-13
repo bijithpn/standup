@@ -222,6 +222,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
         fit: StackFit.expand,
         children: [
           ClipRect(child: photo),
+          const ColoredBox(color: Color(0x590A1012)),
           const Align(
             alignment: Alignment.topCenter,
             child: FractionallySizedBox(
@@ -275,8 +276,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                 children: [
                   Text(
                     widget.breakInfo.tip,
-                    style: BreakOverlayTheme.serif.copyWith(
-                      fontSize: 30,
+                    style: BreakOverlayTheme.body.copyWith(
+                      fontSize: 24,
                       height: 1.3,
                       color: BreakPalette.onPhoto.textPrimary,
                     ),
@@ -293,8 +294,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                     seconds: widget.remainingSeconds,
                     textAlign: TextAlign.left,
                     style: BreakOverlayTheme.hero.copyWith(
-                      fontSize: 168,
-                      fontWeight: FontWeight.w200,
+                      fontSize: 144,
+                      fontWeight: FontWeight.w300,
                       height: 0.95,
                       letterSpacing: -7,
                       fontFeatures: const [FontFeature.tabularFigures()],

@@ -176,8 +176,8 @@ class _SunsetPainter extends CustomPainter {
         colors: const [
           Color(0xFF2A1A4A),
           Color(0xFF7A3B73),
-          Color(0xFFD9627A),
-          Color(0xFFF5A85C),
+          Color(0xFF603E52),
+          Color(0xFF80634B),
         ],
         stops: const [0, 0.4, 0.7, 1],
       ).createShader(Rect.fromLTWH(0, 0, size.width, horizon));
@@ -188,7 +188,7 @@ class _SunsetPainter extends CustomPainter {
     p.shader = const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color(0xFFFFE3A8), Color(0xFFFFB566)],
+      colors: [Color(0xFFA99670), Color(0xFF9D7F57)],
     ).createShader(Rect.fromCircle(center: sun, radius: r));
     canvas.drawCircle(sun, r, p);
 

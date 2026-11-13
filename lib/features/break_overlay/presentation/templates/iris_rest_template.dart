@@ -136,7 +136,7 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
               child: Text(
                 'Eye rest',
                 style: BreakOverlayTheme.body.copyWith(
-                  color: accent,
+                  color: breakReadableColor(accent, palette.surface),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.2,
                 ),

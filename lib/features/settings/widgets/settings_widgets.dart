@@ -141,7 +141,7 @@ Widget inputRow(
                 Text(
                   value,
                   style: TextStyle(
-                    color: AppTheme.accentColor,
+                    color: AppTheme.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Inter',
@@ -429,7 +429,7 @@ void showPicker({
             width: 320,
             constraints: const BoxConstraints(maxHeight: 400),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppTheme.surfaceElevated,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.border),
               boxShadow: [
@@ -447,8 +447,8 @@ void showPicker({
                   padding: const EdgeInsets.all(20),
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       fontFamily: 'Inter',
@@ -462,7 +462,7 @@ void showPicker({
                     separatorBuilder: (context, index) => Divider(
                       height: 1,
                       thickness: 0.5,
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: AppTheme.borderSubtle,
                     ),
                     itemBuilder: (context, index) {
                       final opt = options[index];
@@ -497,7 +497,10 @@ void showPicker({
                   child: MinimalButton(
                     isSecondary: true,
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: AppTheme.textPrimary),
+                    ),
                   ),
                 ),
               ],

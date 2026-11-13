@@ -29,7 +29,12 @@ class BreakCountdown extends StatelessWidget {
         breakFormatTime(seconds),
         textAlign: textAlign,
         maxLines: 1,
-        style: base.copyWith(color: color ?? palette.textPrimary),
+        style: base.copyWith(
+          color: breakReadableColor(
+            color ?? palette.textPrimary,
+            palette.surface,
+          ),
+        ),
       ),
     );
   }
@@ -54,7 +59,7 @@ class BreakLabel extends StatelessWidget {
       text.toUpperCase(),
       textAlign: textAlign,
       style: BreakOverlayTheme.micro.copyWith(
-        color: color ?? palette.textMuted,
+        color: breakReadableColor(color ?? palette.textMuted, palette.surface),
       ),
     );
   }
@@ -83,7 +88,10 @@ class BreakTip extends StatelessWidget {
         text,
         textAlign: textAlign,
         style: BreakOverlayTheme.body.copyWith(
-          color: color ?? palette.textSecondary,
+          color: breakReadableColor(
+            color ?? palette.textSecondary,
+            palette.surface,
+          ),
         ),
       ),
     );

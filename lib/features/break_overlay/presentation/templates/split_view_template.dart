@@ -4,20 +4,19 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-const _sage = Color(0xFF6E9479);
 const _cream = Color(0xFFF7F1E3);
 const _forest = Color(0xFF1F3A2D);
 
 const _paper = BreakPalette(
-  canvas: _cream,
-  canvasRaised: Color(0xFFEFE7D4),
-  surface: Color(0xFFEFE7D4),
-  border: Color(0x2E1F3A2D),
-  track: Color(0x33F7F1E3),
-  textPrimary: _forest,
-  textSecondary: Color(0xFF3F5A4B),
-  textMuted: Color(0xFF6B7F72),
-  isDark: false,
+  canvas: Color(0xFF1C2622),
+  canvasRaised: Color(0xFF26332C),
+  surface: Color(0xFF26332C),
+  border: Color(0x426B746B),
+  track: Color(0x426B746B),
+  textPrimary: Color(0xFFDEE5DA),
+  textSecondary: Color(0xFFBDCCBB),
+  textMuted: Color(0xFFA3B69F),
+  isDark: true,
 );
 
 class SplitViewTemplate extends StatelessWidget {
@@ -43,7 +42,7 @@ class SplitViewTemplate extends StatelessWidget {
     final accent = BreakOverlayTheme.resolveAccent(
       settings.templateAccentOverrides,
       'split_view',
-      _cream,
+      palette.textPrimary,
     );
     final progress = breakProgress(remainingSeconds, totalSeconds);
     final complete = breakIsComplete(context, remainingSeconds, totalSeconds);
@@ -94,7 +93,7 @@ class SplitViewTemplate extends StatelessWidget {
                       color: breakClockColor(
                         settings,
                         palette,
-                        fallback: _cream,
+                        fallback: palette.textPrimary,
                       ),
                     ),
                   ),
@@ -120,7 +119,7 @@ class SplitViewTemplate extends StatelessWidget {
                       style: BreakOverlayTheme.serif.copyWith(
                         fontSize: 22,
                         fontStyle: FontStyle.italic,
-                        color: _sage,
+                        color: palette.textSecondary,
                       ),
                     ),
                     if (breakInfo.tip.isNotEmpty) ...[
@@ -130,7 +129,7 @@ class SplitViewTemplate extends StatelessWidget {
                         child: Text(
                           breakInfo.tip,
                           style: BreakOverlayTheme.serif.copyWith(
-                            fontSize: 42,
+                            fontSize: 32,
                             height: 1.22,
                             letterSpacing: -0.8,
                             color: palette.textPrimary,
@@ -158,7 +157,10 @@ class SplitViewTemplate extends StatelessWidget {
 class _FieldPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = _sage);
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFF24392F),
+    );
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2

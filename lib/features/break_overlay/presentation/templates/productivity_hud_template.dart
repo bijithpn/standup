@@ -4,15 +4,15 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-const _slate = Color(0xFF1E2A36);
-const _coral = Color(0xFFFF6B57);
+const _slate = Color(0xFF161C24);
+const _coral = Color(0xFF94B8AD);
 
 const _hudPalette = BreakPalette(
   canvas: _slate,
-  canvasRaised: Color(0xFF2A3947),
-  surface: Color(0xFF2A3947),
-  border: Color(0x33FFFFFF),
-  track: Color(0x2E1E2A36),
+  canvasRaised: Color(0xFF1E2630),
+  surface: Color(0xFF1E2630),
+  border: Color(0x18FFFFFF),
+  track: Color(0x20FFFFFF),
   textPrimary: Color(0xFFF6F1EA),
   textSecondary: Color(0xFFB4C0CC),
   textMuted: Color(0xFF8394A5),
@@ -52,124 +52,90 @@ class ProductivityHudTemplate extends StatelessWidget {
       palette: palette,
       onSkip: onSkip,
       strictMode: settings.strictMode,
-      accent: _slate,
-      background: Align(
-        alignment: Alignment.bottomCenter,
-        child: FractionallySizedBox(
-          heightFactor: 0.52,
-          widthFactor: 1,
-          child: ColoredBox(color: accent),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 88,
-            top: 128,
-            child: BreakEntrance(
-              scale: false,
-              child: Text(
-                kind.label,
-                style: BreakOverlayTheme.hero.copyWith(
-                  fontSize: 72,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -3,
-                  color: palette.textPrimary,
-                ),
-              ),
+      accent: accent,
+      child: Center(
+        child: BreakEntrance(
+          scale: false,
+          child: Container(
+            width: 760,
+            padding: const EdgeInsets.all(56),
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: palette.border),
             ),
-          ),
-          if (showTip)
-            Positioned(
-              left: 92,
-              top: 228,
-              width: 520,
-              child: BreakEntrance(
-                delay: BreakEntrance.stagger(1),
-                scale: false,
-                child: Text(
-                  breakInfo.tip,
-                  style: BreakOverlayTheme.serif.copyWith(
-                    fontSize: 24,
-                    height: 1.45,
-                    color: palette.textSecondary,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      kind.label,
+                      style: BreakOverlayTheme.title.copyWith(
+                        color: palette.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      breakDurationLabel(totalSeconds),
+                      style: BreakOverlayTheme.body.copyWith(
+                        color: palette.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 48),
+                BreakCompletionPulse(
+                  complete: complete,
+                  child: BreakCountdown(
+                    seconds: remainingSeconds,
+                    textAlign: TextAlign.left,
+                    style: BreakOverlayTheme.hero.copyWith(
+                      fontSize: 144,
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: -6,
+                    ),
+                    color: breakClockColor(settings, palette),
                   ),
                 ),
-              ),
-            ),
-          Positioned(
-            right: 88,
-            top: 112,
-            child: BreakEntrance(
-              delay: BreakEntrance.stagger(1),
-              scale: false,
-              child: Text(
-                '${(progress * 100).round()}%',
-                style: BreakOverlayTheme.hero.copyWith(
-                  fontSize: 96,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -4,
-                  color: accent,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 384,
-            child: BreakEntrance(
-              delay: BreakEntrance.stagger(2),
-              scale: false,
-              child: Semantics(
-                label: '${kind.label} progress',
-                value: '${(progress * 100).round()}%',
-                child: BreakSmoothProgress(
-                  progress: progress,
-                  builder: (context, anim) => AnimatedBuilder(
-                    animation: anim,
-                    builder: (context, _) => SizedBox(
-                      height: 16,
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: ColoredBox(color: palette.track),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: anim.value.clamp(0.0, 1.0),
-                            heightFactor: 1,
-                            child: const ColoredBox(color: _slate),
-                          ),
-                        ],
-                      ),
+                const SizedBox(height: 32),
+                Semantics(
+                  label: '${kind.label} progress',
+                  value: '${(progress * 100).round()}%',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      color: accent,
+                      backgroundColor: palette.track,
                     ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 72,
-            bottom: 8,
-            child: BreakEntrance(
-              delay: BreakEntrance.stagger(3),
-              scale: false,
-              child: BreakCompletionPulse(
-                complete: complete,
-                child: BreakCountdown(
-                  seconds: remainingSeconds,
-                  style: BreakOverlayTheme.hero.copyWith(
-                    fontSize: 300,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -14,
+                if (showTip) ...[
+                  const SizedBox(height: 28),
+                  Text(
+                    breakInfo.tip,
+                    style: BreakOverlayTheme.body.copyWith(
+                      fontSize: 18,
+                      color: palette.textSecondary,
+                    ),
                   ),
-                  textAlign: TextAlign.left,
-                  color: breakClockColor(settings, palette, fallback: _slate),
-                ),
-              ),
+                ],
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -15,13 +15,13 @@ const _charcoal = BreakPalette(
   track: Color(0x33FFFFFF),
   textPrimary: Color(0xFFF3EDDD),
   textSecondary: Color(0xFFC5BFB0),
-  textMuted: Color(0xFF8C8F94),
+  textMuted: Color(0xFFA2A8A4),
   isDark: true,
 );
 
-const _ivory = Color(0xFFF4EEDC);
-const _navy = Color(0xFF1B2A4A);
-const _lacquer = Color(0xFFC8452D);
+const _ivory = Color(0xFF252C2C);
+const _navy = Color(0xFFC5CFC5);
+const _lacquer = Color(0xFFC49A7F);
 
 /// Break template: analog dial whose second hand tracks break progress, next to the current wall-clock time.
 class ClockFaceTemplate extends StatefulWidget {
@@ -131,7 +131,7 @@ class _ClockFaceTemplateState extends State<ClockFaceTemplate> {
                             top: _size / 2 + 78,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: _navy,
+                                color: palette.canvas,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Padding(
@@ -219,7 +219,7 @@ class _DialPainter extends CustomPainter {
     final c = size.center(Offset.zero);
     const r = 300.0;
 
-    _fill.color = const Color(0xFF8E8F91);
+    _fill.color = const Color(0xFF4A5451);
     canvas.drawCircle(c, r + 14, _fill);
     _fill.color = const Color(0xFF3A3D43);
     canvas.drawCircle(c, r + 8, _fill);

@@ -50,13 +50,15 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
           height: 120,
           child: LayoutBuilder(
             builder: (context, c) {
-              const designWidth = 1280.0;
+              final compact =
+                  widget.id == 'quiet_pill' || widget.id == 'floating';
+              final designWidth = compact ? 380.0 : 1280.0;
               final aspect = c.maxHeight / c.maxWidth;
               return FittedBox(
-                fit: BoxFit.fill,
+                fit: compact ? BoxFit.contain : BoxFit.fill,
                 child: SizedBox(
                   width: designWidth,
-                  height: designWidth * aspect,
+                  height: compact ? 220 : designWidth * aspect,
                   child: BreakPreviewScope(
                     child: BreakTemplateSwitcher(
                       breakTemplate: widget.id,

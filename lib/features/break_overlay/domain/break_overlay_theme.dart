@@ -229,7 +229,7 @@ abstract final class BreakOverlayTheme {
   static const TextStyle hero = TextStyle(
     fontFamily: fontFamily,
     fontSize: 64,
-    fontWeight: FontWeight.w200,
+    fontWeight: FontWeight.w300,
     letterSpacing: -2,
     height: 1.0,
     fontFeatures: tabular,
@@ -244,7 +244,7 @@ abstract final class BreakOverlayTheme {
   static const TextStyle title = TextStyle(
     fontFamily: fontFamily,
     fontSize: 20,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     fontFeatures: tabular,
   );
   static const TextStyle body = TextStyle(
@@ -266,7 +266,7 @@ abstract final class BreakOverlayTheme {
   );
 
   static const List<BoxShadow> surfaceShadow = [
-    BoxShadow(color: Color(0x47000000), blurRadius: 32, offset: Offset(0, 12)),
+    BoxShadow(color: Color(0x24000000), blurRadius: 24, offset: Offset(0, 8)),
   ];
   static const double glassBlur = 20;
 

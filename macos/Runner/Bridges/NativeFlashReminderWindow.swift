@@ -4,12 +4,16 @@ public class NativeFlashReminderWindow: NSObject {
     public static let shared = NativeFlashReminderWindow()
     private var flashWindows: [NSWindow] = []
     private var generation = 0
-    private var mouseMonitor: Any?
+    private var mouseMovementTimer: Timer?
+    private var isDismissing = false
     
     public func triggerFlash(text: String, durationMs: Int = 250, opacity: CGFloat = 0.35, colorHex: String = "#000000", dismissOnMouseMove: Bool = false) {
         dismissAll()
         generation += 1
         let current = generation
+        isDismissing = false
+        let initialMouseLocation = NSEvent.mouseLocation
+        let shownAt = ProcessInfo.processInfo.systemUptime
         
         let active = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
         for screen in [active].compactMap({ $0 }) {
@@ -77,30 +81,47 @@ public class NativeFlashReminderWindow: NSObject {
                 window.animator().alphaValue = 1.0
             }
         }, completionHandler: {
+            guard self.generation == current, !self.isDismissing else { return }
             let fadeOut = { [weak self] in
-                guard let self, self.generation == current, !self.flashWindows.isEmpty else { return }
+                guard let self, self.generation == current, !self.isDismissing, !self.flashWindows.isEmpty else { return }
+                self.isDismissing = true
+                self.mouseMovementTimer?.invalidate()
+                self.mouseMovementTimer = nil
                 NSAnimationContext.runAnimationGroup({ context in
                     context.duration = 0.12
                     for window in self.flashWindows {
                         window.animator().alphaValue = 0.0
                     }
                 }, completionHandler: {
+                    guard self.generation == current else { return }
                     self.dismissAll()
                 })
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(durationMs) / 1000.0, execute: fadeOut)
             if dismissOnMouseMove {
-                // Short grace period so the text is readable before the first twitch dismisses it.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-                    guard let self, self.generation == current else { return }
-                    self.mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .keyDown]) { _ in fadeOut() }
+                // Polling also observes movement over our own windows and does not
+                // depend on permission to monitor another application's input.
+                let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] timer in
+                    guard let self, self.generation == current else {
+                        timer.invalidate()
+                        return
+                    }
+                    guard ProcessInfo.processInfo.systemUptime - shownAt >= 0.35 else { return }
+                    let position = NSEvent.mouseLocation
+                    if hypot(position.x - initialMouseLocation.x,
+                             position.y - initialMouseLocation.y) >= 3 {
+                        fadeOut()
+                    }
                 }
+                self.mouseMovementTimer = timer
+                RunLoop.main.add(timer, forMode: .common)
             }
         })
     }
     
     private func dismissAll() {
-        if let m = mouseMonitor { NSEvent.removeMonitor(m); mouseMonitor = nil }
+        mouseMovementTimer?.invalidate()
+        mouseMovementTimer = nil
         for window in flashWindows {
             window.orderOut(nil)
         }

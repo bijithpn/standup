@@ -5,15 +5,15 @@ import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 const _sand = BreakPalette(
-  canvas: Color(0xFFEBDCC0),
-  canvasRaised: Color(0xFFF3E8D2),
-  surface: Color(0xFFF3E8D2),
-  border: Color(0x403B2314),
-  track: Color(0x403B2314),
-  textPrimary: Color(0xFF3B2314),
-  textSecondary: Color(0xFF4F3322),
-  textMuted: Color(0xFF5E4331),
-  isDark: false,
+  canvas: Color(0xFF26221F),
+  canvasRaised: Color(0xFF302A26),
+  surface: Color(0xFF302A26),
+  border: Color(0x426B746B),
+  track: Color(0x426B746B),
+  textPrimary: Color(0xFFE4DCD2),
+  textSecondary: Color(0xFFC7B9AB),
+  textMuted: Color(0xFFB3A596),
+  isDark: true,
 );
 const _clay = Color(0xFFC0623B);
 
@@ -50,15 +50,11 @@ class OneWordTemplate extends StatelessWidget {
       palette: palette,
       background: Align(
         alignment: Alignment.bottomCenter,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(end: progress),
-          duration: const Duration(seconds: 1),
-          curve: Curves.linear,
-          builder: (context, p, _) => FractionallySizedBox(
-            heightFactor: p,
-            widthFactor: 1,
-            child: ColoredBox(color: accent, child: const SizedBox.expand()),
-          ),
+        child: LinearProgressIndicator(
+          value: progress,
+          minHeight: 3,
+          color: accent,
+          backgroundColor: palette.track,
         ),
       ),
       child: Stack(
@@ -81,10 +77,10 @@ class OneWordTemplate extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 130,
+            top: 200,
             left: 60,
             right: 60,
-            height: 440,
+            height: 300,
             child: BreakEntrance(
               scale: false,
               duration: const Duration(milliseconds: 1200),
@@ -99,9 +95,9 @@ class OneWordTemplate extends StatelessWidget {
                       word,
                       maxLines: 1,
                       style: BreakOverlayTheme.serif.copyWith(
-                        fontSize: 400,
+                        fontSize: 200,
                         height: 1.0,
-                        letterSpacing: -12,
+                        letterSpacing: -5,
                         color: palette.textPrimary,
                       ),
                     ),

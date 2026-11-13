@@ -76,7 +76,7 @@ class _SoftFloatingWidgetTemplateState
       palette: _warm,
       child: BreakGlass(
         radius: BreakOverlayTheme.radiusLg,
-        fillAlpha: 0.78,
+        fillAlpha: 0.96,
         borderColor: _apricot.withValues(alpha: 0.22),
         shadow: false,
         child: SizedBox(
@@ -99,34 +99,42 @@ class _SoftFloatingWidgetTemplateState
                             textAlign: TextAlign.left,
                           ),
                           const SizedBox(height: 4),
-                          BreakCountdown(
-                            seconds: widget.remainingSeconds,
-                            style: const TextStyle(
-                              fontFamily: BreakOverlayTheme.serifFamily,
-                              fontSize: 38,
-                              fontWeight: FontWeight.w300,
-                              fontFeatures: BreakOverlayTheme.tabular,
-                              height: 1.0,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: BreakCountdown(
+                              seconds: widget.remainingSeconds,
+                              style: const TextStyle(
+                                fontFamily: BreakOverlayTheme.serifFamily,
+                                fontSize: 38,
+                                fontWeight: FontWeight.w300,
+                                fontFeatures: BreakOverlayTheme.tabular,
+                                height: 1.0,
+                              ),
+                              color: breakClockColor(
+                                widget.settings,
+                                BreakPalette.dark,
+                                fallback: _cream,
+                              ),
+                              textAlign: TextAlign.left,
                             ),
-                            color: breakClockColor(
-                              widget.settings,
-                              BreakPalette.dark,
-                              fallback: _cream,
-                            ),
-                            textAlign: TextAlign.left,
                           ),
                         ],
                       ),
                     ),
-                    if (canSkip)
+                    if (canSkip) ...[
+                      const SizedBox(width: 12),
                       BreakSkipIcon(onPressed: widget.onSkip!, accent: _accent),
+                    ],
                   ],
                 ),
                 AnimatedSize(
                   duration: BreakMotion.fast,
                   curve: BreakMotion.enter,
                   alignment: Alignment.topCenter,
-                  child: _hovered && showTip
+                  child:
+                      (_hovered || BreakPreviewScope.isPreview(context)) &&
+                          showTip
                       ? Padding(
                           padding: const EdgeInsets.only(top: 12, right: 8),
                           child: Text(
@@ -181,7 +189,10 @@ class _SoftFloatingWidgetTemplateState
       strictMode: widget.settings.strictMode,
       accent: _accent,
       child: BreakDraggable(
-        initialAnchor: SoftFloatingWidgetTemplate.lastAnchor,
+        initialAnchor: BreakPreviewScope.isPreview(context)
+            ? Alignment.center
+            : SoftFloatingWidgetTemplate.lastAnchor,
+        inset: BreakPreviewScope.isPreview(context) ? 12 : 32,
         onAnchorChanged: (a) => SoftFloatingWidgetTemplate.lastAnchor = a,
         child: Semantics(
           container: true,

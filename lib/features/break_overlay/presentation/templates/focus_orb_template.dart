@@ -16,7 +16,6 @@ const _night = BreakPalette(
   textMuted: Color(0xFFA9ADDD),
   isDark: true,
 );
-const _ink = Color(0xFF1A1440);
 const _sun = Color(0xFFFF9E6B);
 
 /// Break template: a softly pulsing sun orb over a night sky, with a progress ring.
@@ -112,7 +111,7 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
                   color: breakClockColor(
                     widget.settings,
                     _night,
-                    fallback: _ink,
+                    fallback: _night.textPrimary,
                   ),
                 ),
               ),
@@ -196,15 +195,12 @@ class _OrbPainter extends CustomPainter {
     final eased = Curves.easeInOutSine.transform(breath.value);
     final radius = size.width / 2 * (0.94 + 0.06 * eased);
     final center = size.center(Offset.zero);
-    final rim = Color.lerp(color, const Color(0xFFD23F8B), 0.7)!;
+    final muted = Color.lerp(_night.canvas, color, 0.28)!;
+    final rim = Color.lerp(_night.canvas, color, 0.12)!;
     _fill.shader = RadialGradient(
       center: const Alignment(-0.3, -0.35),
       radius: 1.05,
-      colors: [
-        Color.lerp(color, const Color(0xFFFFF3D6), 0.75 + 0.25 * finish)!,
-        color,
-        rim,
-      ],
+      colors: [Color.lerp(muted, const Color(0xFF474A50), finish)!, muted, rim],
       stops: const [0, 0.55, 1],
     ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, _fill);

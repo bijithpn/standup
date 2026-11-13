@@ -35,13 +35,17 @@ class BreakOverlayContent extends StatelessWidget {
     required this.onLookedAway,
   });
 
+  bool get _isCompactTemplate =>
+      config.breakTemplate == 'quiet_pill' ||
+      config.breakTemplate == 'floating';
+
   // Wind-down template draws its own header, so the shared pill/buttons are hidden.
   bool get _templateOwnsChrome {
     final isWindDown =
         config.title.toUpperCase().contains('WIND DOWN') ||
         (config.breakType == 'windDown') ||
         config.breakTemplate == 'wind_down';
-    return isWindDown;
+    return isWindDown || _isCompactTemplate;
   }
 
   @override
@@ -63,6 +67,7 @@ class BreakOverlayContent extends StatelessWidget {
     } else {
       content = OverlayChrome(
         templateOwnsChrome: _templateOwnsChrome,
+        compactControls: _isCompactTemplate,
         isInternalPreview: config.isPreview,
         canDismiss: canDismiss,
         breakInfo: breakInfo,
@@ -85,7 +90,7 @@ class BreakOverlayContent extends StatelessWidget {
               settings: settings,
               remaining: remaining,
               total: config.durationSeconds,
-              onSkip: null,
+              onSkip: _isCompactTemplate && canDismiss ? onSkip : null,
               currentTemplate: currentTemplate,
               kenBurnsController: kenBurnsController,
               exerciseTitle: config.exerciseTitle,

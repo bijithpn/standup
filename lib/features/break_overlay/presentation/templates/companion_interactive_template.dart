@@ -60,15 +60,15 @@ class _CompanionInteractiveTemplateState
   Timer? _tipTimer;
 
   static const BreakPalette _mint = BreakPalette(
-    canvas: Color(0xFFD7F2E6),
-    canvasRaised: Color(0xFFE8F8F0),
-    surface: Color(0xFFFFFFFF),
-    border: Color(0x1F0F4A3A),
-    track: Color(0x260F4A3A),
-    textPrimary: Color(0xFF0F4A3A),
-    textSecondary: Color(0xFF1F6B55),
-    textMuted: Color(0xFF3F7F6B),
-    isDark: false,
+    canvas: Color(0xFF1C2823),
+    canvasRaised: Color(0xFF26382F),
+    surface: Color(0xFF26382F),
+    border: Color(0x426B746B),
+    track: Color(0x426B746B),
+    textPrimary: Color(0xFFDCE6DC),
+    textSecondary: Color(0xFFB8CEBE),
+    textMuted: Color(0xFFA1BAA9),
+    isDark: true,
   );
 
   Color get _accent => BreakOverlayTheme.resolveAccent(
@@ -358,7 +358,7 @@ class _RoomPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFBFEBD8), Color(0xFFE3F6EC)],
+          colors: [Color(0xFF1C2823), Color(0xFF25352D)],
         ).createShader(Rect.fromLTWH(0, 0, w, floorY)),
     );
 
@@ -372,7 +372,7 @@ class _RoomPainter extends CustomPainter {
     );
     canvas.drawRRect(
       winRRect.inflate(math.max(4, w * 0.008)),
-      Paint()..color = Colors.white,
+      Paint()..color = const Color(0xFF3B5144),
     );
     canvas.drawRRect(
       winRRect,
@@ -380,11 +380,11 @@ class _RoomPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFBDE3FF), Color(0xFFFFF3D6)],
+          colors: [Color(0xFF263D49), Color(0xFF384B4A)],
         ).createShader(win),
     );
     final mullion = Paint()
-      ..color = Colors.white
+      ..color = const Color(0xFF3B5144)
       ..strokeWidth = math.max(3, w * 0.005);
     canvas.drawLine(win.topCenter, win.bottomCenter, mullion);
     canvas.drawLine(
@@ -399,7 +399,7 @@ class _RoomPainter extends CustomPainter {
       ..lineTo(win.right - w * 0.22, h)
       ..lineTo(win.left - w * 0.34, h)
       ..close();
-    canvas.drawPath(beam, Paint()..color = const Color(0x59FFF6DA));
+    canvas.drawPath(beam, Paint()..color = const Color(0x107C9A83));
 
     final floor = Rect.fromLTRB(0, floorY, w, h);
     canvas.drawRect(
@@ -408,7 +408,7 @@ class _RoomPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFFF1D9B5), Color(0xFFE6C597)],
+          colors: [Color(0xFF302E28), Color(0xFF252923)],
         ).createShader(floor),
     );
     final plank = Paint()
@@ -422,7 +422,7 @@ class _RoomPainter extends CustomPainter {
       Offset(0, floorY),
       Offset(w, floorY),
       Paint()
-        ..color = Colors.white
+        ..color = const Color(0xFF3B5144)
         ..strokeWidth = math.max(3, h * 0.008),
     );
 
@@ -432,7 +432,7 @@ class _RoomPainter extends CustomPainter {
         width: w * 0.36,
         height: h * 0.12,
       ),
-      Paint()..color = const Color(0xFF8FD3B6),
+      Paint()..color = const Color(0xFF344B3B),
     );
   }
 

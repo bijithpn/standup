@@ -4,18 +4,18 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-const _plum = Color(0xFF3B1F3E);
+const _plum = Color(0xFFC3ADCB);
 
 const _print = BreakPalette(
-  canvas: Color(0xFFF7F0E1),
-  canvasRaised: Color(0xFFEFE5D0),
-  surface: Color(0xFFEFE5D0),
-  border: Color(0x2E3B1F3E),
-  track: Color(0x333B1F3E),
-  textPrimary: _plum,
-  textSecondary: Color(0xFF5E4361),
-  textMuted: Color(0xFF9A8A99),
-  isDark: false,
+  canvas: Color(0xFF242128),
+  canvasRaised: Color(0xFF302A34),
+  surface: Color(0xFF302A34),
+  border: Color(0x426B746B),
+  track: Color(0x426B746B),
+  textPrimary: Color(0xFFE3DCE7),
+  textSecondary: Color(0xFFC5B9CC),
+  textMuted: Color(0xFFB1A3B9),
+  isDark: true,
 );
 
 /// Break template: splits the tip into up to four steps and highlights each as progress advances.
@@ -69,7 +69,11 @@ class StepGuideTemplate extends StatelessWidget {
     final steps = _steps(BreakPreviewScope.isPreview(context));
     final n = steps.length;
 
-    final active = complete ? n : (progress * n).floor().clamp(0, n - 1);
+    final active = n == 0
+        ? 0
+        : complete
+        ? n
+        : (progress * n).floor().clamp(0, n - 1);
 
     return BreakScaffold(
       palette: palette,
@@ -86,7 +90,7 @@ class StepGuideTemplate extends StatelessWidget {
               child: Text(
                 kind.label,
                 style: BreakOverlayTheme.serif.copyWith(
-                  fontSize: 28,
+                  fontSize: 24,
                   fontStyle: FontStyle.italic,
                   color: palette.textSecondary,
                 ),
@@ -133,6 +137,7 @@ class StepGuideTemplate extends StatelessWidget {
                   excludeSemantics: true,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
+                      color: i == active ? palette.surface : Colors.transparent,
                       border: Border(
                         top: BorderSide(
                           color: i == 0 ? _plum : palette.border,
@@ -143,14 +148,16 @@ class StepGuideTemplate extends StatelessWidget {
                     child: Row(
                       children: [
                         SizedBox(
-                          width: 88,
+                          width: 64,
                           child: AnimatedDefaultTextStyle(
                             duration: BreakMotion.medium,
                             style: BreakOverlayTheme.serif.copyWith(
-                              fontSize: 64,
+                              fontSize: 32,
                               fontWeight: FontWeight.w300,
                               fontStyle: FontStyle.italic,
-                              color: i == active ? accent : palette.textMuted,
+                              color: i == active
+                                  ? breakReadableColor(accent, palette.surface)
+                                  : palette.textMuted,
                             ),
                             child: Text('${i + 1}'),
                           ),
@@ -159,7 +166,7 @@ class StepGuideTemplate extends StatelessWidget {
                           child: AnimatedDefaultTextStyle(
                             duration: BreakMotion.medium,
                             style: BreakOverlayTheme.serif.copyWith(
-                              fontSize: 28,
+                              fontSize: 24,
                               height: 1.3,
                               fontWeight: i == active
                                   ? FontWeight.w600
