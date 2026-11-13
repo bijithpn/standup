@@ -1,7 +1,9 @@
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +14,9 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/native_enhancements_service.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
 
 class NotificationsSection extends StatelessWidget {
   final SettingsModel settings;
@@ -47,6 +52,37 @@ class NotificationsSection extends StatelessWidget {
           if (settings.healthRemindersEnabled) ...[
             divider(),
             _buildReminderPreviewRow(onPreview: _previewRandom),
+            if (Platform.isMacOS) ...[
+              divider(),
+              toggleRow(
+                'Dismiss on mouse movement',
+                'Off: reminders stay for the full duration so they are easy '
+                    'to read. On: moving the mouse dismisses them.',
+                settings.dismissReminderOnMouseMove,
+                (v) => onSave(settings.copyWith(dismissReminderOnMouseMove: v)),
+              ),
+            ],
+            if (kDebugMode && Platform.isMacOS) ...[
+              divider(),
+              _buildReminderPreviewRow(
+                label: 'Preview posture reminder (debug)',
+                onPreview: () => _showPreview('posture'),
+              ),
+              divider(),
+              _buildReminderPreviewRow(
+                label: 'Preview water reminder (debug)',
+                onPreview: () => _showPreview('hydration'),
+              ),
+              divider(),
+              _buildReminderPreviewRow(
+                label: 'Preview notification toast (debug)',
+                onPreview: () => NativeEnhancementsService.instance.showToast(
+                  title: 'Time for a break',
+                  body: 'Eye Rest',
+                  sound: settings.soundEnabled,
+                ),
+              ),
+            ],
             divider(),
             toggleRow(
               'Blink & screen-distance reminders',
@@ -167,6 +203,15 @@ class NotificationsSection extends StatelessWidget {
   }
 
   void _showPreview(String reminderType) {
+    if (Platform.isMacOS) {
+      NativeEnhancementsService.instance.triggerFlashReminder(
+        text: HealthReminderCopy.text(reminderType),
+        durationMs: AppConstants.healthReminderDismissDuration.inMilliseconds,
+        opacity: 0.2,
+        dismissOnMouseMove: settings.dismissReminderOnMouseMove,
+      );
+      return;
+    }
     // `type` (above) only picks the native window's behavior — the Dart
     // overlay itself reads `overlayType` from the JSON payload to decide
     // which widget to render, and defaults to the full break-timer
@@ -204,15 +249,18 @@ class NotificationsSection extends StatelessWidget {
   // break cycle (see `TimerEngine._checkHealthReminders`) rather than a
   // separately configured countdown. Enable/disable above is the only
   // control; this row is just the explanation + a way to preview the look.
-  Widget _buildReminderPreviewRow({required VoidCallback onPreview}) {
+  Widget _buildReminderPreviewRow({
+    required VoidCallback onPreview,
+    String label = 'Preview a random reminder',
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
-              'Preview a random reminder',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
           ),
           const SizedBox(width: 12),

@@ -3,20 +3,25 @@ import Cocoa
 public class NativeFlashReminderWindow: NSObject {
     public static let shared = NativeFlashReminderWindow()
     private var flashWindows: [NSWindow] = []
+    private var generation = 0
+    private var mouseMonitor: Any?
     
-    public func triggerFlash(text: String, durationMs: Int = 250, opacity: CGFloat = 0.35, colorHex: String = "#000000") {
+    public func triggerFlash(text: String, durationMs: Int = 250, opacity: CGFloat = 0.35, colorHex: String = "#000000", dismissOnMouseMove: Bool = false) {
         dismissAll()
+        generation += 1
+        let current = generation
         
         let active = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
         for screen in [active].compactMap({ $0 }) {
-            let window = NSWindow(
+            let window = NSPanel(
                 contentRect: screen.frame,
                 styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
-                defer: false,
-                screen: screen
+                defer: false
             )
+            window.setFrame(screen.frame, display: false)
             window.level = .screenSaver
+            window.hidesOnDeactivate = false
             window.isOpaque = false
             window.backgroundColor = .clear
             window.ignoresMouseEvents = true
@@ -72,7 +77,8 @@ public class NativeFlashReminderWindow: NSObject {
                 window.animator().alphaValue = 1.0
             }
         }, completionHandler: {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(durationMs) / 1000.0) {
+            let fadeOut = { [weak self] in
+                guard let self, self.generation == current, !self.flashWindows.isEmpty else { return }
                 NSAnimationContext.runAnimationGroup({ context in
                     context.duration = 0.12
                     for window in self.flashWindows {
@@ -82,10 +88,19 @@ public class NativeFlashReminderWindow: NSObject {
                     self.dismissAll()
                 })
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(durationMs) / 1000.0, execute: fadeOut)
+            if dismissOnMouseMove {
+                // Short grace period so the text is readable before the first twitch dismisses it.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    guard let self, self.generation == current else { return }
+                    self.mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown, .keyDown]) { _ in fadeOut() }
+                }
+            }
         })
     }
     
     private func dismissAll() {
+        if let m = mouseMonitor { NSEvent.removeMonitor(m); mouseMonitor = nil }
         for window in flashWindows {
             window.orderOut(nil)
         }
@@ -136,6 +151,7 @@ public class NativeToastWindow: NSObject {
             contentRect: NSRect(x: screen.visibleFrame.maxX - width - 12, y: screen.visibleFrame.maxY - height - 12, width: width, height: height),
             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = .statusBar
+        panel.hidesOnDeactivate = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true

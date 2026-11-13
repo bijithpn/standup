@@ -7,34 +7,34 @@ class HealthReminderCopy {
 
   static const Map<String, List<String>> _variants = {
     'eyeblink': [
-      'Rest your eyes — look 20 feet away for 20 seconds',
-      'Blink a few times and look into the distance',
-      'Look away from the screen for a moment',
+      'Look at something far away for 20 seconds.',
+      'Give your eyes a rest. Look out the window.',
+      'Look away from the screen for a bit.',
     ],
     'blink': [
-      'Blink slowly 10 times to rewet your eyes',
-      'Screens make us blink less — blink fully a few times',
-      'Distance check — keep the screen an arm\'s length away',
+      'Blink a few times. Your eyes are probably dry.',
+      'You\'ve been staring. Blink slowly, ten times.',
+      'Move back a bit. Screen should be an arm away.',
     ],
     'posture': [
-      'Sit tall and relax your shoulders',
-      'Posture check — feet flat, back supported',
-      'Unclench your jaw and drop your shoulders',
+      'Sit up and drop your shoulders.',
+      'Feet flat, back against the chair.',
+      'Unclench your jaw.',
     ],
     'hydration': [
-      'Time for a glass of water',
-      'Grab a drink of water',
-      'Stay hydrated — sip some water',
+      'Go get some water.',
+      'Have a glass of water.',
+      'Water break.',
     ],
     'stretch': [
-      'Roll your shoulders and stretch your neck',
-      'Stretch your wrists and fingers',
-      'Reach overhead and stretch your back',
+      'Roll your shoulders and stretch your neck.',
+      'Shake out your wrists and fingers.',
+      'Reach up and stretch your back.',
     ],
     'standup': [
-      'Stand up and walk around for a minute',
-      'Time to move — stand up and shake it out',
-      'Take a short walk, even to the window',
+      'Get up and walk around for a minute.',
+      'Stand up and move a little.',
+      'Walk to the window and back.',
     ],
   };
 
@@ -56,16 +56,12 @@ class HealthReminderCopy {
   }
 
   static const Map<String, List<String>> _pills = {
-    'eyeblink': ['Rest your eyes', 'Look away for a moment', 'Blink & refocus'],
-    'blink': ['Blink slowly', 'Blink a few times', 'Check screen distance'],
-    'posture': ['Posture check', 'Sit tall', 'Relax your shoulders'],
-    'hydration': ['Drink some water', 'Time for water', 'Stay hydrated'],
-    'stretch': [
-      'Time to stretch',
-      'Roll your shoulders',
-      'Stretch your wrists',
-    ],
-    'standup': ['Stand up & move', 'Take a short walk', 'Time to move'],
+    'eyeblink': ['Rest your eyes', 'Look away for a bit', 'Look far away'],
+    'blink': ['Blink more', 'Blink a few times', 'Move back from the screen'],
+    'posture': ['Sit up', 'Check your posture', 'Drop your shoulders'],
+    'hydration': ['Drink some water', 'Water break', 'Have some water'],
+    'stretch': ['Stretch', 'Roll your shoulders', 'Shake out your wrists'],
+    'standup': ['Stand up', 'Take a short walk', 'Move around'],
   };
 
   /// Short label for the compact pill (one of a few variants).
@@ -79,11 +75,11 @@ class HealthReminderCopy {
   static String poster(String? type) => isCustom(type)
       ? _customTitle(type!)
       : switch (type) {
-          'blink' => 'Blink slowly!',
-          'posture' => 'Watch your posture!',
-          'hydration' => 'Drink some water!',
-          'stretch' => 'Time to stretch!',
-          'standup' => 'Stand up and move!',
-          _ => 'Rest your eyes!',
+          'blink' => 'Blink',
+          'posture' => 'Sit up',
+          'hydration' => 'Drink some water',
+          'stretch' => 'Stretch',
+          'standup' => 'Stand up',
+          _ => 'Rest your eyes',
         };
 }

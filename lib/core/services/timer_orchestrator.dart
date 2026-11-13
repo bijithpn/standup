@@ -292,6 +292,7 @@ class TimerOrchestrator {
           ? AppConstants.healthReminderDismissDuration.inMilliseconds
           : 250,
       opacity: macos ? 0.2 : 0.35,
+      dismissOnMouseMove: settings.dismissReminderOnMouseMove,
     );
     if (macos) return;
 

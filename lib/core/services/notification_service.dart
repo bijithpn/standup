@@ -98,41 +98,41 @@ class NotificationService {
   Future<void> showEyeRestReminder() async {
     await _show(
       id: 10,
-      title: 'Eye Rest - 20-20-20',
-      body: 'Look 20 feet away for 20 seconds to reduce eye strain.',
+      title: 'Eye rest',
+      body: 'Look at something 20 feet away for 20 seconds.',
     );
   }
 
   Future<void> showPostureReminder() async {
     await _show(
       id: 11,
-      title: '🧘 Posture Check',
-      body: 'Sit up straight, roll your shoulders back.',
+      title: 'Posture',
+      body: 'Sit up and roll your shoulders back.',
     );
   }
 
   Future<void> showBreakStarted({required String breakTitle}) async {
-    await _show(id: 2, title: 'Time for a break', body: breakTitle);
+    await _show(id: 2, title: 'Break time', body: breakTitle);
   }
 
   Future<void> showBreakFinished() async {
     await _show(
       id: 3,
-      title: 'Break finished',
-      body: 'Welcome back! Stay focused.',
+      title: 'Break over',
+      body: 'Back to it.',
     );
   }
 
   Future<void> showClockOutReminder() async {
     await _show(
       id: 20,
-      title: '🌙 Time to Clock Out',
-      body: 'Your workday is over. Step away and recharge.',
+      title: 'Time to stop',
+      body: 'Your workday is done. Close the laptop.',
     );
   }
 
   Future<void> showWeeklyDigest(WeeklyDigest digest) async {
-    await _show(id: 30, title: 'Your Week in Review', body: digest.toMessage());
+    await _show(id: 30, title: 'Your week', body: digest.toMessage());
   }
 
   Future<void> showFocusCorrelationInsight(
@@ -140,7 +140,7 @@ class NotificationService {
   ) async {
     await _show(
       id: 31,
-      title: 'A pattern in your data',
+      title: 'Something in your data',
       body: correlation.describe(),
     );
   }
@@ -149,20 +149,20 @@ class NotificationService {
   /// highest-priority [OverviewInsight] of the day, delivered once so it
   /// reaches the user without a Statistics-screen visit.
   Future<void> showDailyInsight(String text) async {
-    await _show(id: 32, title: 'Something worth noticing', body: text);
+    await _show(id: 32, title: 'Worth a look', body: text);
   }
 
   Future<void> showEndOfDaySummary(String text) async {
-    await _show(id: 33, title: 'Your day in review', body: text);
+    await _show(id: 33, title: 'Your day', body: text);
   }
 
   Future<void> showEveningEyeCare(bool warmedScreen) async {
     await _show(
       id: 34,
-      title: 'Evening eye care',
+      title: 'Evening',
       body: warmedScreen
-          ? 'Night Shift is on. Consider lowering your brightness too.'
-          : 'Turn on a warm display tint and lower your brightness.',
+          ? 'Night Shift is on. Lower your brightness a bit too.'
+          : 'Turn on a warmer screen tint and lower the brightness.',
     );
   }
 
@@ -173,20 +173,20 @@ class NotificationService {
   Future<void> showBreakReminder({required bool isLong}) async {
     await _show(
       id: 1,
-      title: 'Break coming up',
+      title: 'Break soon',
       body: isLong
-          ? 'Long break starts in 1 minute'
-          : 'Short break starts in 30 seconds',
+          ? 'Long break in 1 minute'
+          : 'Short break in 30 seconds',
     );
   }
 
   Future<void> showMeetingBreakReminder({bool isPresenting = false}) async {
     await _show(
       id: 12,
-      title: 'Break ready',
+      title: 'Break waiting',
       body: isPresenting
-          ? 'You are presenting. BreakMate will keep this reminder quiet.'
-          : 'You are in a meeting. BreakMate will keep this reminder quiet.',
+          ? 'You\'re presenting, so this stays quiet.'
+          : 'You\'re in a meeting, so this stays quiet.',
     );
   }
 

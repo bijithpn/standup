@@ -45,7 +45,7 @@ class AwayBreakService {
         completed: true,
       );
       sl<NotificationService>().showReminder(
-        message: 'Logged $minutesAway min away as a completed break!',
+        message: 'Counted your $minutesAway min away as a break.',
       );
     } catch (e) {
       _logger.error('Failed to log away break: $e');

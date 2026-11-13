@@ -170,7 +170,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
               let duration = args["durationMs"] as? Int ?? 250
               let opacity = CGFloat(args["opacity"] as? Double ?? 0.35)
               let colorHex = args["colorHex"] as? String ?? "#000000"
-              NativeFlashReminderWindow.shared.triggerFlash(text: text, durationMs: duration, opacity: opacity, colorHex: colorHex)
+              NativeFlashReminderWindow.shared.triggerFlash(text: text, durationMs: duration, opacity: opacity, colorHex: colorHex, dismissOnMouseMove: args["dismissOnMouseMove"] as? Bool ?? false)
               result(nil)
           case "showToast":
               let args = call.arguments as? [String: Any]
