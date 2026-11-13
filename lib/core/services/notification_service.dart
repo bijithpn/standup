@@ -6,6 +6,7 @@ import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/services/native_enhancements_service.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/features/analytics/break_focus_correlation.dart';
 import 'package:breakmate/features/analytics/weekly_digest.dart';
@@ -211,9 +212,21 @@ class NotificationService {
           final theme = PetTheme.getTheme(selectedThemeId);
           final iconPath = await PetAssetLoader.extractPetIconPath(theme);
 
+          unawaited(
+            NativeEnhancementsService.instance.showToast(
+              title: title,
+              body: body,
+              sound: _soundEnabled,
+            ),
+          );
+
+          // The toast covers banner + sound on the active display; the system
+          // notification only keeps a silent entry in Notification Center.
           final macOS = DarwinNotificationDetails(
             presentAlert: true,
-            presentSound: _soundEnabled,
+            presentBanner: false,
+            presentList: true,
+            presentSound: false,
             attachments: iconPath.isNotEmpty
                 ? [DarwinNotificationAttachment(iconPath)]
                 : null,

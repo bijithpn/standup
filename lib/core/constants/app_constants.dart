@@ -31,7 +31,7 @@ class AppConstants {
   /// nudge, not a countdown, and must never share a clock with the real
   /// break overlay's `BreakTimerManager` countdown or with the pre-break
   /// warning's own dismiss delay.
-  static const Duration healthReminderDismissDuration = Duration(seconds: 4);
+  static const Duration healthReminderDismissDuration = Duration(seconds: 6);
 
   static const int maxRetries = 3;
   static const int initialRetryDelayMs = 500;

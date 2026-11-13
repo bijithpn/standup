@@ -172,6 +172,10 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
               let colorHex = args["colorHex"] as? String ?? "#000000"
               NativeFlashReminderWindow.shared.triggerFlash(text: text, durationMs: duration, opacity: opacity, colorHex: colorHex)
               result(nil)
+          case "showToast":
+              let args = call.arguments as? [String: Any]
+              NativeToastWindow.shared.show(title: args?["title"] as? String ?? "", body: args?["body"] as? String ?? "", playSound: args?["sound"] as? Bool ?? true)
+              result(nil)
           case "preventDisplaySleep":
               let reason = (call.arguments as? [String: Any])?["reason"] as? String ?? "BreakMate Break Active"
               NativePowerAssertionManager.shared.preventDisplaySleep(reason: reason)

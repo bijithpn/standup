@@ -52,6 +52,23 @@ class NativeEnhancementsService {
     }
   }
 
+  Future<void> showToast({
+    required String title,
+    required String body,
+    required bool sound,
+  }) async {
+    if (!Platform.isMacOS) return;
+    try {
+      await _channel.invokeMethod('showToast', {
+        'title': title,
+        'body': body,
+        'sound': sound,
+      });
+    } catch (e) {
+      _logger.error('Failed to show toast: $e');
+    }
+  }
+
   Future<void> preventDisplaySleep({
     String reason = 'BreakMate Break Active',
   }) async {
