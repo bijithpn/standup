@@ -2,53 +2,35 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_helpers.dart';
 
-/// Configurable circular / open-arc progress indicator.
-///
-/// [size] is the ring's outer diameter. Ticks are drawn *outside* that box.
-/// Progress interpolates smoothly between per-second updates; the painter
-/// repaints through its animation, never through `setState`.
+/// Configurable progress arc (ticks, taper, comet tail, glow) shared by the templates; animates forward smoothly between 1s timer updates.
 class BreakProgressRing extends StatefulWidget {
-  /// Elapsed fraction, 0..1.
   final double progress;
   final double size;
   final double strokeWidth;
   final Color color;
   final Color trackColor;
 
-  /// Where the arc starts, radians. Default is 12 o'clock.
   final double startAngle;
 
-  /// Angular extent of the whole ring. 2pi is a full circle; less is an open
-  /// gauge.
   final double sweep;
 
-  /// Outer ticks. Ticks that fall inside the elapsed range are lit with
-  /// [color], the rest use [tickColor] (defaults to [trackColor]).
   final int tickCount;
   final double tickLength;
   final double tickWidth;
   final double tickGap;
   final Color? tickColor;
 
-  /// When true, ticks that have *not* yet elapsed are lit and elapsed ticks
-  /// fade to [tickColor] (a countdown). Default lights the elapsed ones.
   final bool ticksRemainingLit;
 
-  /// Widen the last [taperDegrees] of the arc from [strokeWidth] to
-  /// [taperTo], ending in a round cap.
   final double taperDegrees;
   final double taperTo;
 
-  /// Fade the trailing [cometDegrees] of the arc up from transparent.
   final double cometDegrees;
 
-  /// Halo around the head, 0..1 alpha.
   final double glow;
 
-  /// Extra glow added briefly on completion, 0..1.
   final double flash;
 
-  /// Interpolate progress between updates. Off for static frames.
   final bool smooth;
   final Widget? child;
 
@@ -269,7 +251,6 @@ class _RingPainter extends CustomPainter {
       final cs = math.cos(a);
       final sn = math.sin(a);
       if (ticksRemainingLit) {
-        // Elapsed ticks fade from the accent to the track colour.
         final e = (p * tickCount - i).clamp(0.0, 1.0);
         _tick.color = Color.lerp(color, tickColor, e)!;
       } else {

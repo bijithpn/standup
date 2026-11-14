@@ -3,6 +3,7 @@ import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../domain/app_theme_preset.dart';
 
+/// Selectable swatch card that previews a preset in its own colors.
 class ThemePresetCard extends StatefulWidget {
   final AppThemePreset preset;
   final bool isSelected;
@@ -70,7 +71,6 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Swatch preview header
               Row(
                 children: [
                   Container(
@@ -113,7 +113,7 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                 ],
               ),
               const SizedBox(height: 10),
-              // Palette preview strip
+
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: SizedBox(
@@ -130,7 +130,7 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Description
+
               Text(
                 p.description,
                 style: TextStyle(

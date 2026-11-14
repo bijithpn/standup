@@ -1,3 +1,5 @@
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:clock/clock.dart';
 import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
@@ -11,7 +13,7 @@ import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
@@ -31,9 +33,7 @@ import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/native_enhancements_service.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_gate.dart';
 
-/// Coordinates cross-service actions driven by the state updates of TimerEngine.
-/// It bridges the core timer system with activity tracking, user alerts, stats logging,
-/// settings changes, and secondary engine UI updates via native IPC.
+/// Glue between TimerEngine and the rest of the app: reacts to engine events (IPC to overlays, tray, notifications, stats), wires idle detection and persists state.
 class TimerOrchestrator {
   final TimerEngine timerEngine;
   final TimerRepository timerRepository;
@@ -51,6 +51,8 @@ class TimerOrchestrator {
   Timer? _usageTrackerTimer;
   Timer? _pauseAutoResumeTimer;
   Timer? _autoSaveTimer;
+  Timer? _healthReminderContextTimer;
+  Timer? _companionCueTimer;
 
   String? _lastTrayTitle;
   String? _lastTrayTooltip;
@@ -68,6 +70,7 @@ class TimerOrchestrator {
     required this.eventBus,
   });
 
+  /// Restores saved state, applies cold-boot recovery, then subscribes to engine events and starts idle/usage tracking.
   void initialize() {
     _logger.info('Initializing TimerOrchestrator...');
 
@@ -77,6 +80,7 @@ class TimerOrchestrator {
         timerEngine.stateData.lastTickTime != null) {
       final lastTick = timerEngine.stateData.lastTickTime!;
       final durationAway = DateTime.now().difference(lastTick);
+      // Away longer than one work interval counts as a rest, so start a fresh session instead of resuming.
       if (durationAway.inMinutes >= timerEngine.shortBreakIntervalMinutes) {
         _logger.info(
           'Cold boot recovery: Away for ${durationAway.inMinutes}m. Resetting focus session.',
@@ -105,6 +109,7 @@ class TimerOrchestrator {
 
     _updateTray();
 
+    // Periodic save so a crash loses at most ~10s of progress.
     _autoSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (timerEngine.state == TimerState.running ||
           timerEngine.state == TimerState.breakActive) {
@@ -113,6 +118,7 @@ class TimerOrchestrator {
     });
   }
 
+  // Shows the cursor countdown 15s before a break and hides it otherwise.
   void _onCountdownTick() {
     _updateTray();
     final remaining = timerEngine.countdownNotifier.value;
@@ -127,14 +133,13 @@ class TimerOrchestrator {
     _updateTray();
   }
 
-  /// Routes global application events. High-priority state events (like breaks starting/ending)
-  /// are serialized and dispatched over the IPC channel so secondary window processes stay synchronized.
+  // Single dispatch point for engine events; each handler fans out to IPC, tray, notifications and stats.
   void _handleEvent(AppEvent event) {
     _logger.info('Received event in Orchestrator: $event');
 
     if (event is TimerStateChangedEvent) {
       _dispatchTimerStateIpc(event);
-      saveState(); // Immediately save state on pause/resume transitions
+      saveState();
     } else if (event is BreakStartedEvent) {
       _handleBreakStarted(event);
     } else if (event is BreakEndedEvent) {
@@ -146,6 +151,7 @@ class TimerOrchestrator {
     }
   }
 
+  // Mirrors timer state to other windows (overlay, companion) which cannot read the engine directly.
   void _dispatchTimerStateIpc(TimerStateChangedEvent event) {
     final targetEndTime = event.targetEndTime;
     IpcBridge.instance.dispatch(
@@ -159,6 +165,7 @@ class TimerOrchestrator {
     );
   }
 
+  // Keeps the display awake and notifies overlays/tray; wind-down also triggers the end-of-day summary.
   void _handleBreakStarted(BreakStartedEvent event) {
     NativeEnhancementsService.instance.hideCursorCountdown();
     NativeEnhancementsService.instance.preventDisplaySleep(
@@ -187,6 +194,7 @@ class TimerOrchestrator {
     saveState();
   }
 
+  // Records history/stats; on completion also feeds AdaptiveBreakService and applies its suggested next interval.
   Future<void> _handleBreakEnded(BreakEndedEvent event) async {
     NativeEnhancementsService.instance.releaseDisplaySleep();
     IpcBridge.instance.dispatch(BreakEndedIpcEvent(skipped: event.skipped));
@@ -201,6 +209,7 @@ class TimerOrchestrator {
     if (event.skipped) {
       statsService.recordSkippedBreak();
     } else {
+      // Let the "Well Done" completion screen show before recording.
       await Future.delayed(const Duration(seconds: 2));
       statsService.recordCompletedBreak();
 
@@ -242,11 +251,13 @@ class TimerOrchestrator {
     saveState();
   }
 
+  /// Plays the sound, then shows the reminder via the companion if enabled, else a flash reminder (macOS) or quick overlay window.
   void _handleHealthReminder(HealthReminderEvent event) {
+    if (timerEngine.contextManager.shouldSuppressHealthReminders) return;
     final settings = settingsRepository.currentSettings;
 
     if (settings.soundEnabled) {
-      final tone = HealthReminderCopy.isCustom(event.reminderType)
+      final tone = HealthReminderMessages.isCustom(event.reminderType)
           ? 'custom'
           : event.reminderType;
       final player = AudioPlayer();
@@ -257,7 +268,7 @@ class TimerOrchestrator {
     }
 
     if (settings.companionEnabled &&
-        !HealthReminderCopy.isCustom(event.reminderType)) {
+        !HealthReminderMessages.isCustom(event.reminderType)) {
       final interactionType = switch (event.reminderType) {
         'posture' || 'stretch' || 'standup' => 'stretch',
         _ => 'blink',
@@ -271,27 +282,58 @@ class TimerOrchestrator {
       IpcBridge.instance.dispatch(
         CompanionInteractionIpcEvent(interactionType: interactionType),
       );
+      if (settings.experience.companionEscalates) {
+        final cueAt = clock.now();
+        _companionCueTimer?.cancel();
+        _companionCueTimer = Timer(AppConstants.companionCueGrace, () {
+          final rested = timerEngine.lastRestAt?.isAfter(cueAt) ?? false;
+          if (rested ||
+              timerEngine.contextManager.shouldSuppressHealthReminders) {
+            return;
+          }
+          _showReminderOverlay(event, settingsRepository.currentSettings);
+        });
+      }
       return;
     }
 
-    // Native system-notification reminders were unreliable in practice, so
-    // health reminders always show the (dismissable, low-opacity) overlay
-    // now, regardless of `event.displayType`.
-    //
-    // `type` below only picks the native window's behavior — the Dart
-    // overlay itself reads `overlayType` from the JSON payload, and
-    // defaults to the full break-timer template ('breakScreen') when that
-    // key is missing. Without it, health reminders rendered the wrong
-    // overlay.
+    _showReminderOverlay(event, settings);
+  }
+
+  void _showReminderOverlay(HealthReminderEvent event, SettingsModel settings) {
+    // macOS uses the native flash reminder only; other platforms also show the quick overlay window.
     final macos = Platform.isMacOS;
     NativeEnhancementsService.instance.triggerFlashReminder(
-      text: HealthReminderCopy.text(event.reminderType),
-      // The Flutter overlay engine was unreliable on macOS, so the native
-      // window carries the whole reminder there.
+      text: HealthReminderMessages.text(event.reminderType),
+      reminderType: event.reminderType,
+
       durationMs: macos
           ? AppConstants.healthReminderDismissDuration.inMilliseconds
           : 250,
       opacity: macos ? 0.2 : 0.35,
+      dismissOnMouseMove: settings.dismissReminderOnMouseMove,
+      textScale: settings.experience.textScale,
+      highContrast: settings.experience.highContrast,
+      reduceMotion: settings.reduceMotion || !settings.enableAnimations,
+    );
+    _healthReminderContextTimer?.cancel();
+    final shownAt = DateTime.now();
+    _healthReminderContextTimer = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (timer) {
+        if (timerEngine.contextManager.shouldSuppressHealthReminders) {
+          timer.cancel();
+          NativeEnhancementsService.instance.dismissHealthReminder();
+          if (!macos &&
+              sl<OverlayWindowService>().currentOverlayType ==
+                  OverlayType.quickReminder) {
+            sl<OverlayWindowService>().hideOverlay();
+          }
+        } else if (DateTime.now().difference(shownAt) >=
+            AppConstants.healthReminderDismissDuration) {
+          timer.cancel();
+        }
+      },
     );
     if (macos) return;
 
@@ -299,8 +341,7 @@ class TimerOrchestrator {
       type: OverlayType.quickReminder,
       builder: (_) => const SizedBox.shrink(),
       reminderType: event.reminderType,
-      // A brief reminder only needs the active display — one Flutter
-      // engine per connected monitor for a 2-second poster is wasted CPU.
+
       showOnAllDisplays: false,
       overlayData: {
         'overlayType': 'quickReminder',
@@ -308,9 +349,7 @@ class TimerOrchestrator {
         'durationSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
         'remainingSeconds':
             AppConstants.healthReminderDismissDuration.inSeconds,
-        // Computed here (main engine) because the overlay's own Flutter
-        // isolate doesn't have SettingsRepository or the detection
-        // services registered — see `OverlayWindowConfig.allowFullPoster`.
+
         'allowFullPoster': allowFullPosterReminder(
           detectMeetings: settings.detectMeetings,
           calendarMeetingActive: sl<MeetingDetectionService>().isMeetingActive,
@@ -321,9 +360,6 @@ class TimerOrchestrator {
       },
     );
 
-    // Fallback safety-net hide, independent of the overlay's own dismiss
-    // timer — must use the same duration so it never clips the reminder
-    // early or lingers past it.
     Future.delayed(AppConstants.healthReminderDismissDuration, () {
       if (sl<OverlayWindowService>().currentOverlayType ==
           OverlayType.quickReminder) {
@@ -348,6 +384,7 @@ class TimerOrchestrator {
     }
   }
 
+  // Pushes countdown title, tooltip and progress to the tray; title/tooltip are only sent when changed.
   void _updateTray() {
     final settings = settingsRepository.currentSettings;
     final state = timerEngine.state;
@@ -396,37 +433,36 @@ class TimerOrchestrator {
     }
   }
 
+  // Idle: discard idle time and pause; return: resume unless manually paused or another pause (e.g. meeting) applies. A long idle also resets the break cycle.
   void _setupActivityMonitor() {
-    activityMonitor.setIdleThreshold(timerEngine.pauseTimerAfterMinutes);
     activityMonitor.setIdleSampleCallback(timerEngine.reportIdleSeconds);
+    activityMonitor.setAwayCallbacks(
+      onAway: (at) => timerEngine.handleSystemSleep(at: at),
+      onBack: () {
+        timerEngine.handleSystemWake();
+        // With auto-resume off the user must restart the timer themselves.
+        if (!settingsRepository.currentSettings.autoResumeOnActivity &&
+            timerEngine.state == TimerState.running) {
+          timerEngine.pauseTimers(isManual: true);
+        }
+      },
+    );
     activityMonitor.setActivityCallback((isActive) {
       final state = timerEngine.state;
 
-      // Safety net for a stuck sleep flag: handleSystemSleep()/
-      // handleSystemWake() are driven purely by native OS notifications
-      // (NSWorkspace willSleep/didWake). If a wake notification is ever
-      // missed — a false-positive sleep event, a race during a fast
-      // sleep/wake cycle, etc. — the tick loop's `systemSleepPaused` guard
-      // stays true forever and the timer silently freezes with no state
-      // change visible to the user. Real, unambiguous user activity is
-      // proof the system is awake, so use it to self-heal.
-      if (isActive && timerEngine.systemSleepPaused) {
-        _logger.warning(
-          'Activity detected while systemSleepPaused was stuck true — '
-          'forcing timer wake recovery.',
-        );
-        timerEngine.handleSystemWake();
-      }
-
       if (isActive &&
           state == TimerState.paused &&
+          timerEngine.pausedForInactivity &&
           !timerEngine.stateData.isManuallyPaused) {
-        timerEngine.resumeTimers();
+        _pauseAutoResumeTimer?.cancel();
+        if (settingsRepository.currentSettings.autoResumeOnActivity) {
+          timerEngine.resumeTimers(isManual: false);
+        }
       } else if (!isActive && state == TimerState.running) {
         timerEngine.discardIdleTime(
           Duration(seconds: activityMonitor.lastIdleSeconds.round()),
         );
-        timerEngine.pauseTimers();
+        timerEngine.pauseForInactivity();
         _pauseAutoResumeTimer?.cancel();
         _pauseAutoResumeTimer = Timer(
           Duration(minutes: timerEngine.resetTimerAfterMinutes),
@@ -454,6 +490,7 @@ class TimerOrchestrator {
     });
   }
 
+  /// Persists engine state, plus the daily session snapshot when session resume is enabled.
   void saveState() {
     timerRepository.save(
       timerEngine.stateData,
@@ -480,6 +517,7 @@ class TimerOrchestrator {
     }
   }
 
+  // Restores engine state and today's session; a new day or disabled resume starts from zero.
   void _restoreState() {
     timerRepository.restore(
       timerEngine.stateData,
@@ -560,6 +598,7 @@ class TimerOrchestrator {
     timerEngine.syncNotifiersFromState();
   }
 
+  /// Called on app quit: pauses, saves and disposes.
   void shutdown() {
     _logger.info('Shutting down TimerOrchestrator...');
     timerEngine.pauseTimers(isManual: true);
@@ -577,6 +616,8 @@ class TimerOrchestrator {
     _usageTrackerTimer?.cancel();
     _pauseAutoResumeTimer?.cancel();
     _autoSaveTimer?.cancel();
+    _healthReminderContextTimer?.cancel();
+    _companionCueTimer?.cancel();
     timerEngine.removeListener(_onTimerEngineChanged);
   }
 }

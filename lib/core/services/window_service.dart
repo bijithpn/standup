@@ -4,6 +4,7 @@ import 'package:breakmate/core/utils/logger.dart';
 
 const _channel = MethodChannel('com.breakmate/window');
 
+/// Thin wrapper over the native window channel (macOS) for level, position, opacity and click-through; errors are reported, never thrown.
 class WindowService {
   WindowService._();
   static final WindowService instance = WindowService._();
@@ -17,12 +18,6 @@ class WindowService {
     }
   }
 
-  /// Moves the window this engine owns.
-  ///
-  /// [animate] lets the platform ease the move, which is what a one-off
-  /// reposition wants. Anything driving its own motion frame by frame — the
-  /// companion walking across the desktop — must pass false, or macOS runs a
-  /// blocking animation per call and every frame fights the last one.
   Future<void> setWindowPosition({
     required double x,
     required double y,
@@ -53,6 +48,7 @@ class WindowService {
     }
   }
 
+  // Returns 0,0 on failure so callers always get a usable position.
   Future<Map<String, dynamic>> getWindowPosition() async {
     try {
       final result = await _channel.invokeMethod('getWindowPosition');
@@ -129,9 +125,6 @@ class WindowService {
     }
   }
 
-  /// Initiates a native window-drag gesture (macOS `performWindowDragWithEvent` /
-  /// Windows `ReleaseCapture` + `PostMessage WM_NCLBUTTONDOWN`).
-  /// This delegates window repositioning entirely to the OS so Flutter never
   Future<void> startDrag() async {
     try {
       await _channel.invokeMethod('startDrag');
@@ -140,9 +133,6 @@ class WindowService {
     }
   }
 
-  /// macOS: sets `styleMask` to include `NSWindowStyleMaskNonactivatingPanel`
-  /// Windows: applies `WS_EX_NOACTIVATE` extended window style.
-  /// Call once during [initialize] so click events never steal focus from the
   Future<void> setNonActivating(bool nonActivating) async {
     try {
       await _channel.invokeMethod('setNonActivating', {

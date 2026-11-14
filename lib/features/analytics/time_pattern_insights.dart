@@ -1,22 +1,11 @@
-/// Time-of-day findings — the richest unused signal in BreakMate's history:
-/// *when* things happen, not just *how much*. Both functions below are pure
-/// aggregation over data already recorded ([BreakHistoryService],
-/// [FocusSessionService]) — no new tracking, same as the rest of the
-/// insight layer. See the workflow-analysis plan doc §7.2/Phase 4.
 library;
 
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 
-/// Minimum sample size before a per-hour rate is trusted enough to surface
-/// — below this, a single unlucky day could look like a pattern.
 const int minHourlySampleCount = 3;
 
-/// The hour of day (0-23) with the worst break-skip rate, if there's enough
-/// data at that hour to say something real. `null` when every hour is under
-/// [minHourlySampleCount] samples.
-///
-/// Ties broken by earliest hour, for a stable, testable result.
+/// Hour of day with the highest skip rate (ignores hours with too few samples); null if none.
 int? worstBreakHour(List<BreakEvent> events) {
   final totalsByHour = <int, int>{};
   final skippedByHour = <int, int>{};
@@ -43,8 +32,6 @@ int? worstBreakHour(List<BreakEvent> events) {
   return worstHour;
 }
 
-/// The break-skip rate at [worstBreakHour], for phrasing the finding.
-/// Returns 0.0 if [hour] has no events.
 double breakSkipRateAtHour(List<BreakEvent> events, int hour) {
   final atHour = events.where((e) => e.time.hour == hour).toList();
   if (atHour.isEmpty) return 0.0;
@@ -52,11 +39,7 @@ double breakSkipRateAtHour(List<BreakEvent> events, int hour) {
   return skipped / atHour.length;
 }
 
-/// The hour of day (0-23) with the most total deep-work focus time, if
-/// there's enough data to say something real. `null` when there aren't at
-/// least [minHourlySampleCount] sessions total.
-///
-/// Ties broken by earliest hour, for a stable, testable result.
+/// Hour of day in which the most focus time starts; null if too few sessions.
 int? goldenFocusHour(List<FocusSession> sessions) {
   if (sessions.length < minHourlySampleCount) return null;
 
@@ -78,8 +61,6 @@ int? goldenFocusHour(List<FocusSession> sessions) {
   return bestHour;
 }
 
-/// Formats an hour-of-day (0-23) as a friendly label, e.g. `2` → `"2pm"`,
-/// `0` → `"12am"`, `13` → `"1pm"`.
 String formatHourLabel(int hour) {
   final period = hour < 12 ? 'am' : 'pm';
   final displayHour = hour % 12 == 0 ? 12 : hour % 12;

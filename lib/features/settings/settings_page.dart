@@ -45,10 +45,18 @@ class _SettingsPageState extends State<SettingsPage> {
     _repo = Provider.of<SettingsRepository>(context, listen: false);
     _breakController = Provider.of<BreakController>(context, listen: false);
     _settings = _repo.currentSettings;
+    _repo.addListener(_syncSettings);
   }
 
   @override
-  void dispose() => super.dispose();
+  void dispose() {
+    _repo.removeListener(_syncSettings);
+    super.dispose();
+  }
+
+  void _syncSettings() {
+    if (mounted) setState(() => _settings = _repo.currentSettings);
+  }
 
   void _save(SettingsModel updated) {
     try {
@@ -105,13 +113,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
         if (isSmallScreen) {
           return Scaffold(
-            backgroundColor: AppTheme.contentBackground,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerLowest,
             body: buildContent(null),
           );
         }
 
         return MacosScaffold(
-          backgroundColor: AppTheme.contentBackground,
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
           toolBar: ToolBar(
             title: Text(
               _sectionDisplayName(widget.section),
@@ -173,6 +183,8 @@ class _SettingsPageState extends State<SettingsPage> {
         return Consumer<StatsService>(
           builder: (context, statsService, _) {
             return AnalyticsSettingsSection(
+              onApplySuggestion: _repo.save,
+              currentSettings: () => _repo.currentSettings,
               stats: statsService.load(),
               settings: _settings,
               onSave: _save,
@@ -184,7 +196,7 @@ class _SettingsPageState extends State<SettingsPage> {
           controller: sl<CompanionOverlayController>(),
         );
       case 'Goals':
-        return const GoalsSection();
+        return GoalsSection();
       case 'Privacy':
         return PrivacySection(settings: _settings, onSave: _save);
       case 'Themes':

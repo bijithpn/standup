@@ -18,18 +18,7 @@ import 'package:breakmate/features/analytics/segments/activity_segment_repositor
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// Polls the active app every 10s while tracking is enabled, accumulates
-/// seconds in memory, and flushes into [AppUsageService] every 30s. Only the
-/// app's executable-derived name is stored (never the window title
-/// `getActiveApp` also returns), to keep usage history at app-level detail
-/// only.
-///
-/// The same tick also feeds an [ActivitySegmentBuilder], which records *when*
-/// each stretch happened rather than only how long it lasted. Daily totals
-/// alone cannot answer "what was I doing at 10am", so the timeline, per-app
-/// sessions, and every time-of-day pattern are built on those segments. It
-/// rides this existing loop deliberately — a second poller watching the same
-/// thing would double the cost for the same information.
+/// Polls the foreground app every 10s while the user is active, batching seconds to AppUsageService and feeding segments, focus sessions and context-switch counts.
 class AppUsageTracker {
   final AppTrackingService _appTracking;
   final AppUsageService _usageService;
@@ -47,6 +36,7 @@ class AppUsageTracker {
   final AppLogger _logger = AppLogger();
 
   static const _pollInterval = Duration(seconds: 10);
+  // Seconds accumulate in memory and are flushed in batches to limit disk writes.
   static const _flushInterval = Duration(seconds: 30);
 
   Timer? _pollTimer;
@@ -76,15 +66,11 @@ class AppUsageTracker {
        _contextSwitchTracker = contextSwitchTracker;
 
   void start() {
-    // The build's own switch, checked before the user's: a disabled module
-    // records nothing regardless of what consent was given earlier.
     if (!ProductivityConfig.current.backgroundMonitoringEnabled) return;
 
     _pollTimer ??= Timer.periodic(_pollInterval, (_) => tickOnce());
     _flushTimer ??= Timer.periodic(_flushInterval, (_) => flushNow());
 
-    // Breaks bracket the timeline: without them a break reads as idle, and
-    // "where did the day go" cannot tell resting apart from walking away.
     _eventSub ??= _eventBus?.stream.listen((event) {
       if (event is BreakStartedEvent) {
         onBreakStarted(at: event.timestamp);
@@ -106,24 +92,17 @@ class AppUsageTracker {
     _recordFocusSession(_focusDetector.closeOpenSession());
   }
 
-  /// A break started, so the stretch it interrupted ends here.
-  ///
-  /// [at] is the moment the break actually began. Events arrive asynchronously,
-  /// so reading the clock on delivery would attribute the queueing delay to
-  /// whatever the break interrupted.
   void onBreakStarted({DateTime? at}) =>
       _recordSegment(_segmentBuilder.onBreakStarted(at ?? clock.now()));
 
-  /// The break ended; the next poll opens whatever comes after it.
   void onBreakEnded({DateTime? at}) =>
       _recordSegment(_segmentBuilder.onBreakEnded(at ?? clock.now()));
 
   @visibleForTesting
+  // One poll: skip when tracking is off, idle (closes the segment) or BreakMate itself is frontmost.
   Future<void> tickOnce() async {
     if (!_settingsRepo.currentSettings.appUsageTrackingEnabled) return;
 
-    // Idle time is recorded rather than skipped: "where did the day go" needs
-    // to account for the hour the machine sat untouched, not quietly drop it.
     if (_activityMonitor.isIdle) {
       _recordSegment(_segmentBuilder.onIdle(clock.now()));
       return;
@@ -199,32 +178,15 @@ class AppUsageTracker {
     _pendingSeconds.clear();
   }
 
-  /// True when the "active app" is BreakMate itself — its Settings window,
-  /// the Desktop Companion overlay, or the break overlay briefly grabbing
-  /// focus. BreakMate runs continuously in the background, so without this
-  /// check its own windows taking focus (e.g. opening Settings to check
-  /// stats) got counted as ordinary app usage, inflating its own tracked
-  /// time far past any real foreground app.
-  ///
-  /// [ActiveAppInfo.bundleId] is the real bundle identifier on macOS
-  /// (`com.bijith.breakmate`) and the full executable path on Windows —
-  /// either way it reliably contains BreakMate's own identifier when
-  /// BreakMate is frontmost (see AppTrackingBridge/app_tracking_bridge.cpp).
   @visibleForTesting
+  // Don't attribute time spent in BreakMate's own windows (overlays, settings).
   static bool isBreakMateItself(ActiveAppInfo app) {
     final bundleId = app.bundleId.toLowerCase();
-    // startsWith, not ==: flavored builds (e.g. the `dev` flavor's
-    // `com.bijith.breakmate.dev`) append a suffix to the base bundle id, so
-    // an exact match let BreakMate's own dev builds slip through and get
-    // tracked as if they were another app.
+
     return bundleId.startsWith('com.bijith.breakmate') ||
         bundleId.contains('breakmateapp.exe');
   }
 
-  /// bundleId is a real bundle identifier on macOS and the full exe path on
-  /// Windows (see AppTrackingBridge/app_tracking_bridge.cpp) — either way
-  /// it's a stable per-app key. Falls back to executableName if bundleId is
-  /// unavailable.
   String? _resolveAppKey(ActiveAppInfo app) {
     final raw = app.bundleId != 'Unknown' ? app.bundleId : app.executableName;
     final key = raw.toLowerCase();
@@ -232,9 +194,6 @@ class AppUsageTracker {
     return key;
   }
 
-  /// The executable's file name is a privacy-safe app label — unlike
-  /// ActiveAppInfo.name, which macOS may populate with the active window's
-  /// title. Only falls back to app.name if the executable name is missing.
   String _resolveDisplayName(ActiveAppInfo app) {
     var name = app.executableName;
     if (name.toLowerCase().endsWith('.exe')) {

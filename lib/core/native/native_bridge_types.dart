@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+// Thin typed wrappers around the maps sent to native windows.
 class OverlayArgs {
   final Map<String, dynamic>? args;
 
@@ -24,6 +25,7 @@ class CompanionArgs {
   Map<String, dynamic> toMap() => args;
 }
 
+/// Screen rectangle of the constraint window that bounds where the companion may roam.
 class ConstraintWindowArgs {
   final double x;
   final double y;
@@ -72,35 +74,22 @@ class PipWindowArgs {
   final String? companionTreatType;
   final String? previewBackground;
 
-  /// The companion's full appearance as JSON, so the overlay engine can render
-  /// the exact breed, palette, and seed the user picked rather than falling
-  /// back to the stock species behind [themeId].
   final String? avatarDefinitionJson;
 
-  /// Which renderer the overlay should use: `blob` or `artwork`.
   final String? renderMode;
 
-  /// Whether the companion stays on screen outside of breaks.
   final bool? keepOnScreen;
 
-  /// Which interactions the overlay may offer when the pointer is over it.
-  ///
-  /// The overlay runs in its own engine and cannot read settings, so the only
-  /// way it knows a user has switched one of these off is for it to travel in
-  /// the payload.
   final bool? pettingEnabled;
   final bool? playEnabled;
   final bool? treatEnabled;
 
-  /// How the companion looks at the pointer and animates on its own. These
-  /// travel in the payload for the same reason as the interactions above.
   final bool? gazeEnabled;
   final double? gazeSensitivity;
   final bool? idleAnimation;
   final bool? reactionsEnabled;
   final bool? reducedMotion;
 
-  /// Master animation switch (the app-wide "enable animations" preference).
   final bool? animationsEnabled;
 
   const PipWindowArgs({
@@ -214,6 +203,7 @@ class PipWindowArgs {
   }
 }
 
+/// Raw display description from native code, converted to DisplayInfo by [NativeBridge].
 class NativeDisplayInfo {
   final String id;
   final double x;
@@ -256,9 +246,11 @@ class NativeDisplayInfo {
   }
 }
 
+/// A visible top-level window reported natively; used e.g. by presentation detection.
 class WindowInfo {
   final String windowId;
   final String windowTitle;
+  final String appBundleId;
   final double x;
   final double y;
   final double width;
@@ -269,6 +261,7 @@ class WindowInfo {
   const WindowInfo({
     required this.windowId,
     required this.windowTitle,
+    this.appBundleId = '',
     required this.x,
     required this.y,
     required this.width,
@@ -280,6 +273,7 @@ class WindowInfo {
   Map<String, dynamic> toMap() => {
     'windowId': windowId,
     'windowTitle': windowTitle,
+    'appBundleId': appBundleId,
     'x': x,
     'y': y,
     'width': width,
@@ -292,6 +286,7 @@ class WindowInfo {
     return WindowInfo(
       windowId: map['windowId']?.toString() ?? '',
       windowTitle: map['windowTitle'] as String? ?? '',
+      appBundleId: map['appBundleId'] as String? ?? '',
       x: (map['x'] as num?)?.toDouble() ?? 0.0,
       y: (map['y'] as num?)?.toDouble() ?? 0.0,
       width: (map['width'] as num?)?.toDouble() ?? 0.0,
@@ -302,9 +297,7 @@ class WindowInfo {
   }
 }
 
-/// Platform boundary for desktop features implemented outside Flutter.
-/// The Dart layer still receives several platform payloads as maps because
-/// MethodChannel is the compatibility boundary between the Flutter engines and
+/// Per-OS contract for native window, overlay, companion, calendar and display features.
 abstract class NativeBridgePlatform {
   Future<void> showOverlay([OverlayArgs? args]);
   Future<void> hideOverlay({bool restoreMainWindow = true});
@@ -365,6 +358,7 @@ abstract class NativeBridgePlatform {
   Future<void> hidePipWindow();
 }
 
+/// No-op implementation for unsupported platforms.
 class FallbackBridge implements NativeBridgePlatform {
   const FallbackBridge();
 

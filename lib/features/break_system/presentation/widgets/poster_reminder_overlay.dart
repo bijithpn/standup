@@ -1,16 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Full-screen "poster" for a quick reminder (posture / eye rest /
-/// meeting-ready) shown when it's safe to take over the whole screen — see
-/// `QuickReminderOverlay`'s `allowFullPoster` gate for when this is skipped
-/// in favor of the small pill instead. Deliberately plain: an icon naming
-/// what the reminder is actually about (not the app's own logo — that told
-/// the user nothing about posture vs. eye rest) and a one-line message,
-/// over whatever's already on screen — the parent overlay
-/// (`StandaloneBreakOverlay`) paints a low-opacity dark scrim behind this
-/// so the user still sees their own desktop, not an opaque colored
-/// background. Simple and brief by design: on screen only for the
-/// reminder's short auto-dismiss window.
+/// Large centered icon + text reminder shown when a full poster is allowed.
 class PosterReminderOverlay extends StatelessWidget {
   final IconData icon;
   final String text;

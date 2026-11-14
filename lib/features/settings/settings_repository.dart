@@ -1,4 +1,6 @@
+import 'experience_preferences.dart';
 import 'dart:convert';
+import 'work_schedule.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
@@ -12,6 +14,8 @@ import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 
+/// Loads, holds and persists [SettingsModel]; [save] notifies listeners so timers, overlays and the tray react to changes.
+/// Primary store is the ObjectBox settings snapshot; companion prefs live in a separate box and some keys in the KV store.
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
   SettingsModel _current = const SettingsModel();
@@ -25,9 +29,7 @@ class SettingsRepository extends ChangeNotifier {
       if (decoded is Map) {
         return decoded.map((k, v) => MapEntry(k as String, v as int));
       }
-    } catch (_) {
-      // Corrupt/legacy value — fall back to no overrides.
-    }
+    } catch (_) {}
     return const {};
   }
 
@@ -38,10 +40,28 @@ class SettingsRepository extends ChangeNotifier {
       if (decoded is Map) {
         return decoded.map((k, v) => MapEntry(k as String, v as int));
       }
-    } catch (_) {
-      // Corrupt/legacy value — fall back to no budgets set.
-    }
+    } catch (_) {}
     return const {};
+  }
+
+  Map<int, WorkSchedule> _loadWeeklySchedule() {
+    try {
+      return WorkSchedule.decode(
+        jsonDecode(_storage.getString('weekly_schedule')),
+      );
+    } catch (_) {
+      return {};
+    }
+  }
+
+  ExperiencePreferences _loadExperience() {
+    try {
+      return ExperiencePreferences.fromMap(
+        jsonDecode(_storage.getString('experience_preferences')),
+      );
+    } catch (_) {
+      return const ExperiencePreferences();
+    }
   }
 
   SettingsModel get currentSettings => _current;
@@ -58,6 +78,7 @@ class SettingsRepository extends ChangeNotifier {
     }
   }
 
+  /// Reads settings at startup (snapshot, else legacy KV keys, else defaults) and reconciles the onboarding flag across stores.
   Future<void> load() async {
     if (!_storage.isReady) {
       debugPrint(
@@ -125,10 +146,9 @@ class SettingsRepository extends ChangeNotifier {
         }
       }
 
-      // The onboarding completion flag is a one-way toggle (false -> true).
-      // We check both the ObjectBox settings snapshot and the database key-value fallback to ensure consistency.
       final snapshotOnboarding = snapshot?.hasCompletedOnboarding ?? false;
       final kvOnboarding = _storage.getBool('has_completed_onboarding');
+      // Onboarding flag is kept in both snapshot and KV; either one counts so a partial write never re-shows onboarding.
       final onboardingDone = snapshotOnboarding || kvOnboarding;
 
       debugPrint(
@@ -158,6 +178,7 @@ class SettingsRepository extends ChangeNotifier {
     }
   }
 
+  /// Saved exercises plus any newly shipped defaults the user hasn't seen yet.
   List<ExerciseModel> getExercises() {
     if (_storage.settingsBox != null) {
       final snapshot = _storage.settingsBox?.get(1);
@@ -176,9 +197,6 @@ class SettingsRepository extends ChangeNotifier {
     return _loadExercises();
   }
 
-  /// Appends any built-in exercise that isn't already in [saved] by id, so
-  /// new default activities show up for existing users too, not just fresh
-  /// installs. Existing entries (and any favorite/hidden state) are untouched.
   List<ExerciseModel> _withNewDefaults(List<ExerciseModel> saved) {
     final savedIds = saved.map((e) => e.id).toSet();
     final missing = ExerciseModel.defaults.where(
@@ -225,6 +243,8 @@ class SettingsRepository extends ChangeNotifier {
         s.workingDaysJson,
         fallback: const [1, 2, 3, 4, 5],
       ),
+      experience: _loadExperience(),
+      weeklySchedule: _loadWeeklySchedule(),
       workStartTime: s.workStartTime,
       workEndTime: s.workEndTime,
       detectVideoCalls: s.detectVideoCalls,
@@ -263,6 +283,15 @@ class SettingsRepository extends ChangeNotifier {
       companionFollowMouse: cp?.companionFollowMouse ?? false,
       unlockedPets: _decodeStringList(cp?.unlockedPetsJson ?? '[]'),
       pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      autoPauseOnIdle: _storage.getBool(
+        'auto_pause_on_idle',
+        defaultValue: true,
+      ),
+      autoResumeOnActivity: _storage.getBool(
+        'auto_resume_on_activity',
+        defaultValue: true,
+      ),
+      pauseOnLock: _storage.getBool('pause_on_lock', defaultValue: true),
       companionGazeEnabled: _storage.getBool(
         'companion_gaze_enabled',
         defaultValue: true,
@@ -314,6 +343,9 @@ class SettingsRepository extends ChangeNotifier {
       eveningEyeCare: _storage.getBool('evening_eye_care'),
       focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
       blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      dismissReminderOnMouseMove: _storage.getBool(
+        'dismiss_reminder_on_mouse_move',
+      ),
       avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
@@ -380,8 +412,13 @@ class SettingsRepository extends ChangeNotifier {
     return ExerciseModel.defaults;
   }
 
+  // Pre-snapshot installs stored each setting as its own KV key; used once, then migrated by [save].
   SettingsModel _loadFromLegacy() {
     return SettingsModel(
+      intensityLevel: _storage.getString(
+        'intensity_level',
+        defaultValue: 'standard',
+      ),
       shortBreakIntervalMinutes: _storage.getInt(
         AppConstants.keyShortBreakInterval,
         defaultValue: AppConstants.defaultShortBreakIntervalMinutes,
@@ -455,6 +492,8 @@ class SettingsRepository extends ChangeNotifier {
         _storage.getString('working_days'),
         fallback: const [1, 2, 3, 4, 5],
       ),
+      experience: _loadExperience(),
+      weeklySchedule: _loadWeeklySchedule(),
       workStartTime: _storage.getString(
         'work_start_time',
         defaultValue: '09:00',
@@ -524,6 +563,15 @@ class SettingsRepository extends ChangeNotifier {
         defaultValue: false,
       ),
       pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      autoPauseOnIdle: _storage.getBool(
+        'auto_pause_on_idle',
+        defaultValue: true,
+      ),
+      autoResumeOnActivity: _storage.getBool(
+        'auto_resume_on_activity',
+        defaultValue: true,
+      ),
+      pauseOnLock: _storage.getBool('pause_on_lock', defaultValue: true),
       companionGazeEnabled: _storage.getBool(
         'companion_gaze_enabled',
         defaultValue: true,
@@ -583,6 +631,9 @@ class SettingsRepository extends ChangeNotifier {
       eveningEyeCare: _storage.getBool('evening_eye_care'),
       focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
       blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      dismissReminderOnMouseMove: _storage.getBool(
+        'dismiss_reminder_on_mouse_move',
+      ),
       avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
@@ -625,6 +676,7 @@ class SettingsRepository extends ChangeNotifier {
     );
   }
 
+  /// Marks onboarding done in both the KV store and the snapshot.
   Future<void> completeOnboarding() async {
     debugPrint('[SettingsRepo] Completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
@@ -645,6 +697,7 @@ class SettingsRepository extends ChangeNotifier {
     }
   }
 
+  /// Persists settings to the snapshot, companion prefs and KV keys, then notifies listeners; throws if storage is unavailable.
   Future<void> save(SettingsModel settings) async {
     if (!_storage.isReady) {
       debugPrint(
@@ -816,6 +869,26 @@ class SettingsRepository extends ChangeNotifier {
     );
     await _storage.setBool('enable_animations', settings.enableAnimations);
     await _storage.setString('intensity_level', settings.intensityLevel);
+    await _storage.setString(
+      'experience_preferences',
+      jsonEncode(settings.experience.toMap()),
+    );
+    await _storage.setBool('show_on_all_displays', settings.showOnAllDisplays);
+    await _storage.setBool(
+      'working_hours_enabled',
+      settings.workingHoursEnabled,
+    );
+    await _storage.setString('working_days', jsonEncode(settings.workingDays));
+    await _storage.setString('work_start_time', settings.workStartTime);
+    await _storage.setString('work_end_time', settings.workEndTime);
+    await _storage.setString(
+      'weekly_schedule',
+      jsonEncode(
+        settings.weeklySchedule.map(
+          (day, shift) => MapEntry('$day', shift.toJson()),
+        ),
+      ),
+    );
 
     await _storage.setString(
       AppConstants.keyCompanionPetTheme,
@@ -823,6 +896,12 @@ class SettingsRepository extends ChangeNotifier {
     );
     await _storage.setDouble('companion_scale', settings.companionScale);
     await _storage.setBool('petting_enabled', settings.pettingEnabled);
+    await _storage.setBool('auto_pause_on_idle', settings.autoPauseOnIdle);
+    await _storage.setBool(
+      'auto_resume_on_activity',
+      settings.autoResumeOnActivity,
+    );
+    await _storage.setBool('pause_on_lock', settings.pauseOnLock);
     await _storage.setBool(
       'companion_gaze_enabled',
       settings.companionGazeEnabled,
@@ -856,6 +935,10 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('overlay_theme_mode', settings.overlayThemeMode);
     await _storage.setString('breath_preset', settings.breathPreset);
     await _storage.setBool('break_chime_enabled', settings.breakChimeEnabled);
+    await _storage.setBool(
+      'dismiss_reminder_on_mouse_move',
+      settings.dismissReminderOnMouseMove,
+    );
     await _storage.setBool('reduce_motion', settings.reduceMotion);
     await _storage.setBool('evening_eye_care', settings.eveningEyeCare);
     await _storage.setBool('focus_dnd_enabled', settings.focusDndEnabled);

@@ -26,11 +26,12 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 
 part 'companion_overlay_setting_actions.dart';
 
+/// Main-window owner of the companion: mirrors settings, shows/hides the native PiP window, and relays timer/break events and PiP interactions via the EventBus.
 class CompanionOverlayController extends ChangeNotifier {
+  void _notifyStateChanged() => notifyListeners();
+
   final SettingsRepository _settingsRepo;
 
-  /// Increments whenever an external surface (such as the PiP window) requests
-  /// opening the Blobatar rename dialog in the main app.
   final ValueNotifier<int> openBlobatarNameDialogNotifier = ValueNotifier<int>(
     0,
   );
@@ -61,11 +62,9 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _companionClickThrough = false;
   bool _companionFollowMouse = false;
   bool _enableAnimations = true;
-  String _companionPreviewBackground =
-      ''; // asset-migration: background assets removed
+  String _companionPreviewBackground = '';
   bool _isCompanionShown = false;
-  bool _isPreviewMode =
-      false; // Hides native companion when viewing settings UI
+  bool _isPreviewMode = false;
 
   String _pipBackgroundStyle = 'transparent';
   double _pipOpacity = 1.0;
@@ -73,11 +72,8 @@ class CompanionOverlayController extends ChangeNotifier {
   String _companionToyType = 'tennis_ball';
   String _companionTreatType = 'sushi';
 
-  /// The companion's saved appearance, as JSON-encoded `AvatarDefinition`.
-  /// Null until the customizer has produced one.
   String? _companionAvatarDefinition;
 
-  /// Whether the companion stays out all the time, or only during breaks.
   bool _companionKeepOnScreen = true;
 
   static const List<String> catNames = [
@@ -181,8 +177,7 @@ class CompanionOverlayController extends ChangeNotifier {
     });
   }
 
-  /// Interactions relayed from the overlay window, which runs in its own
-  /// engine and cannot write settings itself.
+  /// Handles actions sent back from the PiP window process (rename, close, take break, etc.).
   void _handleCompanionInteraction(CompanionInteractionEvent event) {
     switch (event.interactionType) {
       case 'openBlobatarEditor':
@@ -201,24 +196,17 @@ class CompanionOverlayController extends ChangeNotifier {
         final ready = _pipReady;
         if (ready != null && !ready.isCompleted) ready.complete();
       case 'closeCompanion':
-        // The window's own close button. Treated as turning the companion off,
-        // so the switch in Settings matches and can bring it back.
         unawaited(toggleCompanion(false));
       case 'keepOnScreen':
         final value = event.metadata?['value'];
         if (value is bool) unawaited(changeKeepOnScreen(value));
       case 'takeBreak':
-        // The companion asks for this when it has watched the user work for a
-        // long unbroken stretch. It is the one interaction that is not really
-        // about the pet.
         if (sl.isRegistered<TimerEngine>()) {
           sl<TimerEngine>().triggerBreakNow();
         }
     }
   }
 
-  /// Chooses whether the companion stays out all the time, or only shows up
-  /// while a break is running.
   Future<void> changeKeepOnScreen(bool keepOnScreen) async {
     if (_companionKeepOnScreen == keepOnScreen) return;
     await _settingsRepo.save(
@@ -233,31 +221,22 @@ class CompanionOverlayController extends ChangeNotifier {
     if (_isBreakActive == isBreak) return;
     _isBreakActive = isBreak;
     _applyBreakVisibility();
-    // A gentle nudge as a break begins. Only the companion's face changes; no
-    // sound, notification or window activation is involved.
+
     if (isBreak) _notifyCompanion('breakReminder');
   }
 
-  /// A finished break is the one thing the companion celebrates. Skipped
-  /// breaks are not worth a reaction either way.
   void _handleBreakEnded(BreakEndedEvent event) {
     if (event.skipped) return;
     _notifyCompanion('breakCompleted');
   }
 
-  /// Tells the floating companion about something that happened, if it is
-  /// showing and the user has reactions switched on. The companion applies its
-  /// own rules too; this just avoids a native round-trip nobody will see.
   void _notifyCompanion(String eventName) {
     if (!_companionEnabled || !_isCompanionShown || !_pipModeEnabled) return;
     if (!reactionsEnabled || !_enableAnimations) return;
     unawaited(NativeBridge.triggerCompanionState(eventName));
   }
 
-  /// Shows or hides the companion around a break when it is not pinned.
-  ///
-  /// A pinned companion is left exactly where the user put it — including
-  /// closed, which is a deliberate choice we do not undo on the next break.
+  /// Unless keep-on-screen is set, the companion only appears while a break is active.
   void _applyBreakVisibility() {
     if (_companionKeepOnScreen) return;
     if (!_companionEnabled) return;
@@ -291,7 +270,6 @@ class CompanionOverlayController extends ChangeNotifier {
   bool get companionWanderingEnabled =>
       _settingsRepo.currentSettings.companionWanderingEnabled;
 
-  /// The interaction toggles rolled into one comparable value.
   static String _interactionSignature(SettingsModel settings) =>
       '${settings.companionWanderingEnabled}/${settings.pettingEnabled}'
       '/${settings.ballThrowEnabled}/${settings.treatEnabled}'
@@ -335,6 +313,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   String get companionPreviewBackground => _companionPreviewBackground;
 
+  /// Loads settings, syncs break state and shows the companion if enabled and onboarding is done.
   Future<void> init() async {
     final settings = _settingsRepo.currentSettings;
 
@@ -367,6 +346,7 @@ class CompanionOverlayController extends ChangeNotifier {
     }
   }
 
+  /// Diffs settings against cached fields and shows/hides/refreshes the window only when a companion-relevant value changed.
   void _handleSettingsChanged() {
     final settings = _settingsRepo.currentSettings;
 
@@ -389,16 +369,12 @@ class CompanionOverlayController extends ChangeNotifier {
         _pipDraggableClickable != settings.pipDraggableClickable;
     final toyTypeChanged = _companionToyType != settings.companionToyType;
     final treatTypeChanged = _companionTreatType != settings.companionTreatType;
-    // Re-colouring or re-breeding the same species leaves the theme id alone,
-    // so without this the customizer's changes never reach the overlay.
+
     final definitionChanged =
         _companionAvatarDefinition != settings.companionAvatarDefinition;
     final keepOnScreenChanged =
         _companionKeepOnScreen != settings.companionKeepOnScreen;
 
-    // The overlay decides what to offer on hover from these, so a toggle the
-    // user flips in settings has to reach it. They are compared as a group
-    // because none of them is worth a field of its own.
     final interactions = _interactionSignature(settings);
     final interactionsChanged = _lastInteractionSignature != interactions;
     _lastInteractionSignature = interactions;
@@ -420,7 +396,7 @@ class CompanionOverlayController extends ChangeNotifier {
         !definitionChanged &&
         !keepOnScreenChanged &&
         !interactionsChanged) {
-      return; // Exit early if no companion settings have changed
+      return;
     }
 
     _companionEnabled = settings.companionEnabled;
@@ -450,15 +426,11 @@ class CompanionOverlayController extends ChangeNotifier {
       debugPrint(
         '[CompanionOverlayController] Starting transition... needsShowOrToggle: $needsShowOrToggle, needsHide: $needsHide',
       );
-      // The transition owns the loader from here, including one the toggle
-      // raised before saving.
+
       _loaderFromToggle = false;
       _isTransitioning = true;
       notifyListeners();
 
-      // Create a safety timeout timer in case a native call hangs indefinitely.
-      // This is a workaround for platform window-spawning MethodChannels that could block
-      // indefinitely if the native window manager fails to complete high-priority window actions.
       final safetyTimer = Timer(const Duration(seconds: 3), () {
         if (_isTransitioning) {
           debugPrint(
@@ -539,8 +511,6 @@ class CompanionOverlayController extends ChangeNotifier {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
         if (keepOnScreenChanged) {
-          // Un-pinning while no break is running should tidy the pet away now,
-          // not at the end of the next break.
           _applyBreakVisibility();
         }
         if (definitionChanged ||
@@ -552,9 +522,6 @@ class CompanionOverlayController extends ChangeNotifier {
             pipDraggableClickableChanged ||
             toyTypeChanged ||
             treatTypeChanged ||
-            // Wandering and the hover interactions live only in the payload,
-            // so without this a user unticking one of them would see no
-            // change until something else happened to trigger a push.
             interactionsChanged) {
           if (_pipModeEnabled) {
             NativeBridge.showPipWindow(
@@ -567,9 +534,10 @@ class CompanionOverlayController extends ChangeNotifier {
       }
     }
 
-    notifyListeners(); // Keep the Flutter UI completely in sync!
+    notifyListeners();
   }
 
+  /// Opens the PiP window with the current payload and waits (max 2.5s) for its pipReady handshake so the loader does not hang.
   Future<void> _showNativeCompanion() async {
     _isCompanionShown = true;
     final ready = Completer<void>();
@@ -577,9 +545,7 @@ class CompanionOverlayController extends ChangeNotifier {
     await NativeBridge.showPipWindow(
       PipWindowArgs.fromMap(_companionPayload()),
     );
-    // The call returns once the window exists, but its engine is still
-    // starting. Hold the caller (and so the loader) until the companion has
-    // drawn its first frame, with a cap in case it never reports.
+
     await ready.future.timeout(
       const Duration(milliseconds: 2500),
       onTimeout: () {},
@@ -722,15 +688,9 @@ class CompanionOverlayController extends ChangeNotifier {
     return query;
   }
 
-  /// Which renderer the overlay should use for the current theme.
   String get _renderMode =>
       PetTheme.getTheme(_companionPetTheme).isBlobatar ? 'blob' : 'artwork';
 
-  /// The appearance to send to the overlay windows.
-  ///
-  /// Prefers what the customizer saved. When nothing has been customized yet,
-  /// the theme's own definition is encoded instead, so the overlay always has
-  /// a complete description rather than having to guess from an id.
   String? _resolvedAvatarDefinitionJson() {
     final saved = _companionAvatarDefinition;
     if (saved != null && saved.isNotEmpty) return saved;
@@ -747,8 +707,6 @@ class CompanionOverlayController extends ChangeNotifier {
     }
   }
 
-  /// Persists the appearance the customizer produced and pushes it to the
-  /// overlay windows.
   Future<void> saveAvatarDefinition(AvatarDefinition definition) async {
     final encoded = jsonEncode(definition.toJson());
     if (_companionAvatarDefinition == encoded) return;
@@ -760,6 +718,7 @@ class CompanionOverlayController extends ChangeNotifier {
     );
   }
 
+  /// Settings snapshot serialized to the separate PiP window process.
   Map<String, dynamic> _companionPayload() {
     return {
       'themeId': _companionPetTheme,
@@ -767,9 +726,7 @@ class CompanionOverlayController extends ChangeNotifier {
       'scale': _companionScale,
       'clickThrough': _companionClickThrough,
       'followMouse': _companionFollowMouse,
-      // Two switches have to agree: the user's own choice, and whether motion
-      // is allowed at all. A companion that walks about while animations are
-      // off would be the most conspicuous thing on the screen.
+
       'wanderingEnabled': companionWanderingEnabled && _enableAnimations,
       'pettingEnabled': pettingEnabled,
       'playEnabled': ballThrowEnabled,
@@ -786,8 +743,7 @@ class CompanionOverlayController extends ChangeNotifier {
       'companionToyType': _companionToyType,
       'companionTreatType': _companionTreatType,
       'previewBackground': _companionPreviewBackground,
-      // The overlay runs in its own engine and cannot read settings, so its
-      // whole appearance has to travel with the payload.
+
       'avatarDefinitionJson': _resolvedAvatarDefinitionJson(),
       'renderMode': _renderMode,
       'keepOnScreen': _companionKeepOnScreen,
@@ -816,10 +772,9 @@ class CompanionOverlayController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// True while the loader was raised by [toggleCompanion] and no transition
-  /// has taken it over yet.
   bool _loaderFromToggle = false;
 
+  /// Hides and re-shows the window to apply changes that need a rebuild; the safety timer guarantees the loader is dismissed.
   Future<void> refreshCompanion() async {
     if (!_companionEnabled || _isTransitioning) return;
     _isTransitioning = true;

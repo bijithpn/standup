@@ -101,6 +101,13 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
             handleHideConstraintWindow(result: result)
         case "getIdleTime":
             handleGetIdleTime(result: result)
+        case "getSessionState":
+            // Polled to catch lock/session events the notification center missed.
+            let d = CGSessionCopyCurrentDictionary() as? [String: Any]
+            result([
+                "locked": (d?["CGSSessionScreenIsLocked"] as? Bool) ?? false,
+                "active": (d?["kCGSSessionOnConsoleKey"] as? Bool) ?? true,
+            ])
         case "focusApp":
             handleFocusApp(result: result)
         default:

@@ -2,10 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/analytics/habits_summary.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Two streak numbers side by side, plus one sentence on whether they're in
-/// sync — see [HabitsSummary]. Mirrors the card language of the companion
-/// streak card and [InsightsOverviewCard] so it reads as part of the same
-/// Overview tab, not a bolted-on widget.
 class HabitsSummaryCard extends StatelessWidget {
   final HabitsSummary summary;
 

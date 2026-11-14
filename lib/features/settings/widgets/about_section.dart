@@ -10,6 +10,7 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 
+/// Settings > About: version/build info and external links.
 class AboutSection extends StatefulWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -225,10 +226,7 @@ class _AboutSectionState extends State<AboutSection> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFFFD15C), // Premium Warm Golden Yellow
-                          Color(0xFFF39C12), // Honey Amber Orange
-                        ],
+                        colors: [Color(0xFFFFD15C), Color(0xFFF39C12)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),

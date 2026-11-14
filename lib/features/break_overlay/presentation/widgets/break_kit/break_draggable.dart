@@ -4,7 +4,6 @@ import 'package:flutter/physics.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_helpers.dart';
 
-/// The six resting places a floating card may snap to.
 const List<Alignment> breakSixAnchors = [
   Alignment.topLeft,
   Alignment.topCenter,
@@ -14,12 +13,7 @@ const List<Alignment> breakSixAnchors = [
   Alignment.bottomRight,
 ];
 
-/// A card that rests at an anchor, can be dragged anywhere, and springs to the
-/// nearest anchor on release.
-///
-/// Resting layout is an [Align] with [inset] padding, so the child may change
-/// size (hover, expand) and stay glued to its anchor. Dragging and snapping
-/// are a translation on top of that, so no layout state changes per frame.
+/// Lets the user drag a widget and, on release, springs it to the nearest of the allowed anchor positions.
 class BreakDraggable extends StatefulWidget {
   final Widget child;
   final Alignment initialAnchor;
@@ -27,10 +21,8 @@ class BreakDraggable extends StatefulWidget {
   final double inset;
   final ValueChanged<bool>? onDragChanged;
 
-  /// Called with the anchor the card settled on after a drag.
   final ValueChanged<Alignment>? onAnchorChanged;
 
-  /// Slide in from the anchor's edge with a fade on first show.
   final bool animateEntrance;
 
   const BreakDraggable({
@@ -53,11 +45,10 @@ class _BreakDraggableState extends State<BreakDraggable>
   final GlobalKey _childKey = GlobalKey();
 
   late Alignment _anchor = widget.initialAnchor;
-  Offset _offset = Offset.zero; // while dragging
-  Offset _snapFrom = Offset.zero; // spring start, relative to the new anchor
+  Offset _offset = Offset.zero;
+  Offset _snapFrom = Offset.zero;
   bool _dragging = false;
 
-  /// 1 -> 0 while snapping; unbounded so the spring may overshoot.
   late final AnimationController _spring = AnimationController.unbounded(
     vsync: this,
     value: 0,
@@ -100,7 +91,7 @@ class _BreakDraggableState extends State<BreakDraggable>
 
   void _onPanStart(DragStartDetails d) {
     _spring.stop();
-    // Continue from wherever the card is right now.
+
     _offset = _snapFrom * _spring.value;
     setState(() => _dragging = true);
     widget.onDragChanged?.call(true);
@@ -121,6 +112,7 @@ class _BreakDraggableState extends State<BreakDraggable>
     setState(() => _offset = next);
   }
 
+  // Snaps to the closest anchor and animates from the release point via a spring (offset decays from 1 to 0).
   void _onPanEnd(DragEndDetails d, Size parent) {
     final box = _childKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) {
@@ -173,7 +165,7 @@ class _BreakDraggableState extends State<BreakDraggable>
                 final enter = BreakMotion.enter.transform(
                   _entrance.value.clamp(0.0, 1.0),
                 );
-                // Slide in from the anchor's own edge.
+
                 final slide = Offset(_anchor.x, _anchor.y) * (16 * (1 - enter));
                 return Opacity(
                   opacity: enter,

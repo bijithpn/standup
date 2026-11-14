@@ -12,6 +12,7 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
+/// Settings > Updates: manual check via Sparkle on macOS (native channel callbacks) or the feed checker elsewhere.
 class UpdateSection extends StatefulWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -27,6 +28,7 @@ class UpdateSection extends StatefulWidget {
 }
 
 class _UpdateSectionState extends State<UpdateSection> {
+  // Sparkle reports results asynchronously through this channel (onUpdateResult / onUpdateError).
   static const _channel = MethodChannel('com.breakmate/sparkle');
 
   bool _isChecking = false;
@@ -76,6 +78,7 @@ class _UpdateSectionState extends State<UpdateSection> {
               'Unable to connect to update server. Please check your internet connection.';
         }
 
+        // Sparkle reports "already latest" as an error string, so treat those as success.
         final isUpToDate =
             normalizedError.contains('up to date') ||
             normalizedError.contains('up-to-date') ||
@@ -108,6 +111,7 @@ class _UpdateSectionState extends State<UpdateSection> {
       _errorMessage = '';
     });
     _checkTimeout?.cancel();
+    // Guard against Sparkle never calling back.
     _checkTimeout = Timer(const Duration(seconds: 30), () {
       if (!mounted || !_isChecking) return;
       setState(() {
@@ -139,7 +143,6 @@ class _UpdateSectionState extends State<UpdateSection> {
     }
   }
 
-  /// Windows and Linux have no Sparkle; compare against the appcast instead.
   Future<void> _checkFeed() async {
     try {
       final update = await FeedUpdateChecker().check();

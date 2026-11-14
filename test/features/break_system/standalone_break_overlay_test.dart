@@ -1,3 +1,5 @@
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -253,12 +255,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Watch your posture!'), findsOneWidget);
+      expect(
+        tester
+            .widget<QuickReminderOverlay>(find.byType(QuickReminderOverlay))
+            .reminderType,
+        'posture',
+      );
 
       // Let the reminder's own auto-dismiss timer
       // (AppConstants.healthReminderDismissDuration) run out so it
       // doesn't leak past the end of the test.
-      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(
+        AppConstants.healthReminderDismissDuration + const Duration(seconds: 2),
+      );
     });
 
     testWidgets(
@@ -346,10 +355,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 700));
         expect(fadeTransition().opacity.value, equals(1.0));
-        expect(find.text('Rest your eyes!'), findsOneWidget);
+        expect(
+          tester
+              .widget<QuickReminderOverlay>(find.byType(QuickReminderOverlay))
+              .reminderType,
+          'eye',
+        );
         expect(tester.takeException(), isNull);
 
-        await tester.pump(const Duration(seconds: 5));
+        await tester.pump(
+          AppConstants.healthReminderDismissDuration +
+              const Duration(seconds: 2),
+        );
       },
     );
 
@@ -392,10 +409,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.text('Watch your posture!'), findsOneWidget);
+        expect(
+          tester
+              .widget<QuickReminderOverlay>(find.byType(QuickReminderOverlay))
+              .reminderType,
+          'posture',
+        );
         expect(tester.takeException(), isNull);
 
-        await tester.pump(const Duration(seconds: 5));
+        await tester.pump(
+          AppConstants.healthReminderDismissDuration +
+              const Duration(seconds: 2),
+        );
       },
     );
 

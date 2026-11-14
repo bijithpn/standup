@@ -497,7 +497,7 @@ class OverlayWindowManager: NSObject {
                     result(FlutterError(code: "INVALID_ARGS", message: "Missing ignore parameter", details: nil))
                 }
             case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
-                 "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
+                 "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "getSessionState", "focusApp":
                 BehaviorEngineBridge.shared.handle(call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
@@ -595,20 +595,32 @@ class MainFlutterWindow: NSWindow {
         object: nil
     )
     
-    // Register distributed notifications for lock/unlock
+    NSWorkspace.shared.notificationCenter.addObserver(
+        self,
+        selector: #selector(handleSessionInactive),
+        name: NSWorkspace.sessionDidResignActiveNotification,
+        object: nil
+    )
+    NSWorkspace.shared.notificationCenter.addObserver(
+        self,
+        selector: #selector(handleSessionActive),
+        name: NSWorkspace.sessionDidBecomeActiveNotification,
+        object: nil
+    )
+
     DistributedNotificationCenter.default().addObserver(
         self,
-        selector: #selector(handleSystemSleep),
+        selector: #selector(handleSessionLocked),
         name: NSNotification.Name("com.apple.screenIsLocked"),
         object: nil
     )
     DistributedNotificationCenter.default().addObserver(
         self,
-        selector: #selector(handleSystemWake),
+        selector: #selector(handleSessionUnlocked),
         name: NSNotification.Name("com.apple.screenIsUnlocked"),
         object: nil
     )
-    
+
     super.awakeFromNib()
   }
 
@@ -624,6 +636,11 @@ class MainFlutterWindow: NSWindow {
   @objc private func handleSystemWake() {
     bridgeChannel?.invokeMethod("systemWake", arguments: nil)
   }
+
+  @objc private func handleSessionLocked() { bridgeChannel?.invokeMethod("sessionLocked", arguments: nil) }
+  @objc private func handleSessionUnlocked() { bridgeChannel?.invokeMethod("sessionUnlocked", arguments: nil) }
+  @objc private func handleSessionInactive() { bridgeChannel?.invokeMethod("sessionInactive", arguments: nil) }
+  @objc private func handleSessionActive() { bridgeChannel?.invokeMethod("sessionActive", arguments: nil) }
 
   private func configureBridge(binaryMessenger: FlutterBinaryMessenger) {
     bridgeChannel = FlutterMethodChannel(
@@ -731,7 +748,7 @@ class MainFlutterWindow: NSWindow {
       // ── Behavior Engine PAL methods ───────────────────────────────────────
 
       case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
-           "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
+           "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "getSessionState", "focusApp":
         BehaviorEngineBridge.shared.handle(call, result: result)
 
       case "getFrontmostApp":

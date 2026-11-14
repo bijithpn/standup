@@ -7,9 +7,7 @@ import 'package:breakmate/features/companion/domain/environment_theme_config.dar
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 
-// Persists the user's list of custom EnvironmentThemeConfig entries as a JSON
-// sidecar file alongside pet_config_v2.json. Follows the same atomic-write
-// pattern as SettingsPersistence.
+/// Loads/saves user-made environment themes as JSON in the per-platform config dir and registers them with the domain theme list.
 class CustomEnvironmentRepository {
   CustomEnvironmentRepository({AppLogger? logger})
     : _logger = logger ?? AppLogger();
@@ -39,8 +37,6 @@ class CustomEnvironmentRepository {
     );
   }
 
-  // Synchronous initial load. Returns immediately with an empty list if the
-  // file does not yet exist.
   List<CustomEnvironmentTheme> loadSync() {
     final path = _configPath;
     try {
@@ -78,13 +74,11 @@ class CustomEnvironmentRepository {
     return _themes;
   }
 
-  // Persist [themes] atomically. Replaces the in-memory list on success.
   Future<void> save(List<CustomEnvironmentTheme> themes) async {
     _themes = List.of(themes);
     await _atomicWrite(_themes);
   }
 
-  // Adds or replaces the theme with matching id and persists.
   Future<void> upsert(CustomEnvironmentTheme theme) async {
     final index = _themes.indexWhere((t) => t.id == theme.id);
     if (index >= 0) {
@@ -95,12 +89,12 @@ class CustomEnvironmentRepository {
     await _atomicWrite(_themes);
   }
 
-  // Removes the theme by id and persists.
   Future<void> delete(String id) async {
     _themes.removeWhere((t) => t.id == id);
     await _atomicWrite(_themes);
   }
 
+  /// Writes to a .tmp file then renames, so a crash cannot leave a corrupt JSON.
   Future<void> _atomicWrite(List<CustomEnvironmentTheme> themes) async {
     final path = _configPath;
     final tmpPath = '$path.tmp';

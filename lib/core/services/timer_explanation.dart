@@ -1,13 +1,9 @@
+import 'package:intl/intl.dart';
 import 'package:breakmate/core/services/timer_context_manager.dart';
 import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
-/// Templated, local-only answer to "why did BreakMate do that?" — Phase 2
-/// of the workflow-analysis plan doc. Ergonomically mirrors Opsis's Quick
-/// Ask (a hotkey opens an answer instantly), but scoped to BreakMate's own
-/// state rather than screen content, and needs no AI call: every reason
-/// here just reads a predicate [TimerContextManager] already exposes and
-/// turns it into a sentence.
+/// Human-readable answer to "why is my timer in this state?", shown by TimerExplanationOverlayService.
 class TimerExplanation {
   final String stateSummary;
   final List<String> reasons;
@@ -20,10 +16,13 @@ class TimerExplanation {
   });
 }
 
+/// Builds the explanation from current timer state and the context manager's smart-detection signals.
 TimerExplanation buildTimerExplanation({
   required TimerState timerState,
   required TimerContextManager contextManager,
   required SettingsModel settings,
+  DateTime? snoozeResumeAt,
+  bool? isManualPause,
 }) {
   final smartPauseActive = contextManager.isSmartPauseActive();
   final withinWorkingHours = contextManager.isWithinWorkingHours();
@@ -59,6 +58,11 @@ TimerExplanation buildTimerExplanation({
 
   final stateSummary = switch (timerState) {
     TimerState.breakActive => 'A break is active right now.',
+    TimerState.paused when snoozeResumeAt != null =>
+      'Snoozed until ${DateFormat.jm().format(snoozeResumeAt)}. Your focus countdown resumes when your schedule and detection allow.',
+    TimerState.paused when isManualPause == true => 'Timer is manually paused.',
+    TimerState.paused when !withinWorkingHours =>
+      'Timer is paused outside working hours or during lunch.',
     TimerState.paused when smartPauseActive =>
       'Timer is paused by a smart-detection rule.',
     TimerState.paused => 'Timer is manually paused.',

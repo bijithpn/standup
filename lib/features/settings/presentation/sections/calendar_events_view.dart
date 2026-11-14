@@ -6,8 +6,18 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 
 const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const _months = [
-  'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
-  'September', 'October', 'November', 'December', //
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 bool _sameDay(DateTime a, DateTime b) =>
@@ -19,7 +29,7 @@ String _hm(DateTime t) =>
 String _dayLabel(DateTime d) =>
     '${_weekdays[d.weekday - 1]}, ${d.day} ${_months[d.month - 1].substring(0, 3)}';
 
-/// Today's agenda: a timeline of the day's events with the current one marked.
+/// Today's events from [CalendarSyncController.events].
 class TodayAgendaCard extends StatelessWidget {
   final CalendarSyncController controller;
   const TodayAgendaCard({super.key, required this.controller});
@@ -58,7 +68,7 @@ class TodayAgendaCard extends StatelessWidget {
   }
 }
 
-/// Full month view with an event dot per day and the selected day's agenda.
+/// Month grid with per-day event list; loads each visible month on demand via [CalendarSyncController.eventsBetween].
 class MonthCalendarCard extends StatefulWidget {
   final CalendarSyncController controller;
   const MonthCalendarCard({super.key, required this.controller});
@@ -72,6 +82,7 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
   DateTime _selected = DateTime.now();
   List<CalendarEvent> _events = const [];
   bool _loading = false;
+  // Discards results of superseded loads when the user flips months quickly.
   int _token = 0;
 
   @override
@@ -293,7 +304,7 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
   }
 }
 
-/// One event row: time column, accent bar, title and details.
+/// Single event row (time range, title, all-day/ongoing state).
 class EventTile extends StatelessWidget {
   final CalendarEvent event;
   const EventTile({super.key, required this.event});

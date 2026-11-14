@@ -1,39 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-class WindDownTemplate extends StatefulWidget {
+/// Break template: end-of-day sunset screen summarizing today's stats from StatsService.
+class WindDownTemplate extends StatelessWidget {
   const WindDownTemplate({super.key});
 
-  @override
-  State<WindDownTemplate> createState() => _WindDownTemplateState();
-}
-
-class _WindDownTemplateState extends State<WindDownTemplate>
-    with SingleTickerProviderStateMixin {
-  static const Color _gold = Color(0xFFC49A4A);
-
-  /// The glow breathes over a 10s period.
-  late final AnimationController _breath = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 5),
+  static const _palette = BreakPalette(
+    canvas: Color(0xFF2A1A4A),
+    canvasRaised: Color(0xFF3A2358),
+    surface: Color(0xFF3A2358),
+    border: Color(0x33FFE9C7),
+    track: Color(0x33FFE9C7),
+    textPrimary: Color(0xFFFFF1DC),
+    textSecondary: Color(0xFFF2D3C4),
+    textMuted: Color(0xFFD9B4B4),
+    isDark: true,
   );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    breakSyncLoop(_breath, context, reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _breath.dispose();
-    super.dispose();
-  }
+  static const Color _cream = Color(0xFFFFE9C7);
 
   static String _minutes(int m) {
     if (m < 60) return '${m}m';
@@ -44,72 +31,70 @@ class _WindDownTemplateState extends State<WindDownTemplate>
 
   @override
   Widget build(BuildContext context) {
+    const palette = _palette;
     return ListenableBuilder(
       listenable: Listenable.merge([sl<StatsService>(), sl<BreakController>()]),
       builder: (context, _) {
         final stats = sl<StatsService>().stats;
-        final breakController = sl<BreakController>();
-
-        // Only tiles that have data are shown ("Breaks taken" always is).
-        final tiles = <({String label, String value})>[
-          (label: 'Breaks taken', value: '${stats.breaksCompleted}'),
+        final summary = [
+          '${stats.breaksCompleted} breaks taken',
           if (stats.dailyUsageMinutes > 0)
-            (label: 'Screen time', value: _minutes(stats.dailyUsageMinutes)),
-          if (stats.currentStreak > 0)
-            (label: 'Day streak', value: '${stats.currentStreak}'),
-          if (stats.breaksSkipped > 0)
-            (label: 'Skipped', value: '${stats.breaksSkipped}'),
-        ];
+            '${_minutes(stats.dailyUsageMinutes)} on screen',
+          if (stats.currentStreak > 0) '${stats.currentStreak} day streak',
+          if (stats.breaksSkipped > 0) '${stats.breaksSkipped} skipped',
+        ].join('   ·   ');
 
         return BreakScaffold(
-          palette: BreakPalette.evening,
-          canvas: BreakPalette.evening.canvas,
-          background: CustomPaint(painter: _GlowPainter(breath: _breath)),
-          child: Center(
-            child: BreakEntrance(
-              scale: false,
-              duration: const Duration(milliseconds: 1200),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ExcludeSemantics(
-                    child: Icon(LucideIcons.sunset, size: 48, color: _gold),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Time to wind down',
-                    textAlign: TextAlign.center,
-                    style: BreakOverlayTheme.display.copyWith(
-                      color: BreakPalette.evening.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+          palette: palette,
+          canvas: palette.canvas,
+          background: const CustomPaint(painter: _SunsetPainter()),
+          child: Stack(
+            children: [
+              Positioned(
+                left: 128,
+                top: 128,
+                right: 128,
+                child: BreakEntrance(
+                  scale: false,
+                  duration: const Duration(milliseconds: 1200),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var i = 0; i < tiles.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 12),
-                        BreakEntrance(
-                          delay: Duration(milliseconds: 80 * (i + 1)),
-                          scale: false,
-                          child: _Tile(
-                            label: tiles[i].label,
-                            value: tiles[i].value,
+                      Text(
+                        'Time to\nwind down',
+                        style: BreakOverlayTheme.serif.copyWith(
+                          fontSize: 96,
+                          height: 1.0,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: -2,
+                          color: palette.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Semantics(
+                        container: true,
+                        label: summary,
+                        excludeSemantics: true,
+                        child: Text(
+                          summary,
+                          style: BreakOverlayTheme.body.copyWith(
+                            fontSize: 17,
+                            color: palette.textSecondary,
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 40),
+                      IntrinsicWidth(
+                        child: _DoneButton(
+                          onPressed: () =>
+                              sl<BreakController>().completeCurrentBreak(),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  IntrinsicWidth(
-                    child: _DoneButton(
-                      gold: _gold,
-                      onPressed: () => breakController.completeCurrentBreak(),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -117,56 +102,10 @@ class _WindDownTemplateState extends State<WindDownTemplate>
   }
 }
 
-class _Tile extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _Tile({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: '$label, $value',
-      excludeSemantics: true,
-      child: Container(
-        width: 140,
-        height: 88,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusMd),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              value,
-              style: BreakOverlayTheme.title.copyWith(
-                color: const Color(0xFFF3E9DA),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label.toUpperCase(),
-              style: BreakOverlayTheme.micro.copyWith(
-                color: const Color(0xFFC9B79C),
-                fontSize: 11,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// "Done for today": autofocused, so Enter finishes the evening.
 class _DoneButton extends StatefulWidget {
-  final Color gold;
   final VoidCallback onPressed;
 
-  const _DoneButton({required this.gold, required this.onPressed});
+  const _DoneButton({required this.onPressed});
 
   @override
   State<_DoneButton> createState() => _DoneButtonState();
@@ -178,6 +117,7 @@ class _DoneButtonState extends State<_DoneButton> {
 
   @override
   Widget build(BuildContext context) {
+    final lit = _hovered || _focused;
     return Semantics(
       container: true,
       button: true,
@@ -202,20 +142,16 @@ class _DoneButtonState extends State<_DoneButton> {
           child: AnimatedContainer(
             duration: BreakMotion.fast,
             height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 36),
             alignment: Alignment.center,
-            decoration: ShapeDecoration(
-              color: Color.lerp(widget.gold, Colors.white, _hovered ? 0.1 : 0),
-              shape: StadiumBorder(
-                side: _focused
-                    ? const BorderSide(color: Color(0xFFF3E9DA), width: 2)
-                    : BorderSide.none,
-              ),
+            decoration: BoxDecoration(
+              color: WindDownTemplate._cream.withValues(alpha: lit ? 1 : 0.88),
+              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
             ),
             child: Text(
               'Done for today',
               style: BreakOverlayTheme.body.copyWith(
-                color: const Color(0xFF140D07),
+                color: const Color(0xFF3A1F3F),
                 fontWeight: FontWeight.w600,
                 height: 1.0,
               ),
@@ -227,36 +163,64 @@ class _DoneButtonState extends State<_DoneButton> {
   }
 }
 
-class _GlowPainter extends CustomPainter {
-  final Animation<double> breath;
-
-  final Paint _sky = Paint();
-  final Paint _glow = Paint();
-
-  _GlowPainter({required this.breath}) : super(repaint: breath);
+class _SunsetPainter extends CustomPainter {
+  const _SunsetPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
-    final full = Offset.zero & size;
-    _sky.shader = const LinearGradient(
+    final horizon = size.height * 0.72;
+    final p = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: const [
+          Color(0xFF2A1A4A),
+          Color(0xFF7A3B73),
+          Color(0xFF603E52),
+          Color(0xFF80634B),
+        ],
+        stops: const [0, 0.4, 0.7, 1],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, horizon));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, horizon), p);
+
+    final sun = Offset(size.width * 0.7, horizon);
+    final r = size.height * 0.2;
+    p.shader = const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color(0xFF140D07), Color(0xFF2E1C0C)],
-    ).createShader(full);
-    canvas.drawRect(full, _sky);
+      colors: [Color(0xFFA99670), Color(0xFF9D7F57)],
+    ).createShader(Rect.fromCircle(center: sun, radius: r));
+    canvas.drawCircle(sun, r, p);
 
-    final a = 0.20 + 0.05 * Curves.easeInOutSine.transform(breath.value);
-    _glow.shader = RadialGradient(
-      center: const Alignment(0, 0.9),
-      radius: 0.9,
-      colors: [
-        const Color(0xFFC49A4A).withValues(alpha: a),
-        const Color(0xFFC49A4A).withValues(alpha: 0),
-      ],
-    ).createShader(full);
-    canvas.drawRect(full, _glow);
+    p.shader =
+        const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF4A2457), Color(0xFF1C1033)],
+        ).createShader(
+          Rect.fromLTWH(0, horizon, size.width, size.height - horizon),
+        );
+    canvas.drawRect(
+      Rect.fromLTWH(0, horizon, size.width, size.height - horizon),
+      p,
+    );
+
+    p.shader = null;
+    for (var i = 0; i < 7; i++) {
+      final t = i / 6;
+      final w = r * (1.5 - 0.9 * t);
+      final y = horizon + 10 + t * (size.height - horizon - 20) * 0.8;
+      p.color = const Color(0xFFFFC27A).withValues(alpha: 0.55 - 0.4 * t);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(sun.dx, y), width: w, height: 5),
+          const Radius.circular(3),
+        ),
+        p,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _GlowPainter old) => false;
+  bool shouldRepaint(covariant _SunsetPainter old) => false;
 }

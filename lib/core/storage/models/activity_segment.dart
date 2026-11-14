@@ -1,16 +1,11 @@
 import 'package:objectbox/objectbox.dart';
 
-/// What the user was doing during a stretch of time.
-///
-/// Stored as an integer so the value survives reordering of the enum.
+/// Persisted as an int ([storedValue]); do not reorder or reuse values.
 enum ActivityKind {
-  /// Actively using an application.
   active(0),
 
-  /// No input for longer than the idle threshold.
   idle(1),
 
-  /// A BreakMate break was running.
   onBreak(2);
 
   const ActivityKind(this.storedValue);
@@ -25,37 +20,19 @@ enum ActivityKind {
   }
 }
 
-/// One continuous stretch of time spent in a single state.
-///
-/// This is the record the previous usage history could not express. Usage was
-/// stored as a per-day total per app, which answers "how long was Chrome open
-/// today" but nothing about *when* — so a timeline, per-app sessions, and any
-/// pattern that depends on time of day were all unreachable. A segment carries
-/// its own start and end, so those fall out of the data instead of needing a
-/// second collection path.
-///
-/// Deliberately app-level only: the application's name and category, never the
-/// window title or anything from inside it.
+/// One contiguous span of foreground-app activity (or idle/break time) for the activity timeline.
 @Entity()
 class ActivitySegment {
   @Id()
   int id;
 
-  /// Stable per-app identifier — the bundle id on macOS, the executable path
-  /// on Windows. Empty for idle and break segments, which belong to no app.
   @Index()
   String appKey;
 
-  /// The app's display name, derived from its executable.
   String appName;
 
-  /// [AppCategory.name] at the time of recording, kept as a string so a
-  /// renamed or added category cannot corrupt stored history.
   String categoryName;
 
-  /// Local calendar day, `YYYY-MM-DD`. Indexed because almost every query is
-  /// "one day" or "a range of days", and deriving it from [startedAtMs] would
-  /// mean scanning.
   @Index()
   String date;
 
@@ -64,7 +41,7 @@ class ActivitySegment {
 
   int endedAtMs;
 
-  /// [ActivityKind.storedValue].
+  // Raw stored [ActivityKind]; use [activityKind] to read/write.
   int kind;
 
   ActivitySegment({
@@ -90,8 +67,7 @@ class ActivitySegment {
 
   set activityKind(ActivityKind value) => kind = value.storedValue;
 
-  /// A segment that ended before it started, or spans no time at all, is a
-  /// clock adjustment or a bug rather than real usage.
+  // Zero/negative-length spans come from clock jumps and should be discarded.
   bool get isValid => endedAtMs > startedAtMs;
 
   Map<String, dynamic> toMap() {

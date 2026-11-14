@@ -16,7 +16,9 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
+/// Settings > Companion: pet gallery, size, name, gaze sensitivity and streak, all applied through [CompanionOverlayController].
 class CompanionSettingsSection extends StatefulWidget {
   final CompanionOverlayController controller;
 
@@ -32,6 +34,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   static const double _maximumPetSize = 15.0;
 
   bool _isRenameDialogOpen = false;
+  // Preview values show instantly in the UI; the controller is only called on commit (slider release / theme applied).
   bool _isApplyingTheme = false;
   String? _previewThemeId;
   double? _previewScale;
@@ -43,8 +46,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   double get _displayedScale =>
       _previewScale ?? widget.controller.companionScale;
 
+  // Snap to 0.5 steps.
   double _snapScale(double value) => (value * 2.0).roundToDouble() / 2.0;
 
+  // Maps the 2..15 scale range to a 60-100% display factor.
   double _petSizeFactor(double value) {
     final normalized =
         ((value.clamp(_minimumPetSize, _maximumPetSize) - _minimumPetSize) /
@@ -73,7 +78,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   double get _displayedSensitivity =>
       _previewSensitivity ?? widget.controller.gazeSensitivity;
 
-  /// A word for the slider position, so the number never has to be decoded.
   String _sensitivityLabel(double value) {
     if (value < 0.34) return 'Relaxed';
     if (value > 0.66) return 'Keen';
@@ -212,6 +216,30 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     widget.controller.companionEnabled,
                     (v) => widget.controller.toggleCompanion(v),
                   ),
+                  if (widget.controller.companionEnabled) ...[
+                    divider(),
+                    toggleRow(
+                      'Escalate if ignored',
+                      'Your companion gives the first cue. If you do not step '
+                          'away within 45 seconds, the full reminder appears.',
+                      sl<SettingsRepository>()
+                          .currentSettings
+                          .experience
+                          .companionEscalates,
+                      (v) {
+                        final repo = sl<SettingsRepository>();
+                        final cur = repo.currentSettings;
+                        repo.save(
+                          cur.copyWith(
+                            experience: cur.experience.copyWith(
+                              companionEscalates: v,
+                            ),
+                          ),
+                        );
+                        setState(() {});
+                      },
+                    ),
+                  ],
                 ]),
 
                 if (widget.controller.companionEnabled) ...[
@@ -388,8 +416,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 child: AbsorbPointer(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.15),
-                    // Near the top, where the switch that was just pressed is,
-                    // rather than the middle of a page that may be scrolled.
+
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: Padding(
@@ -457,7 +484,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   Row(
                     children: [
                       Text(
-                        // The name the user gave their companion, as chosen.
                         widget.controller.companionPetName.trim().isEmpty
                             ? 'Companion'
                             : widget.controller.companionPetName,
@@ -573,7 +599,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       ),
       child: Row(
         children: [
-          // Left: Clean full SVG or Blobatar showcase
           Container(
             width: 140,
             height: 140,
@@ -663,7 +688,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             ),
           ),
           const SizedBox(width: 20),
-          // Right: Pet Details & Actions
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -796,8 +821,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           itemBuilder: (context, index) {
             final theme = PetTheme.themes[index];
             final isSelected = _displayedThemeId == theme.id;
-            // Every pet is available in the dev flavor; streak gating only
-            // applies to real builds.
+
             final isLocked =
                 !FlavorConfig.instance.isDev &&
                 theme.requiredConsistencyDays > 0 &&
@@ -863,9 +887,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Full-bleed authored species artwork for a fast, reliable
-                      // thumbnail. The full avatar renderer is reserved for the
-                      // larger active-companion preview.
                       if (theme.isBlobatar)
                         Center(
                           child: BlobatarCompanionWidget(
@@ -889,8 +910,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           ),
                         ),
 
-                      // Bottom banner keeps names readable over every authored
-                      // background without hiding the colourful artwork.
                       Positioned(
                         left: 0,
                         right: 0,

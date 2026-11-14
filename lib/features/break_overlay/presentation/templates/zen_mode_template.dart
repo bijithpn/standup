@@ -5,6 +5,21 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+const _forest = BreakPalette(
+  canvas: Color(0xFF0F1A16),
+  canvasRaised: Color(0xFF16251F),
+  surface: Color(0xFF16251F),
+  border: Color(0x339DB8A0),
+  track: Color(0x339DB8A0),
+  textPrimary: Color(0xFFE6EEDF),
+  textSecondary: Color(0xFFB9CBB7),
+  textMuted: Color(0xFF8DA591),
+  isDark: true,
+);
+const _sage = Color(0xFF9DB8A0);
+const _moss = Color(0xFF2F4A3A);
+
+/// Break template: a morphing blob that grows and shrinks with the selected breathing preset, labeled Breathe in/out/Hold.
 class ZenModeTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -27,15 +42,10 @@ class ZenModeTemplate extends StatefulWidget {
 
 class _ZenModeTemplateState extends State<ZenModeTemplate>
     with SingleTickerProviderStateMixin {
-  late BreathPreset _preset = BreathPreset.byId(widget.settings.breathPreset);
+  late final BreathPreset _preset = BreathPreset.byId(
+    widget.settings.breathPreset,
+  );
 
-  /// A preset picked mid-cycle starts at the next cycle, so a breath is never
-  /// cut short.
-  late BreathPreset _pending = _preset;
-  double _lastValue = 0;
-
-  /// One controller drives both the breath and the blob morph; one value
-  /// spans one cycle of the current preset.
   late final AnimationController _breath = AnimationController(
     vsync: this,
     duration: Duration(seconds: _preset.cycleSeconds),
@@ -44,17 +54,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     BreathFullness(() => _preset),
   );
   String _phaseText = 'Breathe in';
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
-  Color get _accent => BreakPalette.of(context).accentOn(
-    breakTimeTinted(
-      BreakOverlayTheme.resolveAccent(
-        widget.settings.templateAccentOverrides,
-        'zen',
-        _kind.accent,
-      ),
-    ),
-  );
+  Color get _accent => breakAccent(widget.settings, 'zen', _sage);
 
   @override
   void initState() {
@@ -65,36 +66,13 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Preview frame: peak inhale (scale 1.0).
+
     breakSyncLoop(_breath, context, park: 0.249);
     _updatePhase();
   }
 
-  void _selectPreset(BreathPreset p) {
-    setState(() => _pending = p);
-    // Frozen (reduced motion / preview): there is no cycle boundary to wait
-    // for, so switch now.
-    if (!_breath.isAnimating) _applyPending();
-  }
-
-  void _applyPending() {
-    _preset = _pending;
-    _lastValue = 0;
-    _breath.duration = Duration(seconds: _preset.cycleSeconds);
-    if (_breath.isAnimating) {
-      _breath.repeat();
-    } else {
-      setState(() {});
-    }
-  }
-
   void _updatePhase() {
     final v = _breath.value;
-    if (v < _lastValue - 0.5 && _pending != _preset) {
-      _applyPending();
-      return;
-    }
-    _lastValue = v;
     final phase = switch (_preset.phaseAt(v * _preset.cycleSeconds)) {
       BreathPhase.inhale => 'Breathe in',
       BreathPhase.exhale => 'Breathe out',
@@ -112,7 +90,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
+    const palette = _forest;
     final reduced = BreakMotion.reduced(context);
     final complete = breakIsComplete(
       context,
@@ -124,41 +102,21 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
-      background: DecoratedBox(
+      palette: _forest,
+      background: const DecoratedBox(
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            radius: 0.75,
-            colors: [_accent.withValues(alpha: 0.05), Colors.transparent],
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF16261F), Color(0xFF0B130F)],
           ),
         ),
       ),
       child: Stack(
         children: [
           Positioned(
-            top: 190,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Semantics(
-                liveRegion: true,
-                child: AnimatedSwitcher(
-                  duration: BreakMotion.medium,
-                  child: Text(
-                    _phaseText,
-                    key: ValueKey(_phaseText),
-                    textAlign: TextAlign.center,
-                    style: BreakOverlayTheme.title.copyWith(
-                      color: palette.textPrimary,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 640 - 120,
-            top: 400 - 120,
+            left: 640 - 210,
+            top: 340 - 210,
             child: BreakEntrance(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: complete ? 0.9 : 1.0),
@@ -170,8 +128,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                 ),
                 child: RepaintBoundary(
                   child: SizedBox(
-                    width: 240,
-                    height: 240,
+                    width: 420,
+                    height: 420,
                     child: CustomPaint(
                       painter: _BlobPainter(
                         breath: _breath,
@@ -187,108 +145,46 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
             ),
           ),
           Positioned(
-            top: 120,
+            top: 340 - 34,
             left: 0,
             right: 0,
-            child: BreakEntrance(
-              delay: BreakEntrance.stagger(3),
-              scale: false,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (final p in BreathPreset.all)
-                    _PresetChip(
-                      preset: p,
-                      selected: p == _pending,
-                      accent: _accent,
-                      onTap: () => _selectPreset(p),
+            child: Center(
+              child: Semantics(
+                liveRegion: true,
+                child: AnimatedSwitcher(
+                  duration: BreakMotion.medium,
+                  child: Text(
+                    _phaseText,
+                    key: ValueKey(_phaseText),
+                    style: BreakOverlayTheme.serif.copyWith(
+                      fontSize: 56,
+                      height: 1.0,
+                      color: palette.textPrimary,
                     ),
-                ],
+                  ),
+                ),
               ),
             ),
           ),
           Positioned(
-            top: 400 + 120 + 40,
+            top: 340 + 210 + 36,
             left: 0,
             right: 0,
-            child: Column(
-              children: [
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(1),
-                  scale: false,
-                  child: BreakCountdown(
-                    seconds: widget.remainingSeconds,
-                    style: BreakOverlayTheme.title,
-                    color: breakClockColor(
-                      widget.settings,
-                      palette,
-                      fallback: palette.textSecondary,
-                    ),
-                  ),
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: BreakCountdown(
+                seconds: widget.remainingSeconds,
+                style: BreakOverlayTheme.display.copyWith(letterSpacing: 6),
+                color: breakClockColor(
+                  widget.settings,
+                  palette,
+                  fallback: palette.textMuted,
                 ),
-                const SizedBox(height: 12),
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(2),
-                  scale: false,
-                  child: BreakLabel(_kind.label),
-                ),
-              ],
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PresetChip extends StatelessWidget {
-  final BreathPreset preset;
-  final bool selected;
-  final Color accent;
-  final VoidCallback onTap;
-
-  const _PresetChip({
-    required this.preset,
-    required this.selected,
-    required this.accent,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: 'Breathing pattern ${preset.label}',
-      excludeSemantics: true,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: BreakMotion.fast,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: selected ? accent.withValues(alpha: 0.16) : null,
-              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
-              border: Border.all(
-                color: selected
-                    ? accent.withValues(alpha: 0.6)
-                    : palette.border,
-              ),
-            ),
-            child: Text(
-              preset.label,
-              style: BreakOverlayTheme.micro.copyWith(
-                color: selected ? palette.textPrimary : palette.textSecondary,
-                fontFeatures: BreakOverlayTheme.tabular,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -302,7 +198,7 @@ class _BlobPainter extends CustomPainter {
   final bool reduced;
 
   static const int _points = 6;
-  static const double _baseRadius = 110;
+  static const double _baseRadius = 190;
 
   final Path _path = Path();
   final Paint _fill = Paint();
@@ -311,39 +207,55 @@ class _BlobPainter extends CustomPainter {
     ..strokeWidth = 1.5;
   final List<Offset> _ctrl = List.filled(_points, Offset.zero);
 
+  static const _layers = [
+    (1.0, 0.0, _moss, 0.55),
+    (0.8, 0.35, _sage, 0.22),
+    (0.58, 0.7, _sage, 0.3),
+  ];
+
   _BlobPainter({
     required this.breath,
     required this.fullness,
     required this.cycleSeconds,
     required this.accent,
     required this.reduced,
-  }) : super(repaint: breath) {
-    _fill.shader = RadialGradient(
-      colors: [accent.withValues(alpha: 0.22), accent.withValues(alpha: 0.0)],
-    ).createShader(Rect.fromCircle(center: Offset.zero, radius: 120));
-  }
+  }) : super(repaint: breath);
 
-  /// 0.75 empty, 1.0 full.
   double _scale() => 0.75 + 0.25 * fullness.value;
 
   @override
   void paint(Canvas canvas, Size size) {
     final v = breath.value;
     final scale = reduced ? 1.0 : _scale();
-    // Morph in whole periods per cycle (about 8 s each), so the loop is
-    // seamless whatever the preset.
+
     final cycle = cycleSeconds();
     final periods = (cycle / 8).round().clamp(1, 4);
     final t = v * periods;
 
+    canvas.save();
+    canvas.translate(size.width / 2, size.height / 2);
+    canvas.scale(scale);
+
+    final fade = reduced ? 0.6 + 0.4 * fullness.value : 1.0;
+    for (final (span, phase, color, alpha) in _layers) {
+      _shape(t + phase, span);
+      _fill.color = color.withValues(alpha: alpha * fade);
+      canvas.drawPath(_path, _fill);
+    }
+    _shape(t, 1.0);
+    _stroke.color = accent.withValues(alpha: 0.6 * fade);
+    canvas.drawPath(_path, _stroke);
+    canvas.restore();
+  }
+
+  void _shape(double t, double size) {
     for (var i = 0; i < _points; i++) {
       final a = (math.pi * 2 / _points) * i - math.pi / 2;
-      final noise = reduced ? 0.0 : 0.06 * math.sin(2 * math.pi * t + i * 1.3);
-      final r = _baseRadius * (1 + noise);
+      final noise = reduced ? 0.0 : 0.07 * math.sin(2 * math.pi * t + i * 1.3);
+      final r = _baseRadius * size * (1 + noise);
       _ctrl[i] = Offset(math.cos(a) * r, math.sin(a) * r);
     }
 
-    // Closed Catmull-Rom spline as cubic Beziers.
     _path.reset();
     _path.moveTo(_ctrl[0].dx, _ctrl[0].dy);
     for (var i = 0; i < _points; i++) {
@@ -356,17 +268,6 @@ class _BlobPainter extends CustomPainter {
       _path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
     }
     _path.close();
-
-    canvas.save();
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.scale(scale);
-    // Reduced motion trades the scale change for a 60% -> 100% opacity swell.
-    final fade = reduced ? 0.6 + 0.4 * fullness.value : 1.0;
-    _fill.color = Color.fromRGBO(255, 255, 255, fade);
-    _stroke.color = accent.withValues(alpha: 0.5 * fade);
-    canvas.drawPath(_path, _fill);
-    canvas.drawPath(_path, _stroke);
-    canvas.restore();
   }
 
   @override

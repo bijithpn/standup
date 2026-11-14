@@ -5,6 +5,7 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 
+/// Position/velocity model for the sprite pet: cursor following, random wandering, hopping/flying by species, and screen clamping.
 class PetNavigationService {
   PetNavigationService();
 
@@ -16,8 +17,6 @@ class PetNavigationService {
   bool _isWanderingEnabled = true;
   PetSpecies _species = PetSpecies.cat;
 
-  // True while the pet is in the falling state and has touched the floor.
-  // Cleared when the falling state exits.
   bool _isLanded = false;
 
   Offset _pos = Offset.zero;
@@ -29,14 +28,14 @@ class PetNavigationService {
 
   bool _isCursorFollowing = false;
   Offset _cursorPos = Offset.zero;
-  double _lookTimer = 0.0; // Cat look-before-move delay
+  double _lookTimer = 0.0;
 
   double _hopY = 0.0;
   double _flyY = 0.0;
 
   int _cursorMoveCount = 0;
   DateTime _lastCursorMoveReset = DateTime.now();
-  static const int _annoyanceThreshold = 15; // moves per 3 seconds
+  static const int _annoyanceThreshold = 15;
   static const Duration _annoyanceWindow = Duration(seconds: 3);
 
   Duration _currentWanderCooldown = const Duration(seconds: 3);
@@ -44,8 +43,7 @@ class PetNavigationService {
 
   Offset get currentPosition => _pos + Offset(0, _hopY + _flyY);
   Offset get velocity => _vel;
-  double get speed =>
-      _vel.distance; // px/s — used by component to pick walk/run anim
+  double get speed => _vel.distance;
   double get currentHeading =>
       _vel.distance > 0.01 ? atan2(_vel.dy, _vel.dx) : 0.0;
   double get heading => currentHeading;
@@ -120,9 +118,6 @@ class PetNavigationService {
     _paddingBottom = bottom;
   }
 
-  /// Resizes the logical screen bounds without resetting movement state.
-  /// Use this for window resize events; use [initialize] only on first load
-  /// or a deliberate position reset.
   void updateScreenSize(Size newSize) {
     _screen = newSize;
   }
@@ -144,7 +139,7 @@ class PetNavigationService {
     _cursorPos = gameSpaceCursor;
     if (forceFollowing != null) {
       if (forceFollowing && !_isCursorFollowing) {
-        _lookTimer = 0.0; // Reset look delay on new follow
+        _lookTimer = 0.0;
       }
       _isCursorFollowing = forceFollowing;
     }
@@ -217,14 +212,11 @@ class PetNavigationService {
     _lastCurrentState = currentState;
     if (_screen == Size.zero) return _pos;
 
-    // Falling state: apply gravity instead of normal wandering so the pet
-    // actually descends. Land when the Y position reaches the floor boundary.
     if (currentState == PetState.falling) {
-      const double gravity = 980.0; // px/s^2
+      const double gravity = 980.0;
       _vel = Offset(_vel.dx, _vel.dy + gravity * dt);
       _pos = Offset(_pos.dx + _vel.dx * dt, _pos.dy + _vel.dy * dt);
 
-      // Clamp X within bounds during fall.
       final minX = _paddingLeft;
       final maxX = _screen.width - _paddingRight;
       if (_pos.dx < minX) {
@@ -235,8 +227,6 @@ class PetNavigationService {
         _vel = Offset(-_vel.dx.abs() * 0.3, _vel.dy);
       }
 
-      // Landing check: floor is at paddingTop for walk-type pets.
-      // Emit PetLandedEvent exactly once per landing to update the FSM.
       final floorY = _paddingTop;
       if (_pos.dy >= floorY) {
         _pos = Offset(_pos.dx, floorY);
@@ -252,7 +242,6 @@ class PetNavigationService {
       return _pos;
     }
 
-    // Reset landing guard when we leave the falling state.
     _isLanded = false;
 
     final bool isPlayState =
@@ -263,7 +252,6 @@ class PetNavigationService {
       _updateWander(dt, currentState: currentState);
     }
 
-    // Ground-based walking pets should not have vertical velocity to prevent jitter/tilt/stretch deforming
     if (_species.movementType == MovementType.walk) {
       _vel = Offset(_vel.dx, 0.0);
     }
@@ -273,7 +261,6 @@ class PetNavigationService {
     _clampToBounds();
 
     if (_species.movementType == MovementType.walk) {
-      // Force Y position to stay at the vertical limit
       _pos = Offset(_pos.dx, _paddingTop);
       _vel = Offset(_vel.dx, 0.0);
     }
@@ -284,6 +271,7 @@ class PetNavigationService {
     return _pos;
   }
 
+  /// Eases toward the cursor, stopping at stopRadius; species lookDelay holds it still briefly before moving.
   void _updateCursorFollow(double dt) {
     final profile = _species.defaultProfile;
 
@@ -339,7 +327,7 @@ class PetNavigationService {
     final dir = toTarget / dist;
     final speedFactor = (dist / 80.0).clamp(0.3, 1.0);
     final targetVel = dir * (_wanderSpeed * speedFactor);
-    // Smooth velocity change (avoids instant direction snaps)
+
     _vel = Offset(
       _vel.dx + (targetVel.dx - _vel.dx) * 6.0 * dt,
       _vel.dy + (targetVel.dy - _vel.dy) * 6.0 * dt,
@@ -354,7 +342,7 @@ class PetNavigationService {
 
     if (_pos.dx < minX) {
       _pos = Offset(minX, _pos.dy);
-      _vel = Offset(_vel.dx.abs() * 0.5, _vel.dy); // Soft bounce
+      _vel = Offset(_vel.dx.abs() * 0.5, _vel.dy);
       _hasWanderTarget = false;
     } else if (_pos.dx > maxX) {
       _pos = Offset(maxX, _pos.dy);

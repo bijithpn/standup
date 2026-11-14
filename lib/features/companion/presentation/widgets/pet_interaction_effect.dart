@@ -2,24 +2,18 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// The three things a user can do to the companion, each with a prop or effect
-/// of its own so they do not all read as the same bounce.
+/// Visual interaction effects (hearts, ball, cookie); hops lists when the pet should jump during the effect.
 enum PetInteractionKind {
-  /// Hearts drift up from the head.
   pet(Duration(milliseconds: 1500)),
 
-  /// A ball is thrown in, lands, and bounces away.
   play(Duration(milliseconds: 2400)),
 
-  /// A cookie drops to the mouth and is eaten in bites.
   treat(Duration(milliseconds: 1900));
 
   const PetInteractionKind(this.duration);
 
   final Duration duration;
 
-  /// Moments, as a 0..1 fraction of [duration], when the pet should hop in
-  /// time with what is drawn.
   List<({double at, double strength})> get hops => switch (this) {
     PetInteractionKind.pet => const [],
     PetInteractionKind.play => const [
@@ -35,8 +29,7 @@ enum PetInteractionKind {
   };
 }
 
-/// Plays one [PetInteractionKind] over a square [size] stage, then calls
-/// [onDone]. Give it a fresh key per interaction to replay it.
+/// Plays a one-shot effect animation for kind.duration, then calls onDone.
 class PetInteractionEffect extends StatefulWidget {
   const PetInteractionEffect({
     super.key,
@@ -99,8 +92,6 @@ class _EffectPainter extends CustomPainter {
     }
   }
 
-  // ── Pet: hearts ───────────────────────────────────────────────────────────
-
   void _hearts(Canvas canvas, Size size, double t) {
     const offsets = [-0.18, 0.04, 0.2, -0.06, 0.12];
     for (var i = 0; i < offsets.length; i++) {
@@ -144,8 +135,6 @@ class _EffectPainter extends CustomPainter {
     canvas.drawPath(path, Paint()..color = color);
   }
 
-  // ── Play: ball ────────────────────────────────────────────────────────────
-
   void _ball(Canvas canvas, Size size, double t) {
     final r = size.width * 0.06;
     final ground = size.height * 0.86;
@@ -153,14 +142,12 @@ class _EffectPainter extends CustomPainter {
     final double spin;
 
     if (t < 0.3) {
-      // Thrown in from the right, landing in front of the pet.
       final p = t / 0.3;
       final x = size.width * (1.08 - p * 0.5);
       final arc = math.sin(p * math.pi) * size.height * 0.28;
       c = Offset(x, ground - r - arc);
       spin = p * 6;
     } else {
-      // Three shrinking bounces while it rolls off to the left.
       final p = (t - 0.3) / 0.7;
       final x = size.width * (0.58 - p * 0.75);
       final bounce =
@@ -198,21 +185,17 @@ class _EffectPainter extends CustomPainter {
     canvas.restore();
   }
 
-  // ── Treat: cookie ─────────────────────────────────────────────────────────
-
   void _cookie(Canvas canvas, Size size, double t) {
     final r = size.width * 0.075;
     const mouth = 0.58;
 
     if (t < 0.4) {
-      // Falls from above onto the mouth.
       final p = Curves.easeIn.transform(t / 0.4);
       final y = size.height * (0.05 + (mouth - 0.05) * p);
       _cookieAt(canvas, Offset(size.width / 2, y), r);
       return;
     }
 
-    // Eaten away in three chomps, which also throws up a few crumbs.
     final p = ((t - 0.4) / 0.4).clamp(0.0, 1.0);
     if (p < 1) {
       _cookieAt(
@@ -242,7 +225,6 @@ class _EffectPainter extends CustomPainter {
       }
     }
 
-    // A little sparkle once it is gone: it was a good one.
     final sparkle = ((t - 0.78) / 0.22).clamp(0.0, 1.0);
     if (sparkle > 0) {
       _sparkle(

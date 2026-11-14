@@ -70,4 +70,37 @@ void main() {
 
     expect(sl<AppNavigationService>().selectedSection.value, 'Calendar Sync');
   });
+
+  testWidgets('toggling a detector saves once', (tester) async {
+    final saved = <SettingsModel>[];
+    await pumpSection(tester, const SettingsModel(), saved.add);
+    await tester.tap(find.byType(CupertinoSwitch).first);
+    await tester.pump();
+    expect(saved.single.detectVideoCalls, isFalse);
+  });
+
+  testWidgets('Check again gives feedback without a Scaffold', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SingleChildScrollView(
+          child: FocusDetectionSection(
+            settings: SettingsModel(),
+            onSave: _noop,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Check again'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Check again'));
+    await tester.pumpAndSettle(const Duration(seconds: 6));
+    expect(tester.takeException(), isNull);
+    expect(
+      find.text('Permissions checked'),
+      findsNothing,
+    ); // auto-cleared after 5s
+  });
 }
+
+void _noop(SettingsModel _) {}

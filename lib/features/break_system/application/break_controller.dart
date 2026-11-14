@@ -1,3 +1,5 @@
+import 'package:clock/clock.dart';
+import 'package:breakmate/core/services/snooze_timer.dart';
 import 'dart:math';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -31,6 +33,7 @@ import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
+/// UI-facing controller over [TimerEngine]: opens/closes the break overlay window, runs focus sessions, snooze, music and hotkeys.
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
   final TimerEngine _timerEngine;
@@ -43,6 +46,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   AudioPlayer? _audioPlayer;
   bool _isPlayingMusic = false;
   Timer? _fadeTimer;
+  final SnoozeTimer _snoozeTimer = SnoozeTimer();
+  DateTime? get snoozeResumeAt => _snoozeTimer.resumeAt;
   double _currentVolume = 0.0;
 
   String _currentTemplate = '';
@@ -71,16 +76,23 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   String? get currentExerciseTitle => _currentExerciseTitle;
   String? get currentExerciseInstructions => _currentExerciseInstructions;
 
+  // Settings edits re-apply timers/services and refresh an already-open break overlay.
   void _onSettingsChanged() {
     _applySettings();
+    if (isBreakActive &&
+        _settingsRepo.currentSettings.experience.hasExerciseRestrictions) {
+      _pickRandomExercise();
+    }
     _updateActiveOverlay();
     notifyListeners();
   }
 
   void _onTimerChanged() {
+    if (!isPaused) _snoozeTimer.cancel();
     notifyListeners();
   }
 
+  /// Starts the timers and subscribes to timer changes so overlays follow the timer state.
   void initialize() {
     _applySettings();
     _timerEngine.startTimers();
@@ -94,6 +106,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   @override
+  // Timers may not fire while the app is hidden, so snap the music fade to its final volume.
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.hidden ||
         state == AppLifecycleState.paused) {
@@ -109,6 +122,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Reacts to every timer tick: shows the break overlay on break start, the pre-break warning in the last 3s, and tears down on end.
   void _handleGlobalOverlays() {
     final overlayService = sl<OverlayWindowService>();
     final strictModeController = sl<StrictModeController>();
@@ -124,6 +138,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     if (shouldShowBreak && _lastOverlayState != TimerState.breakActive) {
+      // Guards against re-showing the overlay on every tick of the same break.
       _lastOverlayState = TimerState.breakActive;
 
       final isLong = _timerEngine.activeBreak?.type == BreakType.long;
@@ -131,6 +146,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           ? 'activities'
           : settings.breakTemplate;
 
+      // Break still starts, but the user gets a notice since the overlay is suppressed/quiet in meetings.
       if (isMeetingActive || isPresenting) {
         if (!_hasShownMeetingBreakNotice) {
           _hasShownMeetingBreakNotice = true;
@@ -140,7 +156,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
 
-      if (_currentTemplate == 'activities') {
+      if (_currentTemplate == 'activities' ||
+          settings.experience.hasExerciseRestrictions) {
         _pickRandomExercise();
       }
 
@@ -152,11 +169,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
-        builder: (_) =>
-            const SizedBox.shrink(), // Overlay UI is rendered in separate window
+        builder: (_) => const SizedBox.shrink(),
         strictMode: settings.strictMode,
         breakTheme: settings.breakTheme,
         showOnAllDisplays: settings.showOnAllDisplays,
+        // Sent over IPC to the overlay process, which parses it into OverlayWindowConfig.
         overlayData: {
           'isLong': isLong,
           'breakType': _timerEngine.activeBreak?.type.name,
@@ -167,6 +184,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
           'showWellnessNotes': settings.showExercisesInBreak,
+          'experience': settings.experience.toMap(),
           'durationSeconds':
               _timerEngine.activeBreak?.durationSeconds ??
               _timerEngine.countdownSeconds,
@@ -227,8 +245,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   ExerciseModel? _microExercise;
 
-  /// A one-off guided stretch (neck, wrists, back…) shown as a short break
-  /// with that exercise; finishing it counts as a wellness action.
+  /// Short stretch/posture break triggered on demand; the picked exercise forces the "activities" template.
   void startMicroSession() {
     final stretches = _settingsRepo
         .getExercises()
@@ -242,6 +259,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       stretches,
       Random(),
       avoidId: _currentExerciseId,
+      preferences: _settingsRepo.currentSettings.experience,
     );
     _timerEngine.triggerBreakNow(
       durationSeconds: _microExercise?.durationSeconds,
@@ -255,9 +273,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   bool get isFocusSessionActive => _focusEndsAt != null;
 
-  /// Pauses breaks and reminders for [minutes] (and optionally turns on Do
-  /// Not Disturb), then logs the block to analytics and nudges you to break.
+  /// Pauses break timers and (optionally) enables DND until [minutes] elapse; persisted so it survives a restart.
   void startFocusSession(int minutes) {
+    _snoozeTimer.cancel();
     endFocusSession(completed: false);
     final now = DateTime.now();
     _beginFocus(now, now.add(Duration(minutes: minutes)));
@@ -278,8 +296,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
-  /// A session that was running when the app quit resumes, or is logged as
-  /// finished if its time ran out while the app was closed.
+  /// Resumes or finalises a focus session saved before the app was closed.
   void restoreFocusSession() {
     final storage = sl<StorageService>();
     final endMs = storage.getInt('focus_ends_ms', defaultValue: 0);
@@ -297,6 +314,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Ends the session, resumes timers and logs it as a FocusSession if it lasted at least a minute.
   void endFocusSession({required bool completed}) {
     final start = _focusStartedAt;
     final end = _focusEndsAt;
@@ -328,8 +346,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  /// Runs the user's "BreakMate Focus On"/"BreakMate Focus Off" Shortcut —
-  /// macOS has no public API to toggle Focus modes. Silent if it's absent.
+  // Runs a user-installed macOS Shortcut named "BreakMate Focus On/Off"; no-op elsewhere.
   void _setDoNotDisturb(bool on) {
     if (!Platform.isMacOS || !_settingsRepo.currentSettings.focusDndEnabled) {
       return;
@@ -338,20 +355,33 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _pickRandomExercise() {
-    final micro = _microExercise;
+    final micro =
+        _microExercise?.effectiveTraits.matches(
+              _settingsRepo.currentSettings.experience,
+            ) ==
+            true
+        ? _microExercise
+        : null;
     final exercise =
         micro ??
         ExerciseModel.pickForBreak(
           _settingsRepo.getExercises(),
           Random(),
           avoidId: _currentExerciseId,
+          preferences: _settingsRepo.currentSettings.experience,
         );
-    if (exercise == null) return;
+    if (exercise == null) {
+      _currentExerciseId = null;
+      _currentExerciseTitle = null;
+      _currentExerciseInstructions = null;
+      return;
+    }
     _currentExerciseId = exercise.id;
     _currentExerciseTitle = exercise.title;
     _currentExerciseInstructions = exercise.instructions;
   }
 
+  /// Pushes current settings into the timer engine and starts/stops the detection and hotkey services.
   void _applySettings() {
     final settings = _settingsRepo.currentSettings;
     _timerEngine.updateSettings(
@@ -383,10 +413,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       meetingDetection.stop();
     }
 
-    // Kept running regardless of presentationPauseEnabled: that setting only
-    // controls whether a presentation pauses the work timer, while the
-    // detector itself is also used to keep the full break overlay off a
-    // screen that's being presented/shared (see _handleGlobalOverlays).
     sl<PresentationDetectionService>().start();
 
     final hotkeyService = sl<GlobalHotkeyService>();
@@ -412,29 +438,28 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Phase 2's "why did BreakMate do that?" panel — opened by
-  /// `⌘⌥E`/`Ctrl+Alt+E` ([ExplainHotkeyService]), shown via
-  /// [TimerExplanationOverlayService]. Templated text over state this
-  /// controller and [TimerContextManager] already expose; no AI call.
   void showTimerExplanation() {
     final explanation = buildTimerExplanation(
       timerState: _timerEngine.state,
       contextManager: _timerEngine.contextManager,
       settings: _settingsRepo.currentSettings,
+      snoozeResumeAt: snoozeResumeAt,
+      isManualPause: _timerEngine.isManuallyPaused,
     );
     TimerExplanationOverlayService.show(explanation);
   }
 
+  /// Manually pauses timers for [minutes] and auto-resumes unless the user resumed earlier.
   void snooze({int? minutes}) {
+    if (isBreakActive || isFocusSessionActive) return;
     final snoozeMins =
-        minutes ?? _settingsRepo.currentSettings.lastSnoozeDurationMinutes;
-    _timerEngine.pauseTimers(isManual: true);
-
-    Timer(Duration(minutes: snoozeMins), () {
-      if (isPaused) {
-        _timerEngine.resumeTimers();
-      }
+        (minutes ?? _settingsRepo.currentSettings.lastSnoozeDurationMinutes)
+            .clamp(1, 1440);
+    _snoozeTimer.start(Duration(minutes: snoozeMins), () {
+      if (isPaused) _timerEngine.resumeTimers(isManual: false);
+      notifyListeners();
     });
+    _timerEngine.pauseTimers(isManual: true);
 
     _settingsRepo.save(
       _settingsRepo.currentSettings.copyWith(
@@ -445,8 +470,17 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void snoozeUntil(DateTime endTime) {
-    final minutes = endTime.difference(DateTime.now()).inMinutes.clamp(1, 240);
-    snooze(minutes: minutes);
+    final remaining = endTime.difference(clock.now());
+    if (remaining <= Duration.zero || isBreakActive || isFocusSessionActive) {
+      return;
+    }
+    // Keep the exact meeting end; rounding down could interrupt its final minute.
+    _snoozeTimer.start(remaining, () {
+      if (isPaused) _timerEngine.resumeTimers(isManual: false);
+      notifyListeners();
+    });
+    _timerEngine.pauseTimers(isManual: true);
+    notifyListeners();
   }
 
   bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
@@ -462,10 +496,31 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           : 'Break active. Skip is available from the overlay.';
     }
     if (_timerEngine.state == TimerState.paused) {
-      if (settings.quietModeEnabled) {
-        return _quietModeLabel(settings.quietModePreset);
+      if (snoozeResumeAt != null) {
+        return 'Snoozed. Your focus countdown resumes at the time shown below.';
       }
-      return 'Paused manually.';
+      if (isFocusSessionActive) {
+        return 'Paused: focus session active. Resumes when your session ends.';
+      }
+      if (_timerEngine.isManuallyPaused) {
+        return 'Paused manually. Resume when you are ready.';
+      }
+      final context = _timerEngine.contextManager;
+      if (!context.isWithinWorkingHours()) {
+        return 'Paused: outside working hours or during lunch. Resumes automatically when your schedule allows.';
+      }
+      if (context.isSmartPauseActive()) {
+        return context.isPresentationActive()
+            ? 'Paused: presentation detected. Resumes when it ends.'
+            : 'Paused: video playback detected. Resumes when it ends.';
+      }
+      return 'Paused. Resume when you are ready.';
+    }
+    if (_timerEngine.contextManager.isMeetingActive()) {
+      return 'Meeting detected: the timer continues and breaks use quiet reminders.';
+    }
+    if (settings.quietModeEnabled) {
+      return _quietModeLabel(settings.quietModePreset);
     }
     if (settings.calendarEnabled) {
       return 'Calendar-aware planning is watching for meeting conflicts.';
@@ -515,6 +570,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Shows the overlay with sample data and auto-closes after 10s; flagged isPreview so nothing is recorded.
   void previewBreak({String? templateId}) {
     final overlayService = sl<OverlayWindowService>();
     final settings = _settingsRepo.currentSettings;
@@ -542,6 +598,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         'enableAnimations': settings.enableAnimations,
         'intensityLevel': settings.intensityLevel,
         'showWellnessNotes': settings.showExercisesInBreak,
+        'experience': settings.experience.toMap(),
         'exerciseTitle': 'Preview Mode',
         'exerciseInstructions':
             'This is a preview of your selected break template. It will not be recorded in your history.',
@@ -568,15 +625,14 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
-  /// [lookedAway] is true when the user confirmed they looked away from the
-  /// screen during an eye-rest break; it counts as a wellness action.
+  /// Finishes the break normally; wellness stats and chime are skipped in meetings/presentations.
   Future<void> completeCurrentBreak({bool lookedAway = false}) async {
     await _timerEngine.finishBreak(skipped: false);
     if (lookedAway || _microExercise != null) {
       _statsService.recordWellnessAction();
     }
     _microExercise = null;
-    // Never a sound while the user is in a meeting or presenting.
+
     final context = _timerEngine.contextManager;
     if (_settingsRepo.currentSettings.breakChimeEnabled &&
         !context.isMeetingActive() &&
@@ -586,12 +642,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  /// Replaces the audio player in tests.
   @visibleForTesting
   Future<void> Function()? onChime;
 
-  /// A short, soft bell for a break that ran to its end. Fire and forget: a
-  /// missing audio device must never affect the break flow.
   Future<void> _playChime() async {
     final override = onChime;
     if (override != null) return override();
@@ -604,6 +657,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Ends the break as skipped (counts toward skipped stats).
   Future<void> skipCurrentBreak() async {
     _microExercise = null;
     await _timerEngine.finishBreak(skipped: true);
@@ -622,6 +676,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void togglePause() {
+    _snoozeTimer.cancel();
     if (isPaused) {
       _timerEngine.resumeTimers();
     } else {
@@ -636,6 +691,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  // Re-sends overlay data so setting changes apply live to a break already on screen.
   void _updateActiveOverlay() {
     if (_timerEngine.state == TimerState.breakActive) {
       final overlayService = sl<OverlayWindowService>();
@@ -657,6 +713,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
           'showWellnessNotes': settings.showExercisesInBreak,
+          'experience': settings.experience.toMap(),
           'durationSeconds':
               _timerEngine.activeBreak?.durationSeconds ??
               _timerEngine.countdownSeconds,
@@ -695,6 +752,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  // Starts silent then fades in to avoid an abrupt start.
   Future<void> _startMusic() async {
     if (_isPlayingMusic) return;
     _isPlayingMusic = true;
@@ -754,6 +812,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _timerEngine.removeListener(_onTimerChanged);
     _settingsRepo.removeListener(_onSettingsChanged);
     _focusTimer?.cancel();
+    _snoozeTimer.cancel();
     _audioPlayer?.dispose();
     super.dispose();
   }

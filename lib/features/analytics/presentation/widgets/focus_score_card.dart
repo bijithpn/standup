@@ -6,19 +6,14 @@ import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// The deep-work Focus Score for the selected period (the share of tracked
-/// time spent in an uninterrupted 15+ minute session in a focus app), the
-/// sessions behind it, and, once there is enough break history, whether
-/// taking breaks lines up with more focus afterwards.
+/// Today's focus score (focus time share of active time) with its sessions and top focus apps.
 class FocusScoreCard extends StatelessWidget {
   final bool enabled;
   final double focusScore;
   final List<FocusSession> sessions;
 
-  /// Apps used in focus categories for the period, most-used first.
   final List<AppUsageEntry> focusApps;
 
-  /// Shown under a divider at the bottom of the card (the trend chart).
   final Widget? footer;
 
   const FocusScoreCard({
@@ -125,8 +120,6 @@ class FocusScoreCard extends StatelessWidget {
       (m, e) => e.durationSeconds > m ? e.durationSeconds : m,
     );
 
-    // One slice per app (top 5, the rest grouped). Falls back to the
-    // category split when no per-app data is available.
     final slices = <_Slice>[];
     if (focusApps.isNotEmpty) {
       for (var i = 0; i < focusApps.length && i < 5; i++) {
@@ -318,7 +311,6 @@ class FocusScoreCard extends StatelessWidget {
     Color(0xFFF472B6),
   ];
 
-  /// The split as a donut, with a legend (name, time, share) beside it.
   Widget _pie(List<_Slice> items) {
     final total = items.fold<int>(0, (t, e) => t + e.seconds);
     return LayoutBuilder(
@@ -428,7 +420,6 @@ class FocusScoreCard extends StatelessWidget {
           ],
         );
 
-        // Stack the legend under the chart when the card is narrow.
         if (box.maxWidth < 420) {
           return Column(children: [chart, const SizedBox(height: 14), legend]);
         }

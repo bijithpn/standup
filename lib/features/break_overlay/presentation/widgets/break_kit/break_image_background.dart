@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
-/// Photo background that never shows black: a gradient sits underneath, the
-/// image fades in over [BreakMotion.slow] once decoded, and a failed load just
-/// leaves the gradient visible.
+/// Full-bleed photo that fades in over a gradient fallback, so the overlay never shows a blank frame while the image loads.
 class BreakImageBackground extends StatelessWidget {
   final ImageProvider? image;
   final List<Color> fallback;
   final BoxFit fit;
 
-  /// Rendering transform (e.g. a Ken Burns scale) applied to the image only.
   final Widget Function(Widget image)? imageBuilder;
 
   const BreakImageBackground({
@@ -20,7 +17,6 @@ class BreakImageBackground extends StatelessWidget {
     this.imageBuilder,
   });
 
-  /// Warm the image cache so the first frame of a break is not blank.
   static Future<void> precache(BuildContext context, ImageProvider image) =>
       precacheImage(image, context).catchError((_) {});
 

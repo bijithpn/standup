@@ -1,6 +1,6 @@
-// ignore_for_file: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
 part of 'pet_behavior_engine.dart';
 
+/// Per-step simulation of the engine (part of pet_behavior_engine.dart); _advance runs these updates in a fixed order each tick.
 extension _PetBehaviorSimulation on PetBehaviorEngine {
   void _advance(double dt) {
     _sinceCursorSample += dt;
@@ -30,10 +30,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     }
   }
 
-  /// Tells the mood machine when the pointer enters or leaves the pet.
-  ///
-  /// The enter and exit areas differ in size so a pointer resting on the edge
-  /// does not fire an event every frame.
   void _updatePointerProximity(bool tracking) {
     if (!tracking) {
       if (_pointerNear) {
@@ -47,8 +43,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
         : _viewport.inflate(10).contains(_cursor);
     if (inside == _pointerNear) return;
     _pointerNear = inside;
-    // Only a pointer that is actually moving is interesting. One that was
-    // parked on the pet before it appeared should not make it start.
+
     if (inside && !_cursorIsStill) {
       _machine.post(CompanionEvent.pointerEntered, _clock);
     } else if (!inside) {
@@ -68,7 +63,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     );
   }
 
-  /// Whether the cursor should be treated as holding still right now.
   bool get _cursorIsStill =>
       _cursorResting ||
       _sinceCursorSample > PetBehaviorEngine._staleSampleSeconds;
@@ -80,7 +74,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       return;
     }
 
-    // Interest falls off with distance and rises with motion.
     final proximity = distance >= _interestRadius
         ? 0.0
         : 1.0 - (distance / _interestRadius);
@@ -88,9 +81,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
 
     if (_cursorIsStill) {
       _quietSeconds += dt;
-      // Staring at something that has stopped moving gets boring. Interest
-      // bleeds away faster than it built, which is what makes the pet look
-      // away on its own instead of locking on forever.
+
       _attention = PetBehaviorEngine._decay(
         _attention,
         0.55 + proximity * 0.2,
@@ -119,7 +110,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
         math.max(_startle, math.max(_delight, _playing)),
       ),
     );
-    // Arousal climbs quickly and settles slowly, like a real startle response.
+
     final rate = target > _arousal ? 6.0 : 0.55;
     _arousal += (target - _arousal) * math.min(1.0, rate * dt);
   }
@@ -142,18 +133,13 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
         _gazeSettings.enabled) {
       final sector = _sectors.update(toCursor);
       if (sector == GazeDirection.center) {
-        // Inside the dead zone the pointer is "right here". Looking straight
-        // ahead reads as relaxed; chasing it around a few pixels does not.
         _setGazeTarget(Offset.zero, snap: false);
       } else {
-        // Direction is snapped to the sector so the head does not jitter on a
-        // boundary; how far the eyes travel still follows the distance.
         final dead = _gazeSettings.deadZone;
         final span = math.max(reach * 1.25 - dead, 1.0);
         final pull = ((distance - dead) / span).clamp(0.0, 1.0);
         var strength = 0.35 + 0.65 * pull;
 
-        // Close up, the pet looks *at* the cursor rather than toward it.
         if (distance < PetBehaviorEngine._intimateRadius) {
           strength = math.min(1.0, strength * 1.2);
         }
@@ -164,14 +150,12 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       return;
     }
 
-    // Disengaged. A pointer that has gone quiet is no longer worth following.
     _sectors.reset();
     if (!_idleMotion) {
       _setGazeTarget(Offset.zero, snap: false);
       return;
     }
 
-    // Look around on its own schedule.
     _idleGazeTimer -= dt;
     if (_idleGazeTimer <= 0) {
       _idleGazeTimer = 1.4 + _random.nextDouble() * 3.0;
@@ -199,15 +183,12 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     final error = (target - _gazeTarget).distance;
     _gazeTarget = target;
 
-    // Big jumps are made with a saccade; small corrections are tracked
-    // smoothly. Doing both is what separates a living eye from a lerp.
     if (error > PetBehaviorEngine._saccadeThreshold &&
         _saccadeT >= 1.0 &&
         !_reducedMotion) {
       _saccadeFrom = _gaze;
       _saccadeT = 0.0;
-      // Eyes and lids are wired together — a large saccade often carries a
-      // blink with it.
+
       if (_random.nextDouble() < 0.28 && _blinkProgress < 0) {
         _blinkProgress = 0.0;
       }
@@ -220,7 +201,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
         1.0,
         _saccadeT + dt / PetBehaviorEngine._saccadeDuration,
       );
-      // Ease-out: a saccade leaves fast and arrives gently.
+
       final t = 1 - math.pow(1 - _saccadeT, 3).toDouble();
       _gaze = Offset(
         _saccadeFrom.dx + (_gazeTarget.dx - _saccadeFrom.dx) * t,
@@ -229,7 +210,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       return;
     }
 
-    // Smooth pursuit, with gain rising as the pet pays more attention.
     final gain = 3.0 + _attention * 7.0;
     final k = math.min(1.0, gain * dt);
     _gaze = Offset(
@@ -239,9 +219,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
   }
 
   void _integratePosture(double dt) {
-    // The head chases the eyes, the body chases the head, each softer than the
-    // last. That ordering is the whole trick behind the motion reading as one
-    // creature rather than three sliding parts.
     final headTarget = _gaze * (0.55 + _attention * 0.3);
     final headResult = PetBehaviorEngine._spring(
       _head,
@@ -266,8 +243,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _body = bodyResult.$1;
     _bodyVelocity = bodyResult.$2;
 
-    // A curious head cocks to one side. Tie it to how far the pet is reaching
-    // sideways, plus a little of its own drift.
     final drift = _idleMotion ? 1.0 : 0.0;
     final tiltTarget = _attention > 0.5
         ? _head.dx * 0.16 + math.sin(_breathPhase * 0.37) * 0.02 * drift
@@ -286,7 +261,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       return;
     }
     if (_quietSeconds > PetBehaviorEngine._drowsyAfter) {
-      // Heavy lids, but still blinking occasionally.
       final droop = 0.45;
       if (_blinkProgress < 0) {
         _blink += (droop - _blink) * math.min(1.0, 2.0 * dt);
@@ -319,15 +293,11 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       return;
     }
 
-    // With idle animation off the lids stay still unless an event asks.
     if (!_idleMotion) return;
     _blinkTimer -= dt;
     if (_blinkTimer <= 0) _blinkProgress = 0.0;
   }
 
-  /// Blink spacing is irregular in life, so draw it from an exponential
-  /// distribution rather than a fixed interval, with a floor so two blinks
-  /// never run together.
   double _nextBlinkDelay() {
     final u = 1.0 - _random.nextDouble();
     final mean = _arousal > 0.7 ? 2.6 : 4.2;
@@ -339,13 +309,9 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _updateIdleAction(dt);
     _startle = PetBehaviorEngine._decay(_startle, _held ? 0.0 : 2.4, dt);
     _delight = PetBehaviorEngine._decay(_delight, 1.6, dt);
-    // Much slower than the others: a game lasts, where a touch is over as
-    // soon as the hand lifts. This rate keeps the pet visibly excited for
-    // about forty seconds after a game and calm again within two minutes.
+
     _playing = PetBehaviorEngine._decay(_playing, 0.04, dt);
 
-    // The walk cycle runs faster the harder the pet is travelling, and stops
-    // dead when it is not.
     _travelPhase += dt * (5.5 + 7.0 * _travel.distance);
 
     if (_reducedMotion || !_animations) {
@@ -354,7 +320,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       return;
     }
 
-    // A spring back to rest, so a pet lands and settles instead of snapping.
     const stiffness = 210.0;
     const damping = 14.0;
     _bounceVelocity += (-stiffness * _bounce - damping * _bounceVelocity) * dt;
@@ -371,8 +336,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       _wobbleVelocity = 0.0;
       return;
     }
-    // A held pet dangles and swings; otherwise a lightly damped spring rings
-    // the roll out over about a second.
+
     final target = _held ? math.sin(_clock.inMilliseconds / 260.0) * 0.12 : 0.0;
     _wobbleVelocity +=
         ((target - _wobble) * 120.0 - _wobbleVelocity * 5.5) * dt;
@@ -383,13 +347,10 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     }
   }
 
-  /// Now and then, with nobody touching it, the pet does something of its own:
-  /// a small hop, a shake of the head, a stretch. This is what separates a
-  /// living thing sitting there from a picture that breathes.
   void _updateIdleAction(double dt) {
     if (!_idleMotion || _held) return;
     if (_quietSeconds > PetBehaviorEngine._drowsyAfter) {
-      return; // Dozing pets do not fidget.
+      return;
     }
     _idleActionTimer -= dt;
     if (_idleActionTimer > 0) return;
@@ -400,24 +361,21 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
         _bounceVelocity = -70.0;
         _rock(2.5);
       case 1:
-        _rock(6.0); // A quick shake of the head.
+        _rock(6.0);
       case 2:
-        _bounceVelocity = 40.0; // A stretch: sinks, then rises.
+        _bounceVelocity = 40.0;
         _attention = math.max(_attention, 0.5);
       default:
         _rock(3.0);
-        _idleGazeTimer = 0.0; // Looks somewhere else.
+        _idleGazeTimer = 0.0;
     }
   }
 
-  /// Advances the slow feelings: affection fades, loneliness grows while
-  /// ignored, weariness grows while working without a break.
+  /// Slow emotional drives (affection, loneliness, weariness since last break) that feed emotion resolution.
   void _updateDrives(double dt) {
     _sinceInteraction += dt;
     _sinceBreak += dt;
 
-    // Affection fades over roughly half an hour untended, so the warm face is
-    // earned rather than permanent.
     _affection = math.max(0.0, _affection - dt / 1800);
 
     if (_sinceInteraction > PetBehaviorEngine._lonelyAfter) {
@@ -429,8 +387,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       _loneliness = math.max(0.0, _loneliness - dt / 600);
     }
 
-    // Weariness only accrues while the user is actually at the machine; a
-    // laptop asleep overnight should not tire the pet out.
     if (!_cursorIsStill && _sinceBreak > PetBehaviorEngine._wearyAfter) {
       _fatigue = math.min(1.0, _fatigue + dt / PetBehaviorEngine._wearyAfter);
     } else if (_cursorIsStill) {
@@ -440,12 +396,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _emotion = _resolveEmotion();
   }
 
-  /// Picks the single feeling the face should wear.
-  ///
-  /// Ordered by urgency rather than magnitude: a fright interrupts everything,
-  /// and sleep beats any feeling the pet had before it dropped off. Only one
-  /// emotion shows at a time, because a face blending three of them reads as
-  /// none of them.
   PetEmotionState _resolveEmotion() {
     PetEmotionState state(PetEmotion emotion, double intensity) =>
         PetEmotionState(
@@ -456,8 +406,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
           fatigue: _fatigue,
         );
 
-    // The mood machine owns every event-driven feeling. The ladder below only
-    // fills in the slow, drive-based baseline when no reaction is showing.
     final mood = _machine.mood;
     if (mood == CompanionMood.resting) {
       return state(mood.emotion, mood.intensity);
@@ -465,11 +413,11 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     if (mood == CompanionMood.surprised) {
       return state(PetEmotion.startled, math.max(_startle, mood.intensity));
     }
-    // A game outranks everything except a fright, and outlasts it too.
+
     if (_playing > 0.2) {
       return state(PetEmotion.playful, 0.55 + _playing * 0.45);
     }
-    // Rapid attention winds the pet up past mere contentment: it laughs.
+
     if (_delight > 0.25 && _arousal > 0.78) {
       return state(PetEmotion.laughing, 0.7 + _delight * 0.3);
     }
@@ -524,14 +472,12 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     return PetActivity.idle;
   }
 
+  /// Builds the immutable snapshot for the UI and notifies only if visibly different.
   void _publish() {
     final breath = math.sin(_breathPhase);
     final startleRecoil = _motionAllowed ? _startle * 8.0 : 0.0;
     final delightLift = _motionAllowed ? _delight * 6.0 : 0.0;
 
-    // Travel rides on top of the cursor-driven posture rather than replacing
-    // it, so a pet crossing the screen can still glance at where the pointer
-    // went. The bob is what sells it as steps rather than a slide.
     final travelVigour = _travel.distance;
     final trot = travelVigour == 0
         ? 0.0
@@ -554,9 +500,6 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
                 (_idleMotion ? breath * 0.012 : 0.0) +
                 _delight * 0.05 -
                 _startle * 0.03 +
-                // Squash and stretch: narrower and taller in the air, wider
-                // and shorter as it lands. This is most of what makes a hop
-                // read as a body rather than a sticker moving up and down.
                 (_bounce * 0.0045).clamp(-0.14, 0.16),
       tilt: _tilt + _travel.dx * 0.11 + _wobble,
       arousal: _arousal.clamp(0.0, 1.0),
@@ -566,9 +509,8 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       gazeDirection: _sectors.direction,
       mood: _machine.mood,
     );
-    // A pet that has settled produces identical frames. Telling listeners
-    // anyway would rebuild and repaint the avatar for nothing.
+
     if (PetBehaviorEngine._visiblySame(previous, _snapshot)) return;
-    notifyListeners();
+    _notifyStateChanged();
   }
 }

@@ -8,6 +8,7 @@ import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
+/// Legacy (prefs-based) app usage card: category split and top apps, with budget markers; shows an enable prompt when tracking is off.
 class AppUsageSection extends StatelessWidget {
   final bool enabled;
   final List<AppUsageEntry> topApps;
@@ -15,14 +16,8 @@ class AppUsageSection extends StatelessWidget {
   final AppIconCache iconCache;
   final VoidCallback onEnable;
 
-  /// Heading for the app list. Defaults to 'Top Apps' (a highlights view);
-  /// pass e.g. 'All Tracked Apps' when [topApps] holds the complete,
-  /// unfiltered list rather than a cut-off top N.
   final String listTitle;
 
-  /// The user's opt-in daily budgets (`SettingsModel.categoryDailyBudgetMinutes`).
-  /// Only meaningful when [categoryTotals] is for today — pass `const {}`
-  /// (the default) for week/month views, where "over budget" doesn't apply.
   final Map<String, int> budgetMinutes;
 
   const AppUsageSection({

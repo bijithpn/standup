@@ -11,6 +11,7 @@ import 'package:breakmate/features/companion/services/cursor_tracker.dart';
 
 typedef JsEvaluator = FutureOr<dynamic> Function(String script);
 
+/// Dart-side API to the JS avatar renderer (window.AvatarBridge): sends look/animation/palette commands and computes smoothed gaze from the cursor.
 class AvatarEngineController {
   AvatarEngineController({
     JsEvaluator? jsEvaluator,
@@ -38,7 +39,6 @@ class AvatarEngineController {
   AvatarPalette? _currentPalette;
   AvatarPalette? get currentPalette => _currentPalette;
 
-  // Gaze calculation & smoothing state
   ui.Offset _gazeSmoothed = ui.Offset.zero;
   ui.Offset _lastCursorPosition = ui.Offset.zero;
   double _idleTime = 0.0;
@@ -48,6 +48,7 @@ class AvatarEngineController {
   final math.Random _random = math.Random();
   StreamSubscription<ui.Offset>? _cursorSubscription;
 
+  /// No-op without a JS evaluator (tests/headless).
   Future<dynamic> evaluateJs(String script) async {
     if (_jsEvaluator != null) {
       return await _jsEvaluator(script);
@@ -95,6 +96,7 @@ class AvatarEngineController {
     return await evaluateJs('window.AvatarBridge.capturePng();');
   }
 
+  /// Normalised cursor direction with damping and random saccades so the eyes do not look robotic.
   ui.Offset calculateGaze({
     required ui.Offset petScreenPosition,
     required ui.Offset cursorScreenPosition,
@@ -164,6 +166,7 @@ class AvatarEngineController {
     return _gazeSmoothed;
   }
 
+  /// Computes gaze, emits proximity/gaze events, and pushes lookAt to the renderer.
   Future<void> updateGaze({
     required ui.Offset petScreenPosition,
     required ui.Offset cursorScreenPosition,

@@ -6,39 +6,25 @@ import 'package:vector_graphics_compiler/vector_graphics_compiler.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 
-/// Turns a raw OneWorks avatar SVG into a compiled vector-graphics buffer.
-///
-/// Every function here is pure and binding-free: this file is what actually
-/// runs inside the render isolate. Nothing in it may touch `dart:ui`,
-/// `rootBundle`, or anything else that needs the Flutter engine.
-
-/// The full-bleed rounded plate each snapshot is exported with, always the
-/// first child of the root `<svg>`.
 final RegExp _backdropPlate = RegExp(
   r'(<svg\b[^>]*>)\s*<rect\b[^>]*\bwidth="\d+(?:\.\d+)?"[^>]*\bheight="\d+(?:\.\d+)?"[^>]*>\s*(?:</rect>)?',
 );
 
-/// `filter="url(#…)"` references. The renderer has no `feDropShadow`, so these
-/// only cost parse time and produce a warning per element.
 final RegExp _filterRef = RegExp(r'\s*filter="url\(#[^)]*\)"');
 
-/// The `<filter>` definitions those references pointed at.
 final RegExp _filterDef = RegExp(r'<filter\b[^>]*>.*?</filter>', dotAll: true);
 
-/// Clip paths exported with an empty geometry, plus the references to them.
 final RegExp _emptyClipDef = RegExp(
   r'<clipPath\b[^>]*\bid="([^"]+)"[^>]*>\s*<path\s+d=""\s*>\s*</path>\s*</clipPath>',
 );
 
-/// A `<defs>` left with nothing in it once the above are gone.
 final RegExp _emptyDefs = RegExp(r'<defs\b[^>]*>\s*</defs>');
 
 final RegExp _colorAttr = RegExp(
   r'(fill|stroke|flood-color|stop-color)="(#[0-9a-fA-F]{3,8})"',
 );
 
-/// Strips the parts of an exported snapshot that fight with how we composite
-/// it: the opaque backdrop plate, unsupported filters, and empty clip paths.
+/// Removes the backdrop plate, filters and empty clip paths from the authored SVG.
 String stripAvatarChrome(String raw, {required bool transparentBackdrop}) {
   var svg = raw;
 
@@ -60,7 +46,6 @@ String stripAvatarChrome(String raw, {required bool transparentBackdrop}) {
   return svg;
 }
 
-/// Parses `#rgb`, `#rrggbb`, and `#rrggbbaa` into a 32-bit ARGB value.
 int? parseCssColor(String hex) {
   var h = hex.startsWith('#') ? hex.substring(1) : hex;
   if (h.length == 3) {
@@ -72,13 +57,12 @@ int? parseCssColor(String hex) {
   }
   if (h.length == 8) {
     final v = int.tryParse(h, radix: 16);
-    // CSS orders the alpha last; ARGB wants it first.
+
     return v == null ? null : ((v & 0xFF) << 24) | (v >> 8);
   }
   return null;
 }
 
-/// The colour of the backdrop plate, so role assignment can ignore it.
 int? _backdropColorOf(String raw) {
   final plate = _backdropPlate.firstMatch(raw);
   if (plate == null) return null;
@@ -93,7 +77,6 @@ double _luminance(int argb) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/// One authored colour and how much of the artwork it covers.
 class _AuthoredColor {
   _AuthoredColor(this.argb, this.firstSeen);
 
@@ -102,10 +85,6 @@ class _AuthoredColor {
   int count = 0;
 }
 
-/// Counts every colour the artwork paints with, most-used first.
-///
-/// The backdrop plate's own fill is discounted once: if the same colour shows
-/// up again further in it is a real part of the pet, not the card behind it.
 List<_AuthoredColor> _histogram(String raw, {int? backdrop}) {
   final byColor = <int, _AuthoredColor>{};
   var index = 0;
@@ -192,12 +171,6 @@ int _lerpColor(int a, int b, double t) {
       channel(0);
 }
 
-/// Recolours [source] toward [target] while keeping the artwork's own shading.
-///
-/// A flat swap would flatten each snapshot into two tones, because the shading
-/// in these exports *is* the colour difference between fills. Taking the
-/// target's hue and saturation but only part of its lightness keeps the
-/// highlights and shadows the illustrator drew.
 int _reshade(int source, int target, double strength) {
   final sourceHsl = _toHsl(source);
   final targetHsl = _toHsl(target);
@@ -212,11 +185,7 @@ int _reshade(int source, int target, double strength) {
   return _lerpColor(source, blended, strength.clamp(0.0, 1.0));
 }
 
-/// Maps each authored colour onto the palette role that best fits it.
-///
-/// Roles go by coverage rather than by name: the colour covering the most of
-/// the artwork becomes the body, the darkest becomes the ink used for eyes and
-/// outlines, and the remaining roles fill in behind them.
+/// Maps the SVG's most-used authored colors onto palette colors, so any breed art can be recolored.
 Map<int, int> buildPaletteSubstitutions(
   String raw,
   AvatarPalette palette,
@@ -236,8 +205,6 @@ Map<int, int> buildPaletteSubstitutions(
 
   final ink = parseCssColor(palette.eyes);
 
-  // The darkest authored colour is the ink the artwork draws eyes and outlines
-  // with — it has to stay dark or the face stops reading as a face.
   var darkest = colors.first;
   for (final color in colors) {
     if (_luminance(color.argb) < _luminance(darkest.argb)) darkest = color;
@@ -264,10 +231,6 @@ Map<int, int> buildPaletteSubstitutions(
 
 final RegExp _viewBoxAttr = RegExp(r'viewBox="([^"]*)"');
 
-/// Measured artwork bounds, keyed by the prepared SVG's asset.
-///
-/// Bounds do not depend on the palette, so recolouring the same companion
-/// reuses this instead of paying for a second parse.
 final Map<String, ArtworkBounds?> _boundsCache = <String, ArtworkBounds?>{};
 
 class ArtworkBounds {
@@ -285,12 +248,7 @@ class ArtworkBounds {
   bool get isUseful => width > 0 && height > 0;
 }
 
-/// Measures where the artwork actually sits inside its declared viewBox.
-///
-/// The snapshots are exported with the pet placed by a transform rather than
-/// centred, so the drawn content sits off to one side of the 420×420 box by a
-/// different amount in every file — which is why the companions looked
-/// variously shoved left, right, or low.
+/// Measures the drawn content bounds so the viewBox can be recentred on the pet.
 ArtworkBounds? measureContent(String preparedSvg, String debugName) {
   final VectorInstructions instructions;
   try {
@@ -322,11 +280,6 @@ ArtworkBounds? measureContent(String preparedSvg, String debugName) {
   return bounds.isUseful ? bounds : null;
 }
 
-/// Re-frames [svg] on a square viewBox centred on [bounds].
-///
-/// Squaring it is what makes every species come out the same visual size: a
-/// tall pet and a wide one both fill their own square, so neither ends up
-/// noticeably smaller than the other once `BoxFit.contain` has had its say.
 String recenterViewBox(
   String svg,
   ArtworkBounds bounds, {
@@ -344,14 +297,13 @@ String recenterViewBox(
   if (_viewBoxAttr.hasMatch(svg)) {
     return svg.replaceFirst(_viewBoxAttr, viewBox);
   }
-  // No viewBox to replace: give the root one so the new framing still applies.
+
   return svg.replaceFirst(RegExp(r'<svg\b'), '<svg $viewBox');
 }
 
 String _trim(double value) =>
     value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
-/// Applies a precomputed substitution table while the SVG is parsed.
 class _SubstitutionColorMapper extends ColorMapper {
   _SubstitutionColorMapper(this._table);
 
@@ -369,19 +321,13 @@ class _SubstitutionColorMapper extends ColorMapper {
   }
 }
 
-/// Prepares and compiles one avatar artwork. This is the isolate's whole job.
-///
-/// The three optimizers are off on purpose: each needs the native PathOps
-/// library, which is only linked into the build tooling. Leaving them on throws
-/// `PathOps library was not initialized` at runtime.
+/// Full pipeline: strip chrome, recenter, build palette substitutions, encode to vector_graphics bytes.
 Uint8List compileAvatarArtwork(AvatarArtworkRecipe recipe, String rawSvg) {
   var prepared = stripAvatarChrome(
     rawSvg,
     transparentBackdrop: recipe.transparentBackdrop,
   );
 
-  // Centre the pet on its own artwork. Skipped when the backdrop plate is
-  // kept, because then the plate *is* the frame and re-framing would crop it.
   if (recipe.transparentBackdrop && recipe.centerContent) {
     final bounds = _boundsCache.putIfAbsent(
       recipe.assetKey,
@@ -390,9 +336,6 @@ Uint8List compileAvatarArtwork(AvatarArtworkRecipe recipe, String rawSvg) {
     if (bounds != null) prepared = recenterViewBox(prepared, bounds);
   }
 
-  // Roles are assigned from the prepared artwork, not the raw file: the drop
-  // shadow's flood colour is gone by now, and counting it would push every
-  // real colour onto the wrong palette role.
   final palette = recipe.palette;
   final substitutions = palette == null
       ? const <int, int>{}

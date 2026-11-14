@@ -1,9 +1,7 @@
 import 'dart:typed_data';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 
-/// In-memory, per-session cache of app icon bytes, keyed by the same appKey
-/// used by [AppUsageService]. Avoids re-fetching an icon over the platform
-/// channel every time a list rebuilds.
+/// Memoizes native app icons by appKey so the UI doesn't re-query the platform bridge.
 class AppIconCache {
   final AppTrackingService _appTracking;
   final Map<String, Uint8List?> _cache = {};

@@ -9,12 +9,7 @@ import 'package:breakmate/features/analytics/stats_service.dart'
     show StatsService;
 import 'package:breakmate/features/settings/settings_repository.dart';
 
-/// Wipes every piece of user data BreakMate owns: settings, companion
-/// preferences, statistics, key/value records (app usage, focus sessions, break
-/// history), the activity timeline, and the SimplePrefs mirror.
-///
-/// Only application-owned storage is touched; exported backups and CSVs the
-/// user saved elsewhere are theirs and are left alone.
+/// Clears every ObjectBox box, prefs and in-memory analytics caches, then reloads defaults into running services ("delete all data").
 Future<void> wipeAllLocalData() async {
   final storage = sl<StorageService>();
   storage.settingsBox?.removeAll();
@@ -26,7 +21,6 @@ Future<void> wipeAllLocalData() async {
 
   SimplePrefs.instance.clear();
 
-  // In-memory copies would otherwise be written straight back on the next flush.
   if (sl.isRegistered<ActivitySegmentRepository>()) {
     sl<ActivitySegmentRepository>().clearAll();
   }

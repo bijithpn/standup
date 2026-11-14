@@ -5,6 +5,7 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 
+/// Learns per-hour activity from recorded work sessions to suggest break intervals, durations, messages and a focus score.
 class AdaptiveBreakService {
   final StorageService _storage;
   final WellnessEngine _wellnessEngine;
@@ -26,6 +27,7 @@ class AdaptiveBreakService {
     _checkNewDay();
   }
 
+  // Resets the daily session count on date rollover.
   void _checkNewDay() {
     final today = _getTodayString();
     if (_lastActiveDate != today) {
@@ -66,6 +68,7 @@ class AdaptiveBreakService {
     );
   }
 
+  /// Busier hours give shorter intervals (about 20-60 min); long days stretch them slightly.
   int getSuggestedBreakInterval() {
     _checkNewDay();
 
@@ -82,7 +85,6 @@ class AdaptiveBreakService {
 
     final suggestedInterval = (60 - (activityFactor * 40)).round();
 
-    // More sessions = slightly longer intervals to prevent burnout
     if (_todaySessionCount > 10) {
       return (suggestedInterval * 1.2).round().clamp(20, 90);
     }
@@ -94,11 +96,11 @@ class AdaptiveBreakService {
     final currentHour = DateTime.now().hour;
 
     if (currentHour < 12) {
-      return 15; // 15 seconds micro break
+      return 15;
     } else if (currentHour < 17) {
-      return 20; // 20 seconds standard
+      return 20;
     } else {
-      return 30; // 30 seconds for evening recovery
+      return 30;
     }
   }
 
@@ -123,6 +125,7 @@ class AdaptiveBreakService {
     return 'Time to refresh before finishing up.';
   }
 
+  /// True when the current hour is historically very active and many sessions are done today.
   bool shouldDelayBreakForDeepFocus() {
     final currentHour = DateTime.now().hour;
     final currentActivity = _activityPatterns[currentHour] ?? 0.5;
@@ -130,6 +133,7 @@ class AdaptiveBreakService {
     return currentActivity > 0.8 && _todaySessionCount > 5;
   }
 
+  /// 0-100 score: rewards 25-50 min sessions and 8-12 sessions per day; 50 when no data.
   int getTodayFocusScore() {
     _checkNewDay();
 
@@ -158,6 +162,7 @@ class AdaptiveBreakService {
     return ((durationScore + countScore) / 2).round().clamp(0, 100);
   }
 
+  // Exponential moving average (70/30) so recent behaviour shifts the hour profile gradually.
   void _updateActivityPattern(int hour, String activityLevel) {
     final current = _activityPatterns[hour] ?? 0.5;
     final newValue = activityLevel == 'high'
@@ -197,7 +202,19 @@ class AdaptiveBreakService {
     _storage.setString(AppConstants.keyActivityPatterns, jsonEncode(jsonData));
   }
 
-  void _loadFocusSessions() {}
+  void _loadFocusSessions() {
+    final dataString = _storage.getString('focus_sessions');
+    if (dataString.isEmpty) return;
+
+    try {
+      final List<dynamic> jsonData = jsonDecode(dataString);
+      _focusSessions = jsonData
+          .map((s) => FocusSession.fromJson(s as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logger.error('Failed to load focus sessions: $e');
+    }
+  }
 
   void _saveFocusSessions() {
     final jsonData = _focusSessions.map((s) => s.toJson()).toList();
@@ -214,6 +231,7 @@ class AdaptiveBreakService {
   }
 }
 
+/// One completed work session, persisted as JSON.
 class FocusSession {
   final String date;
   final int durationMinutes;

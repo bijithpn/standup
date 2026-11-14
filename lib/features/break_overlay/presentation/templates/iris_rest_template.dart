@@ -1,13 +1,25 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/break_activity_graph.dart';
 
+const _graphite = BreakPalette(
+  canvas: Color(0xFF14161A),
+  canvasRaised: Color(0xFF23272D),
+  surface: Color(0xFF1B1E23),
+  border: Color(0x24FFFFFF),
+  track: Color(0x33FFFFFF),
+  textPrimary: Color(0xFFF1ECE2),
+  textSecondary: Color(0xFFB9B4AA),
+  textMuted: Color(0xFF8A8A8A),
+  isDark: true,
+);
+
+const _amber = Color(0xFFE8A33D);
+
+/// Break template: camera-aperture iris that opens and closes slowly as a focus point for resting the eyes.
 class IrisRestTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -30,13 +42,6 @@ class IrisRestTemplate extends StatefulWidget {
 
 class _IrisRestTemplateState extends State<IrisRestTemplate>
     with SingleTickerProviderStateMixin {
-  bool _showStreak = false;
-
-  static const Color _good = Color(0xFF4ADE80);
-  static const Color _fair = Color(0xFFF59E0B);
-  static const Color _low = Color(0xFFEF4444);
-
-  /// Dilate over 2.5s, constrict over 2.5s: a 5s cycle.
   late final AnimationController _iris = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2500),
@@ -48,10 +53,11 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
+    // Fixed apertures for preview and reduced motion; otherwise the iris loops back and forth.
     if (BreakPreviewScope.isPreview(context)) {
-      _iris.value = 0.546; // opening ~80px
+      _iris.value = 0.546;
     } else if (BreakMotion.reduced(context)) {
-      _iris.value = 0.6415; // opening ~90px, held
+      _iris.value = 0.6415;
     } else {
       _iris.repeat(reverse: true);
     }
@@ -63,49 +69,13 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
     super.dispose();
   }
 
-  /// Last (up to) 10 days of break history, oldest first, padded to at
-  /// least 2 entries so [BreakActivityGraph] never divides by zero when
-  /// history is thin (e.g. a brand-new install).
-  List<DailyStats> _recentDays(List<DailyStats> weeklyData) {
-    final recent = weeklyData.length > 10
-        ? weeklyData.sublist(weeklyData.length - 10)
-        : weeklyData;
-    if (recent.length >= 2) return recent;
-    final placeholder = DailyStats(
-      date: '0000-00-00',
-      breaksCompleted: 0,
-      breaksSkipped: 0,
-      usageMinutes: 0,
-    );
-    return [for (var i = recent.length; i < 2; i++) placeholder, ...recent];
-  }
-
-  Color _colorForDay(DailyStats day) {
-    final total = day.breaksCompleted + day.breaksSkipped;
-    if (total == 0) return BreakOverlayTheme.nature;
-    final rate = day.breaksCompleted / total;
-    if (rate >= 0.75) return _good;
-    if (rate >= 0.4) return _fair;
-    return _low;
-  }
-
-  String _dayLabel(DailyStats day, bool isToday) {
-    final total = day.breaksCompleted + day.breaksSkipped;
-    if (total == 0) return '${isToday ? 'Today' : day.date}, no breaks yet';
-    final pct = (day.breaksCompleted / total * 100).round();
-    final grade = pct >= 75 ? 'good' : (pct >= 40 ? 'fair' : 'low');
-    return '${isToday ? 'Today' : day.date}, $pct percent, $grade';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    final accent = palette.accentOn(
-      BreakOverlayTheme.resolveAccent(
-        widget.settings.templateAccentOverrides,
-        'iris_rest',
-        _good,
-      ),
+    const palette = _graphite;
+    final accent = BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'iris_rest',
+      _amber,
     );
     final complete = breakIsComplete(
       context,
@@ -113,171 +83,107 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
       widget.totalSeconds,
     );
     final reduced = BreakMotion.reduced(context);
+    final showTip =
+        widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 
-    return ListenableBuilder(
-      listenable: sl<StatsService>(),
-      builder: (context, _) {
-        final recentDays = _recentDays(sl<StatsService>().stats.weeklyData);
-        final dataPoints = recentDays.map((d) => d.breaksCompleted).toList();
-        final pointColors = recentDays.map(_colorForDay).toList();
-
-        return BreakScaffold(
-          onSkip: widget.onSkip,
-          strictMode: widget.settings.strictMode,
-          accent: accent,
-          background: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                radius: 0.8,
-                colors: [accent.withValues(alpha: 0.05), Colors.transparent],
-              ),
-            ),
+    return BreakScaffold(
+      palette: palette,
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: accent,
+      background: const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(-0.38, 0),
+            radius: 0.85,
+            colors: [Color(0xFF2B3037), Color(0xFF14161A)],
           ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 96,
-                left: 64,
-                right: 64,
-                child: BreakEntrance(
-                  scale: false,
-                  child: Column(
-                    children: [
-                      Text(
-                        'Rest Your Eyes, Refresh Your Mind',
-                        textAlign: TextAlign.center,
-                        style: BreakOverlayTheme.title.copyWith(
-                          color: palette.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 520),
-                        child: Text(
-                          'Gentle reminders to protect your vision '
-                          'and boost focus. Take a moment - your '
-                          'eyes deserve it.',
-                          textAlign: TextAlign.center,
-                          style: BreakOverlayTheme.body.copyWith(
-                            color: palette.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 640 - 130,
-                top: 370 - 130,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(1),
-                  child: TweenAnimationBuilder<double>(
-                    // Completion: the aperture opens fully and fades.
-                    tween: Tween(end: complete ? 1.0 : 0.0),
-                    duration: BreakMotion.slow,
-                    curve: BreakMotion.enter,
-                    builder: (context, finish, _) => RepaintBoundary(
-                      child: CustomPaint(
-                        size: const Size(260, 260),
-                        painter: _AperturePainter(
-                          open: _iris,
-                          fixed:
-                              reduced || BreakPreviewScope.isPreview(context),
-                          accent: accent,
-                          bladeA: Color.lerp(
-                            palette.surface,
-                            palette.isDark ? Colors.white : Colors.black,
-                            0.08,
-                          )!,
-                          bladeB: palette.canvasRaised,
-                          edge: palette.isDark
-                              ? Colors.white.withValues(alpha: 0.16)
-                              : const Color(0xFF1C1F24).withValues(alpha: 0.14),
-                          housing: palette.border,
-                          finish: finish,
-                        ),
-                      ),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 400 - _lens / 2,
+            top: 400 - _lens / 2,
+            child: BreakEntrance(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: complete ? 1.0 : 0.0),
+                duration: BreakMotion.slow,
+                curve: BreakMotion.enter,
+                builder: (context, finish, _) => RepaintBoundary(
+                  child: CustomPaint(
+                    size: const Size(_lens, _lens),
+                    painter: _AperturePainter(
+                      open: _iris,
+                      fixed: reduced || BreakPreviewScope.isPreview(context),
+                      accent: accent,
+                      bladeA: const Color(0xFF565C66),
+                      bladeB: const Color(0xFF2E3238),
+                      edge: Colors.white.withValues(alpha: 0.16),
+                      finish: finish,
                     ),
                   ),
                 ),
               ),
-              Positioned(
-                top: 370 + 130 + 32,
-                left: 0,
-                right: 0,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(2),
-                  scale: false,
-                  child: BreakCountdown(
-                    seconds: widget.remainingSeconds,
-                    color: breakClockColor(widget.settings, palette),
-                  ),
-                ),
-              ),
-              // Compliance strip: dots, with the streak chart behind a toggle.
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 596,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(3),
-                  scale: false,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < recentDays.length; i++) ...[
-                            if (i > 0) const SizedBox(width: 8),
-                            Semantics(
-                              label: _dayLabel(
-                                recentDays[i],
-                                i == recentDays.length - 1,
-                              ),
-                              child: Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: pointColors[i],
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _showStreak = !_showStreak),
-                        style: TextButton.styleFrom(
-                          foregroundColor: palette.textSecondary,
-                          textStyle: BreakOverlayTheme.micro,
-                        ),
-                        child: Text(
-                          _showStreak ? 'Hide streak' : 'Your streak',
-                        ),
-                      ),
-                      if (_showStreak)
-                        SizedBox(
-                          width: 360,
-                          height: 64,
-                          child: BreakActivityGraph(
-                            dataPoints: dataPoints,
-                            pointColors: pointColors,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        );
-      },
+          Positioned(
+            left: 760,
+            top: 270,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: Text(
+                'Eye rest',
+                style: BreakOverlayTheme.body.copyWith(
+                  color: breakReadableColor(accent, palette.surface),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 752,
+            top: 300,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: BreakCountdown(
+                seconds: widget.remainingSeconds,
+                textAlign: TextAlign.left,
+                style: BreakOverlayTheme.hero.copyWith(
+                  fontSize: 132,
+                  letterSpacing: -6,
+                ),
+                color: breakClockColor(widget.settings, palette),
+              ),
+            ),
+          ),
+          if (showTip)
+            Positioned(
+              left: 760,
+              top: 460,
+              width: 400,
+              child: BreakEntrance(
+                delay: BreakEntrance.stagger(2),
+                scale: false,
+                child: Text(
+                  widget.breakInfo.tip,
+                  style: BreakOverlayTheme.serif.copyWith(
+                    fontSize: 22,
+                    height: 1.5,
+                    color: palette.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
+
+  static const double _lens = 512;
 }
 
 class _AperturePainter extends CustomPainter {
@@ -287,20 +193,59 @@ class _AperturePainter extends CustomPainter {
   final Color bladeA;
   final Color bladeB;
   final Color edge;
-  final Color housing;
   final double finish;
 
   static const int _blades = 8;
   static const double _outer = 130;
+  static const double _units = 330;
+  static const double _bezelR = 145;
+
+  static final Path _knurl = () {
+    final p = Path();
+    for (var i = 0; i < 90; i++) {
+      final a = i * 2 * math.pi / 90;
+      p
+        ..moveTo(math.cos(a) * 138, math.sin(a) * 138)
+        ..lineTo(math.cos(a) * 152, math.sin(a) * 152);
+    }
+    return p;
+  }();
 
   final List<Path> _paths = List.generate(_blades, (_) => Path());
   final Paint _fill = Paint();
+  final Paint _flat = Paint();
   final Paint _stroke = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
-  final Paint _ring = Paint()
+  final Paint _bezel = Paint()
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 2;
+    ..strokeWidth = 26
+    ..shader = const SweepGradient(
+      colors: [
+        Color(0xFF5B6068),
+        Color(0xFFE3E6EA),
+        Color(0xFF454A52),
+        Color(0xFFCDD1D7),
+        Color(0xFF5B6068),
+      ],
+      stops: [0, 0.25, 0.5, 0.78, 1],
+    ).createShader(Rect.fromCircle(center: Offset.zero, radius: 160));
+  final Paint _lip = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 5
+    ..color = const Color(0xFF0A0B0D);
+  final Paint _knurlPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 0.8
+    ..color = const Color(0x59000000);
+  final Paint _glass = Paint()
+    ..shader = const RadialGradient(
+      center: Alignment(-0.35, -0.35),
+      colors: [Color(0xFF1E3446), Color(0xFF07090B)],
+    ).createShader(Rect.fromCircle(center: Offset.zero, radius: _outer));
+  final Paint _amberRing = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
   final Paint _dot = Paint();
 
   _AperturePainter({
@@ -310,7 +255,6 @@ class _AperturePainter extends CustomPainter {
     required this.bladeA,
     required this.bladeB,
     required this.edge,
-    required this.housing,
     required this.finish,
   }) : super(repaint: open) {
     _fill.shader = LinearGradient(
@@ -318,8 +262,8 @@ class _AperturePainter extends CustomPainter {
       end: Alignment.bottomRight,
       colors: [bladeA, bladeB],
     ).createShader(Rect.fromCircle(center: Offset.zero, radius: _outer));
+    _flat.color = Color.lerp(bladeA, bladeB, 0.5)!;
     _stroke.color = edge;
-    _ring.color = housing;
   }
 
   static Offset _p(double r, double a) =>
@@ -328,16 +272,18 @@ class _AperturePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final eased = fixed ? 0.5 : Curves.easeInOutSine.transform(open.value);
-    // Opening radius 40 -> 110px; completion opens it fully.
-    final base = fixed ? 85.0 : 40 + 70 * eased;
+
+    final base = fixed ? 85.0 : 104 * eased;
     final r = base + (125 - base) * finish;
-    final dotR = fixed ? 4.0 : (10 - 7 * eased) / 2;
-    final twist = -(1 - (r - 40) / 85) * 0.45;
+    final dotR = fixed ? 4.0 : 5 - 3 * eased;
+    final twist = -(1 - (r / 125).clamp(0.0, 1.0)) * 0.45;
     final step = 2 * math.pi / _blades;
     final vertexR = r / math.cos(step / 2);
 
     canvas.save();
     canvas.translate(size.width / 2, size.height / 2);
+    canvas.scale(size.width / _units);
+    canvas.drawCircle(Offset.zero, _outer, _glass);
     canvas.saveLayer(
       Rect.fromCircle(center: Offset.zero, radius: _outer + 4),
       Paint()..color = Color.fromRGBO(255, 255, 255, 1 - 0.85 * finish),
@@ -346,28 +292,33 @@ class _AperturePainter extends CustomPainter {
       Path()..addOval(Rect.fromCircle(center: Offset.zero, radius: _outer)),
     );
 
+    const reach = _outer * 2.2;
     for (var i = 0; i < _blades; i++) {
       final a = i * step + twist;
-      // Inner edge is one side of the octagonal opening; the blade sweeps
-      // outward past its neighbours so the leaves overlap like a real iris.
+
       final v0 = _p(vertexR, a - step / 2);
       final v1 = _p(vertexR, a + step / 2);
-      // Far corners lie outside the housing (clipped), so the leaves always
-      // cover the whole annulus however far the iris opens.
-      final o1 = _p(_outer * 1.8, a + step / 2 + step * 1.1);
-      final o0 = _p(_outer * 1.8, a - step / 2 - step * 0.1);
+      final along = _p(reach, a + math.pi / 2);
+      final out = _p(reach, a);
       _paths[i]
         ..reset()
         ..moveTo(v0.dx, v0.dy)
-        ..lineTo(v1.dx, v1.dy)
-        ..lineTo(o1.dx, o1.dy)
-        ..lineTo(o0.dx, o0.dy)
+        ..lineTo(v0.dx + along.dx, v0.dy + along.dy)
+        ..lineTo(v0.dx + along.dx + out.dx, v0.dy + along.dy + out.dy)
+        ..lineTo(v0.dx + out.dx, v0.dy + out.dy)
         ..close();
-      canvas.drawPath(_paths[i], _fill);
-      canvas.drawPath(_paths[i], _stroke);
+      canvas.drawPath(_paths[i], i.isEven ? _fill : _flat);
+      canvas.drawLine(v0, v1, _stroke);
     }
     canvas.restore();
-    canvas.drawCircle(Offset.zero, _outer, _ring);
+    canvas.drawCircle(Offset.zero, _bezelR, _bezel);
+    canvas.drawPath(_knurl, _knurlPaint);
+    canvas.drawCircle(Offset.zero, _outer + 3, _lip);
+    canvas.drawCircle(
+      Offset.zero,
+      _outer - 6,
+      _amberRing..color = accent.withValues(alpha: 0.55 * (1 - finish)),
+    );
 
     _dot.color = accent.withValues(alpha: 1 - 0.85 * finish);
     canvas.drawCircle(Offset.zero, dotR.clamp(1.5, 5.0), _dot);
@@ -381,6 +332,5 @@ class _AperturePainter extends CustomPainter {
       old.bladeA != bladeA ||
       old.bladeB != bladeB ||
       old.edge != edge ||
-      old.housing != housing ||
       old.finish != finish;
 }

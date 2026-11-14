@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_helpers.dart';
 
-/// `MM:SS` countdown in tabular figures. Announced as "N seconds remaining"
-/// without a live region, so screen readers do not chatter every second.
+/// mm:ss countdown text with a screen-reader label.
 class BreakCountdown extends StatelessWidget {
   final int seconds;
   final TextStyle? style;
@@ -30,13 +29,17 @@ class BreakCountdown extends StatelessWidget {
         breakFormatTime(seconds),
         textAlign: textAlign,
         maxLines: 1,
-        style: base.copyWith(color: color ?? palette.textPrimary),
+        style: base.copyWith(
+          color: breakReadableColor(
+            color ?? palette.textPrimary,
+            palette.surface,
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Micro-style uppercase label (the break type).
 class BreakLabel extends StatelessWidget {
   final String text;
   final Color? color;
@@ -56,13 +59,12 @@ class BreakLabel extends StatelessWidget {
       text.toUpperCase(),
       textAlign: textAlign,
       style: BreakOverlayTheme.micro.copyWith(
-        color: color ?? palette.textMuted,
+        color: breakReadableColor(color ?? palette.textMuted, palette.surface),
       ),
     );
   }
 }
 
-/// Instruction text: body style in secondary color, at most 420 wide.
 class BreakTip extends StatelessWidget {
   final String text;
   final Color? color;
@@ -86,7 +88,10 @@ class BreakTip extends StatelessWidget {
         text,
         textAlign: textAlign,
         style: BreakOverlayTheme.body.copyWith(
-          color: color ?? palette.textSecondary,
+          color: breakReadableColor(
+            color ?? palette.textSecondary,
+            palette.surface,
+          ),
         ),
       ),
     );

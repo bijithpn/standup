@@ -5,8 +5,7 @@ import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
-/// Displayed when a requested break template cannot be loaded or is invalid,
-/// showing an informative message and toast instead of silently falling back.
+/// Fallback shown for an unknown or failed template; keeps the countdown (and Skip, unless strict) so the break still works.
 class BreakTemplateErrorView extends StatefulWidget {
   final String templateName;
   final BreakModel breakInfo;

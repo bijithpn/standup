@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:package_info_plus/package_info_plus.dart';
 
-/// A newer build advertised by the appcast for this platform.
+/// Newest release found in the appcast feed.
 class FeedUpdate {
   const FeedUpdate({
     required this.version,
@@ -16,11 +16,7 @@ class FeedUpdate {
   final Uri downloadUrl;
 }
 
-/// Update check for Windows and Linux, where there is no Sparkle.
-///
-/// It reads the same appcast macOS uses. An `<enclosure>` is offered to a
-/// platform only when it carries `sparkle:os="windows"` / `sparkle:os="linux"`,
-/// so the macOS-only entries are never suggested to the wrong OS.
+/// Windows/Linux updater: reads the Sparkle appcast XML and compares build numbers (macOS uses Sparkle natively).
 class FeedUpdateChecker {
   FeedUpdateChecker({this.feedUrl = defaultFeedUrl, HttpClient? client})
     : _client = client;
@@ -33,8 +29,6 @@ class FeedUpdateChecker {
 
   static String get _osKey => Platform.isWindows ? 'windows' : 'linux';
 
-  /// Returns the newest build for this OS if it is newer than the running one,
-  /// otherwise null. Throws on network or feed errors.
   Future<FeedUpdate?> check() async {
     final current =
         int.tryParse((await PackageInfo.fromPlatform()).buildNumber) ?? 0;
@@ -57,7 +51,7 @@ class FeedUpdateChecker {
     }
   }
 
-  /// Pure parsing step, split out so it can be tested without a network.
+  /// Picks the highest build for [os] above [currentBuild]; uses regex rather than an XML parser to stay dependency-free.
   static FeedUpdate? newestFor(
     String xml, {
     required String os,

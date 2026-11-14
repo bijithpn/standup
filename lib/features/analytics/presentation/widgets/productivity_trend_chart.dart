@@ -5,6 +5,7 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 
 enum ChartPeriod { today, week, month }
 
+/// Bar chart of daily usage and breaks from DailyStats for the chosen period.
 class ProductivityTrendChart extends StatelessWidget {
   final List<DailyStats> weeklyData;
   final ChartPeriod period;
@@ -271,12 +272,11 @@ class ProductivityTrendChart extends StatelessWidget {
     for (final s in slots) {
       if (s.value > maxValue) maxValue = s.value.toDouble();
     }
-    // Dynamic ceiling with a clean minimum
+
     final double maxY = maxValue < 4
         ? 4
         : (maxValue + (maxValue * 0.25)).ceilToDouble();
 
-    // Calculate clean integer intervals for guidelines and left axis
     final double interval = maxY <= 4
         ? 1
         : maxY <= 8

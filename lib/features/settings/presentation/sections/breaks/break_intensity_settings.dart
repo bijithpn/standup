@@ -6,6 +6,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// Settings > Break display options: which monitors dim, wellness notes and break music.
 class BreakIntensitySettings extends StatelessWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -104,8 +105,7 @@ class BreakIntensitySettings extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // A status label, not a control: it used to be a button
-                      // with an empty callback.
+
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,

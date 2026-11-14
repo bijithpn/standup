@@ -133,11 +133,14 @@ void main() {
       );
 
       expect(
-        find.text('Possible pattern'),
+        find.text('Possible pattern: Your busiest hours'),
         findsOneWidget,
         reason: 'a skimmed heading must not read as a fact',
       );
-      expect(find.text('Based on 2 days of activity.'), findsOneWidget);
+      expect(
+        find.text('When you focus, from 2 days of activity'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a medium finding still carries its evidence', (tester) async {
@@ -155,7 +158,7 @@ void main() {
       );
 
       expect(find.text('Break rhythm'), findsOneWidget);
-      expect(find.text('Based on 5 days of activity.'), findsOneWidget);
+      expect(find.text('Breaks, from 5 days of activity'), findsOneWidget);
     });
   });
 

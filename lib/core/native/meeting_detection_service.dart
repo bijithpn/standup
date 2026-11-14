@@ -4,32 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 
-/// Meeting-app identifiers used by the Windows polling fallback (see
-/// [MeetingDetectionService._startPolling]). Matched case-insensitively
-/// against [ActiveAppInfo.executableName] (".exe" stripped),
-/// [ActiveAppInfo.bundleId], and [ActiveAppInfo.name] — deliberately the
-/// same app set `MeetingDetectionBridge.swift` already hardcodes natively
-/// for macOS (`us.zoom.xos`, `com.microsoft.teams`, etc.), just matched by
-/// substring so both platforms' naming (`Zoom.exe` vs `us.zoom.xos`) hit
-/// the same entries.
-const Set<String> kKnownMeetingApps = {
-  'zoom',
-  'teams', // covers Microsoft Teams and the "ms-teams"/"msteams" exe names
-  'webex', // covers WebexMta.exe / CiscoWebexStart.exe
-  'slack',
-};
+// Substrings matched against executable, bundle id and app name.
+const Set<String> kKnownMeetingApps = {'zoom', 'teams', 'webex', 'slack'};
 
-/// Streams whether a known meeting app is currently frontmost.
-///
-/// - **macOS**: backed by `MeetingDetectionBridge.swift`, which pushes an
-///   event on every app activation via `NSWorkspace` — instant, no polling.
-/// - **Windows**: no native bridge exists for this yet, so this falls back
-///   to polling [AppTrackingService.getActiveApp] — the same primitive
-///   [AppUsageTracker] already polls every 10s — against
-///   [kKnownMeetingApps]. Coarser than the macOS push channel (a few
-///   seconds of lag instead of instant), but needs no new native C++ code,
-///   the same tradeoff [PresentationDetectionService] already makes for
-///   presentation detection.
+/// Reports whether a meeting app is in use; feeds the quiet-break logic and mirrors state to overlays over IPC.
 class MeetingDetectionService {
   static const Duration _pollInterval = Duration(seconds: 5);
 
@@ -50,6 +28,7 @@ class MeetingDetectionService {
 
   Stream<bool> get isMeetingActiveStream => _controller.stream;
 
+  /// macOS listens to a native event stream; Windows/Linux poll the active app.
   void start() {
     if (_isRunning) return;
     _isRunning = true;
@@ -99,13 +78,13 @@ class MeetingDetectionService {
   @visibleForTesting
   Future<void> pollOnceForTest() => _pollOnce();
 
+  // Only emits on change so listeners are not spammed every poll.
   Future<void> _pollOnce() async {
     try {
       final app = await _appTracking.getActiveApp();
       if (app == null) return;
       final active = _matchesKnownMeetingApp(app);
-      // Polling repeats itself; only tell listeners (and the other windows,
-      // over IPC) when the answer actually changed.
+
       if (active == _lastPolled) return;
       _lastPolled = active;
       _emit(active);
@@ -124,6 +103,7 @@ class MeetingDetectionService {
     );
   }
 
+  // Also forwards to the other windows so the overlay can react to meetings.
   void _emit(bool isActive) {
     _isMeetingActive = isActive;
     _controller.add(isActive);

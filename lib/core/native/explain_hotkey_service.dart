@@ -2,20 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
-/// Registers a second system-wide hotkey (`Cmd+Option+E` on macOS,
-/// `Ctrl+Alt+E` on Windows) that opens the "why did BreakMate do that?"
-/// explain panel (see `TimerExplanationOverlayService`) — Phase 2 of the
-/// workflow-analysis plan doc, ergonomically mirroring Opsis's Quick Ask
-/// but scoped to BreakMate's own state, not screen content, and needing no
-/// AI call.
-///
-/// Deliberately a standalone service rather than extending
-/// [GlobalHotkeyService] (`⌘⌥B`, break skip/start) — that service's
-/// single-hotkey shape is already exercised elsewhere; a second,
-/// independent registration is lower risk than generalizing it to carry
-/// multiple bindings.
-///
-/// Desktop-only; a no-op on any other platform.
+/// Registers the system-wide shortcut (Cmd/Ctrl+Alt+E) that triggers the timer explanation overlay.
 class ExplainHotkeyService {
   static final HotKey defaultHotKey = HotKey(
     key: PhysicalKeyboardKey.keyE,
@@ -32,7 +19,6 @@ class ExplainHotkeyService {
       defaultTargetPlatform == TargetPlatform.windows ||
       defaultTargetPlatform == TargetPlatform.linux;
 
-  /// Registers the hotkey and invokes [onPressed] whenever it fires.
   Future<void> start({required VoidCallback onPressed}) async {
     if (_isRunning || !isSupportedPlatform) return;
     _isRunning = true;

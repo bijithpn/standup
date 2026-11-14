@@ -4,11 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 
-/// Loads the authored companion scenes exported from the OneWorks editor.
-///
-/// One JSON file holds every built-in species: its primitives, its face, its
-/// camera and its light. Parsed once and kept, because it is small and every
-/// companion surface wants it.
+/// Singleton that lazily loads and caches all preset scenes from the bundled JSON.
 class AvatarSceneCatalog {
   AvatarSceneCatalog._();
 
@@ -19,7 +15,6 @@ class AvatarSceneCatalog {
   Map<String, AvatarScene>? _scenes;
   Future<Map<String, AvatarScene>>? _loading;
 
-  /// Every scene, keyed by preset name (`cat`, `red-panda`, …).
   Future<Map<String, AvatarScene>> load({AssetBundle? bundle}) {
     final cached = _scenes;
     if (cached != null) return Future<Map<String, AvatarScene>>.value(cached);
@@ -49,23 +44,16 @@ class AvatarSceneCatalog {
     }
   }
 
-  /// The scene for [preset], once [load] has completed. Null before then.
   AvatarScene? sceneFor(String preset) => _scenes?[_normalize(preset)];
 
-  /// Whether the catalog has a scene for this preset.
   bool has(String preset) => _scenes?.containsKey(_normalize(preset)) ?? false;
 
-  /// Every preset name the catalog knows, sorted.
   List<String> get presets {
     final scenes = _scenes;
     if (scenes == null) return const <String>[];
     return scenes.keys.toList()..sort();
   }
 
-  /// Maps the app's species naming onto the editor's preset names.
-  ///
-  /// The app uses lowerCamelCase enum names while the editor uses kebab-case,
-  /// so `redPanda` and `red-panda` have to resolve to the same scene.
   static String _normalize(String preset) {
     final kebab = preset
         .replaceAllMapped(
@@ -76,7 +64,6 @@ class AvatarSceneCatalog {
     return kebab;
   }
 
-  /// Drops the parsed catalog. For tests.
   void reset() {
     _scenes = null;
     _loading = null;

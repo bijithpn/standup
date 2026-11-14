@@ -36,13 +36,7 @@ import 'package:breakmate/shared/utils/reduced_motion.dart';
 
 part 'pip_overlay_widgets.dart';
 
-/// The floating companion window.
-///
-/// It runs in its own Flutter engine, so everything it needs about the pet
-/// arrives over the `pip_data` channel. Motion comes from a single
-/// [PetBehaviorEngine] on one ticker, reading one shared [CursorFeed] — the
-/// previous version ran three independent polling timers that each made their
-/// own native cursor call every frame.
+/// Root widget of the separate PiP companion window process: renders the avatar, runs the behavior engine/wanderer and talks to the main app over the pip_data channel.
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
 
@@ -56,13 +50,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     'com.breakmate.desktop/pip_data',
   );
 
-  /// How often the window's own position is re-read. The pet only needs this
-  /// to know where it is relative to the cursor, which tolerates being a frame
-  /// or two stale — and the window rarely moves.
   static const Duration _viewportSyncInterval = Duration(milliseconds: 400);
 
-  /// How often a pet that has nothing left to animate is still ticked, so it
-  /// keeps getting drowsy and lonely without drawing a single frame.
   static const Duration _restInterval = Duration(milliseconds: 250);
 
   late final PetBehaviorEngine _engine = PetBehaviorEngine(
@@ -70,8 +59,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   );
   late final Ticker _ticker = createTicker(_tickEngine);
 
-  /// The engine's clock. Independent of the ticker, which stops and restarts,
-  /// so the simulation never sees time jump backwards.
   final Stopwatch _clock = Stopwatch()..start();
   Timer? _restTimer;
   final List<Timer> _hopTimers = <Timer>[];
@@ -89,8 +76,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   late final PetWanderer _wanderer = PetWanderer.forWindow(
     windowManager: _windowManager,
     engine: _engine,
-    // Wherever it walks to is where it now lives, so whatever the pet knows
-    // about its own position has to be brought back into line.
+
     onArrived: _syncViewport,
   );
 
@@ -119,23 +105,16 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     defaultValue: true,
   );
 
-  /// How the card behind the companion is drawn: `scene` for the colour the
-  /// avatar was authored with, `none` for nothing, or a `#RRGGBB` of your own.
   late String _backdrop = SimplePrefs.instance.getString(
     'pip_background_style',
     defaultValue: 'scene',
   );
   bool _clickThrough = false;
 
-  /// Which interactions the user has left switched on. Everything is on until
-  /// the host says otherwise, so the affordances appear on the first frame
-  /// rather than popping in once settings arrive.
   bool _pettingEnabled = true;
   bool _playEnabled = true;
   bool _treatEnabled = true;
 
-  // How the pet looks at the pointer and animates on its own. Defaults match
-  // the settings defaults so the first frame is right before the host speaks.
   bool _gazeEnabled = true;
   double _gazeSensitivity = 0.5;
   bool _idleAnimation = true;
@@ -168,13 +147,11 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
     unawaited(_fetchInitialSettings());
 
-    // Tell the native side the first frame exists so it can reveal the window
-    // straight away instead of after a fixed delay.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(
         _channel.invokeMethod<void>('pipReady').catchError((Object _) {}),
       );
-      // And the app, so its loader can end when the companion is really there.
+
       _report('pipReady');
     });
   }
@@ -197,12 +174,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   @override
   void didChangeAccessibilityFeatures() {
-    // The user flipped macOS "Reduce motion" while the companion was running.
     _applyBehavior();
   }
 
-  // ── Settings plumbing ─────────────────────────────────────────────────────
-
+  /// Native-to-Dart commands from the main window (settings sync, theme/name updates, break events, visibility, wake/display changes).
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     final args = call.arguments;
     final map = args is Map ? stringKeyedMap(args) : null;
@@ -212,9 +187,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         if (map != null) _applySettings(OverlayConfig.fromJson(map));
         break;
 
-      // The host sends these as individual updates as well as inside a full
-      // sync. Handling both is what keeps a rename or a re-style from being
-      // silently dropped.
       case 'updateCompanionTheme':
         final themeId = map?['themeId']?.toString();
         if (themeId != null) {
@@ -240,8 +212,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         _handleCompanionEvent(map?['state']?.toString());
         break;
 
-      // The native side reports these so the pet never has to guess whether
-      // animation callbacks ran while it was hidden or the machine slept.
       case 'setWindowVisible':
         _setWindowVisible(map?['visible'] != false);
         break;
@@ -269,8 +239,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     await _windowManager.initialize();
     await _syncViewport();
 
-    // Started only once the window manager knows where the window actually
-    // is; before that the wanderer would be walking from a guess.
     if (mounted) _wanderer.start();
   }
 
@@ -335,8 +303,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     }
   }
 
-  /// Compiles the pet's artwork before the first frame that needs it, so it
-  /// never appears as an empty box while the window fades in.
   void _warmArtwork() {
     if (_isBlob) return;
     unawaited(
@@ -346,15 +312,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     );
   }
 
-  // ── Pet identity ──────────────────────────────────────────────────────────
-
-  /// Whether the companion is the generative blob rather than illustrated
-  /// artwork.
-  ///
-  /// The host says so explicitly through [OverlayConfig.renderMode]; the theme
-  /// id is only a fallback. Deciding from the id alone is unreliable in both
-  /// directions, because `PetTheme.getTheme` answers with the blob theme for
-  /// anything it does not recognise.
   bool get _isBlob {
     final mode = _renderMode;
     if (mode != null && mode.isNotEmpty) return mode == 'blob';
@@ -379,13 +336,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     return AvatarDefinition.fromSpecies(species);
   }
 
-  // ── Cursor, viewport, click-through ───────────────────────────────────────
-
-  // ── Behaviour, frame pacing, lifecycle ────────────────────────────────────
-
-  /// Pushes the user's preferences, and the system's reduce-motion setting,
-  /// into the engine. Idempotent: the engine ignores values that did not
-  /// change, so calling this on every settings sync is cheap.
   void _applyBehavior() {
     final reduced = _reducedMotionSetting || prefersReducedMotion;
     _engine.configure(
@@ -395,7 +345,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       animations: _animationsEnabled,
       reducedMotion: reduced,
     );
-    // A pet that is meant to be calm does not stroll across the desktop.
+
     _wanderer.enabled = _wanderingRequested && _animationsEnabled && !reduced;
   }
 
@@ -410,8 +360,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     }
   }
 
-  /// Runs the frame ticker, unless the pet has nothing to draw. Called
-  /// whenever something may have given it work: a setting, an event, a tap.
+  /// Frame loop is on-demand: a ticker runs only while the engine is moving, otherwise a slow rest timer polls until it settles.
   void _requestFrames() {
     if (!mounted || !_windowVisible) return;
     _restTimer?.cancel();
@@ -428,8 +377,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     if (_engine.isSettled) _enterRest();
   }
 
-  /// Nothing is moving: stop asking Flutter for frames and tick slowly so the
-  /// slow feelings (drowsiness, loneliness) still advance.
   void _enterRest() {
     if (_ticker.isActive) _ticker.stop();
     _restTimer ??= Timer.periodic(_restInterval, (_) {
@@ -439,6 +386,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     });
   }
 
+  /// Hidden windows stop the ticker and cursor polling to save CPU.
   void _setWindowVisible(bool visible) {
     if (_windowVisible == visible) return;
     _windowVisible = visible;
@@ -447,8 +395,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       _requestFrames();
       unawaited(_syncViewport());
     } else {
-      // Occluded, hidden or on another Space: nobody can see the pet, so draw
-      // nothing and poll nothing until it comes back.
       if (_ticker.isActive) _ticker.stop();
       _restTimer?.cancel();
       _restTimer = null;
@@ -456,28 +402,16 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     _syncHitTestSubscription();
   }
 
-  /// After sleep or a display change nothing can be assumed about the
-  /// callbacks that did or did not run, or about where the window now is.
+  /// After sleep or a display change, drop cached display geometry and re-sync viewport and position.
   Future<void> _reconcileAfterSuspend() async {
     _windowManager.invalidateDisplayCache();
     _engine.reconcile();
     await _syncViewport();
-    // The native side may have pulled the window back onto a display that
-    // still exists; remember where it ended up.
+
     _windowManager.persistPosition();
     _requestFrames();
   }
 
-  // ── Cursor, hit-testing ───────────────────────────────────────────────────
-
-  /// Whether the window needs to know where the cursor is for itself, apart
-  /// from where the pet looks.
-  ///
-  /// The controls are shown on hover, and a panel that never becomes the key
-  /// window does not reliably get enter/exit events, so hover is also read from
-  /// the cursor. Without a card behind the pet, the transparent margins must
-  /// not swallow clicks meant for whatever is underneath, which takes the same
-  /// watching.
   bool get _needsHitTesting => _windowVisible && _pipDraggableClickable;
 
   void _syncHitTestSubscription() {
@@ -489,17 +423,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     }
   }
 
-  /// Decides whether the window should swallow clicks.
-  ///
-  /// This reuses the shared cursor sample rather than asking the platform
-  /// again, so click-through costs nothing beyond the poll the pet already
-  /// needed to know where to look.
+  /// Toggles whether the window accepts mouse by cursor position (click-through elsewhere); _applyingMouseMode avoids overlapping native calls.
   void _onCursorSample(CursorSample sample) {
     if (!mounted || _isDraggingWindow) return;
 
-    // The window's own enter/exit events are not trusted: a window that has
-    // stopped accepting the mouse never hears the pointer leave, and a
-    // non-activating panel may never hear it arrive.
     if (!_windowRect.isEmpty) {
       _setHovered(_windowRect.inflate(2).contains(sample.position));
     }
@@ -526,17 +453,14 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     if (_isHovered == hovered || !mounted) return;
     setState(() => _isHovered = hovered);
     if (hovered) {
-      // Nothing walks off while it is being looked at.
       _wanderer.suspend();
     } else {
       _wanderer.resume();
     }
-    // Works even with cursor-following off: being hovered is a plain window
-    // event, not tracking.
+
     _engine.hover(hovered);
   }
 
-  /// Where the pet is drawn, in the same screen space as the cursor.
   Rect get _stageGlobalRect {
     final local = _stageLocalRect;
     if (local == null || _windowRect.isEmpty) return Rect.zero;
@@ -545,10 +469,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   Rect? _stageLocalRect;
 
-  /// Where the pet's eyes are on screen, or null until it has been laid out.
-  ///
-  /// Gaze is measured from here. The head sits in the upper part of the
-  /// square the pet is drawn into, well above the middle of the window.
   Offset? get _eyeGlobal {
     final stage = _stageGlobalRect;
     if (stage.isEmpty) return null;
@@ -566,12 +486,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         size.height,
       );
       _engine.setViewport(_windowRect, eye: _eyeGlobal);
-    } catch (_) {
-      // The window may be mid-move or already gone.
-    }
+    } catch (_) {}
   }
-
-  // ── Interaction ───────────────────────────────────────────────────────────
 
   void _handlePetTap() {
     _engine.pet();
@@ -600,11 +516,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     }
   }
 
-  /// Carries out one of the offered interactions.
-  ///
-  /// Each one is two things at once: something that happens to the pet now,
-  /// and a note to the host, which is the only side that can write settings or
-  /// touch the break timer.
   void _handleWish(PetWish wish) {
     switch (wish) {
       case PetWish.petting:
@@ -623,11 +534,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       case PetWish.none:
         break;
     }
-    // Whatever just happened, the pet is now busy with the user.
+
     _wanderer.suspend();
   }
 
-  /// Draws the prop for [kind] over the pet and hops the pet in time with it.
   void _playEffect(PetInteractionKind kind) {
     _cancelHops();
     setState(() {
@@ -671,9 +581,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     unawaited(NativeBridge.focusApp());
   }
 
-  /// Closing the window turns the companion off, so Settings agrees with what
-  /// is on screen and offers the switch to bring it back. Hiding the window
-  /// alone left it reading "active" with nothing to click.
   Future<void> _handleClose() async {
     SimplePrefs.instance.flush();
     try {
@@ -686,13 +593,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }
-    // The host hides the window itself once the setting is saved. This covers
-    // the host being unreachable.
+
     await NativeBridge.hidePipWindow();
   }
 
-  /// Toggles whether the companion stays out all the time or only shows up
-  /// while a break is running.
   void _toggleKeepOnScreen() {
     final next = !_keepOnScreen;
     setState(() => _keepOnScreen = next);
@@ -708,16 +612,11 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     _engine.nudge();
   }
 
-  // ── Appearance ────────────────────────────────────────────────────────────
-
-  // The chrome has to stay readable whether the pet sits on its own card or
-  // straight on the desktop, so it carries its own scrim either way.
   static final Color _chromeForeground = AppTheme.gray100;
   static final Color _chromeBackground = AppTheme.gray950.withValues(
     alpha: 0.68,
   );
 
-  /// The card colour to draw behind the companion, or null for none.
   Color? get _backdropColor {
     switch (_backdrop) {
       case 'none':
@@ -738,17 +637,11 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   bool get _hasBackdrop => _backdrop != 'none' && _backdrop != 'transparent';
 
-  /// Maps the existing 2–15 preference range to a useful percentage of the
-  /// PiP's safe drawing area. Even at 100%, the layout below keeps animation
-  /// headroom above the stage instead of letting a bounce hit the window edge.
   double get _petSizeFactor {
     final normalized = ((_scale - 2.0) / 13.0).clamp(0.0, 1.0);
     return 0.88 + normalized * 0.12;
   }
 
-  /// The interactions this window is allowed to offer, in the order they are
-  /// shown. Resting is not in the list: it only appears when the companion
-  /// actually asks for it.
   List<PetWish> get _availableActions => <PetWish>[
     if (_pettingEnabled) PetWish.petting,
     if (_playEnabled) PetWish.play,
@@ -794,12 +687,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     );
   }
 
-  /// The pet itself. Rebuilt every frame, and nothing else is.
   Widget _buildPet() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The top strip holds the drag handle and buttons; the bottom one the
-        // action buttons and their caption. Everything between is the pet's.
         const topHeadroom = 34.0;
         const bottomHeadroom = 52.0;
         const horizontalInset = 12.0;
@@ -837,8 +727,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
             child: AnimatedBuilder(
               animation: _engine,
               builder: (context, _) => Semantics(
-                // Mood only. Gaze changes constantly and would make a screen
-                // reader chatter.
                 label: _semanticLabel(_engine.snapshot.mood),
                 button: true,
                 onTap: _handlePetTap,
@@ -849,7 +737,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                   definition: _isBlob ? null : _avatarDefinition,
                   blobName: _isBlob ? _petName : null,
                   background: _backdropColor,
-                  // The contact shadow needs a surface to fall on.
+
                   showShadow: false,
                   showSceneShadow: _hasBackdrop,
                   onTap: _handlePetTap,
@@ -878,16 +766,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     return '$name, $feeling. Activate to pet.';
   }
 
-  /// Everything that is not the pet: drag grip, name, close, status. All of it
-  /// fades away when the pointer leaves, so the resting state is just an animal
-  /// on the desktop.
   Widget _buildChrome() {
     final showChrome = _isHovered || _chromeFocused;
     return Focus(
       canRequestFocus: false,
       skipTraversal: true,
-      // Keyboard users tab onto the controls without hovering, and the
-      // controls have to be visible once they are there.
+
       onFocusChange: (focused) {
         if (_chromeFocused != focused) setState(() => _chromeFocused = focused);
       },
@@ -899,7 +783,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
           ignoring: !showChrome,
           child: Stack(
             children: <Widget>[
-              // Dotted grid drag handle along the top edge.
               Positioned(
                 top: 6,
                 left: 0,
@@ -944,8 +827,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 ),
               ),
 
-              // Name and edit sit top-left so the bottom of the window is free
-              // for the interactions, which are the part a new user needs.
               Positioned(
                 top: 6,
                 left: 6,

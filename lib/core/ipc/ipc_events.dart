@@ -4,6 +4,7 @@ part 'ipc_events.freezed.dart';
 part 'ipc_events.g.dart';
 
 @freezed
+/// All messages exchanged between the main app and overlay windows; wire name via [eventName], body via [payload].
 sealed class IpcEvent with _$IpcEvent {
   const IpcEvent._();
 
@@ -47,6 +48,7 @@ sealed class IpcEvent with _$IpcEvent {
   const factory IpcEvent.companionStateChanged({required String state}) =
       CompanionStateChangedIpcEvent;
 
+  // Fallback for names we do not recognise so newer/older peers do not crash the handler.
   const factory IpcEvent.unknown({
     required String eventName,
     required Map<String, dynamic> payload,
@@ -68,10 +70,11 @@ sealed class IpcEvent with _$IpcEvent {
     unknown: (name, _) => name,
   );
 
+  // Freezed adds "runtimeType" for union decoding; it is not part of the wire payload.
   Map<String, dynamic> get payload => (toJson()..remove('runtimeType'));
 
+  /// Rebuilds a typed event from the wire name + payload by re-injecting the freezed "runtimeType" discriminator.
   static IpcEvent parse(String eventName, Map<String, dynamic> payload) {
-    // Add runtimeType for Freezed fromJson
     final Map<String, dynamic> jsonWithRuntimeType = Map.from(payload);
     switch (eventName) {
       case IpcEventNames.timerStateChanged:
@@ -108,6 +111,7 @@ sealed class IpcEvent with _$IpcEvent {
   }
 }
 
+/// Wire-level event names shared by both sides of the channel; keep in sync with the native code.
 class IpcEventNames {
   IpcEventNames._();
 

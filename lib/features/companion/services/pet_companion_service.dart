@@ -10,6 +10,7 @@ import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
 import 'package:breakmate/features/companion/services/throwable_object_manager.dart';
 
+/// Sprite-pet orchestrator: ticks needs/mood/fatigue, periodically asks PetBehaviorBrain for a new state and moves the pet through PetNavigationService.
 class PetCompanionService extends ChangeNotifier {
   final PetStateMachine _stateMachine;
   final PetBehaviorBrain _brain;
@@ -25,7 +26,6 @@ class PetCompanionService extends ChangeNotifier {
   DateTime _lastBehaviorDecision = DateTime.now();
   static const Duration _decisionInterval = Duration(seconds: 4);
 
-  // Throttle context.copyWith to every 500ms to avoid per-frame allocations
   DateTime _lastContextUpdate = DateTime.now();
   static const Duration _contextUpdateInterval = Duration(milliseconds: 500);
 
@@ -93,9 +93,7 @@ class PetCompanionService extends ChangeNotifier {
     });
   }
 
-  void trackToy(Offset toyPos) {
-    // Tracking is handled by overlay viewport gaze tracking
-  }
+  void trackToy(Offset toyPos) {}
 
   void onPetting() {
     _needsEngine.onPetting();
@@ -186,7 +184,7 @@ class PetCompanionService extends ChangeNotifier {
     );
   }
 
-  /// Main update — called every frame. Must be allocation-minimal.
+  /// Per-frame tick: needs, mood expiry, fatigue/curiosity/boredom drifts, navigation, then throttled context refresh and decision.
   void update(double dt) {
     final now = DateTime.now();
 
@@ -201,7 +199,7 @@ class PetCompanionService extends ChangeNotifier {
     if (_stateMachine.currentState == PetState.sleep) {
       _fatigue = (_fatigue - 0.1 * dt).clamp(0.0, 1.0);
     } else {
-      double rate = 0.005; // Base passive rate
+      double rate = 0.005;
       if (_stateMachine.currentState == PetState.walk ||
           _stateMachine.currentState == PetState.exploring ||
           _stateMachine.currentState == PetState.following) {
@@ -235,7 +233,6 @@ class PetCompanionService extends ChangeNotifier {
       currentState: _stateMachine.currentState,
     );
 
-    // Throttle context.copyWith to avoid per-frame object allocation
     if (now.difference(_lastContextUpdate) >= _contextUpdateInterval) {
       _context = _context.copyWith(
         petPosition: newPos,
@@ -285,7 +282,7 @@ class PetCompanionService extends ChangeNotifier {
           cur == PetState.meetingPaused ||
           cur == PetState.drag ||
           cur == PetState.sleep) {
-        return; // Don't interrupt these states
+        return;
       }
 
       if (cur != PetState.following) {

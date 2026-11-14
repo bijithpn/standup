@@ -14,6 +14,7 @@ import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
+/// Owns the ObjectBox store (one per process) and exposes typed boxes plus a key-value API mirrored to SimplePrefs.
 class StorageService {
   static Store? _store;
   static bool _initializing = false;
@@ -26,6 +27,7 @@ class StorageService {
   int? openDurationMs;
   int? initDurationMs;
 
+  // Overlay/companion isolates must never open the store (it is single-process); access there throws.
   Store get store {
     final isolateName = Isolate.current.debugName ?? '';
     final isSecondaryIsolate =
@@ -62,6 +64,7 @@ class StorageService {
   set migrationDurationMs(int val) =>
       SimplePrefs.instance.setInt('database_migration_ms', val);
 
+  /// Opens the database with layered recovery: legacy-path migration, stale-lock cleanup, schema reset, then a temp-dir fallback. Sets [hasFailed] if all fail.
   Future<void> init() async {
     if (_store != null) return;
     if (_initializing) {
@@ -97,12 +100,11 @@ class StorageService {
       debugPrint('[Storage] Support Dir: ${supportDir.path}');
       debugPrint('[Storage] Docs Dir: ${docsDir.path}');
 
-      // New primary location
+      // Database moved from Documents to Application Support; the legacy dir is renamed on first run.
       final storeDir = p.join(supportDir.path, 'breakmate_db');
-      // Old location (legacy)
+
       final legacyStoreDir = p.join(docsDir.path, 'breakmate_db');
 
-      // Simple migration: if legacy exists and new doesn't, move it.
       if (Directory(legacyStoreDir).existsSync() &&
           !Directory(storeDir).existsSync()) {
         debugPrint(
@@ -135,13 +137,13 @@ class StorageService {
       activeDatabasePath = activeStoreDir;
       await diagnoseStorage(activeStoreDir);
 
-      // Ensure the directory exists
       final dir = Directory(activeStoreDir);
       if (!dir.existsSync()) {
         debugPrint('[Storage] Creating store directory: $activeStoreDir');
         dir.createSync(recursive: true);
       }
 
+      // ObjectBox on macOS needs an app group derived from the bundle id (max 19 chars; dev builds get their own).
       String? macosAppGroup;
       if (Platform.isMacOS) {
         try {
@@ -188,6 +190,7 @@ class StorageService {
         debugPrint('[Storage] StackTrace: $stack');
 
         final errStr = e.toString().toLowerCase();
+        // Error text sniffing decides the recovery path: lock errors kill stale holders, schema errors wipe the DB.
         final isLockError =
             errStr.contains('operation not permitted') ||
             errStr.contains('lock') ||
@@ -200,6 +203,7 @@ class StorageService {
             errStr.contains('corrupt') ||
             errStr.contains('model');
 
+        // Kills other processes holding the DB files (via lsof), removes lock.mdb and retries once.
         if (isLockError) {
           debugPrint(
             '[Storage] Attempting to clean up stale processes holding the database files...',
@@ -249,7 +253,7 @@ class StorageService {
                   );
                 }
               }
-              // Wait for OS to release files
+
               await Future.delayed(const Duration(milliseconds: 800));
             }
 
@@ -283,6 +287,7 @@ class StorageService {
           }
         }
 
+        // Last-resort data loss: delete and recreate the DB when it is incompatible or corrupt.
         if (_store == null && isSchemaError) {
           debugPrint(
             '[Storage] Incompatible or corrupted database detected. Attempting database reset...',
@@ -309,7 +314,6 @@ class StorageService {
         }
 
         if (_store == null) {
-          // Fallback: try Documents directory if Support failed (for some reason)
           if (activeStoreDir != legacyStoreDir) {
             debugPrint(
               '[Storage] Attempting fallback to legacy location $legacyStoreDir...',
@@ -329,8 +333,8 @@ class StorageService {
           }
 
           if (_store == null) {
-            // Last resort: temporary directory (will lose data on OS cleanup)
             try {
+              // Final fallback: temp storage keeps the app usable but settings will not persist.
               final tempDir = await getTemporaryDirectory();
               final fallbackPath = p.join(tempDir.path, 'breakmate_fallback');
               debugPrint(
@@ -395,16 +399,13 @@ class StorageService {
   void diagnoseAndLogFailure(String storeDir) {
     debugPrint('=== STORAGE INITIALIZATION FAILURE DIAGNOSTICS ===');
 
-    // Check whether initialization was re-entered or skipped.
     debugPrint('[Diagnostics] 1. Initialization Order Check:');
     debugPrint('   - StorageService._initializing: $_initializing');
     debugPrint('   - StorageService._store != null: ${_store != null}');
 
-    // Identify the process that owns this storage attempt.
     debugPrint('[Diagnostics] 2. Existing Process Ownership Check:');
     debugPrint('   - Current Process ID: $pid');
 
-    // Secondary Flutter engines must not open ObjectBox directly.
     final isolateName = Isolate.current.debugName ?? '';
     final isSecondaryIsolate =
         isolateName.toLowerCase().contains('overlay') ||
@@ -413,7 +414,6 @@ class StorageService {
     debugPrint('   - Isolate Name: "$isolateName"');
     debugPrint('   - Is Secondary Isolate: $isSecondaryIsolate');
 
-    // Temporary storage keeps the app usable but cannot be treated as durable.
     debugPrint('[Diagnostics] 4. Temporary Storage Fallback Check:');
     debugPrint('   - Active database path: $activeDatabasePath');
     final isTemp = activeDatabasePath?.contains('temporary') ?? false;
@@ -424,11 +424,9 @@ class StorageService {
       );
     }
 
-    // Capture the internal failure flag after all retry paths have run.
     debugPrint('[Diagnostics] 5. ObjectBox Open Failure Check:');
     debugPrint('   - StorageService._failed: $_failed');
 
-    // Inspect the main database file without attempting repair here.
     debugPrint('[Diagnostics] 6. Database Corruption Check:');
     if (storeDir.isNotEmpty) {
       final dbFile = File(p.join(storeDir, 'data.mdb'));
@@ -442,7 +440,6 @@ class StorageService {
       }
     }
 
-    // A leftover lock file usually points to another process or a crash.
     debugPrint('[Diagnostics] 7. Lock-file Conflict Check:');
     if (storeDir.isNotEmpty) {
       final lockFile = File(p.join(storeDir, 'lock.mdb'));
@@ -469,7 +466,6 @@ class StorageService {
       final dir = Directory(storeDir);
       debugPrint('Dir exists: ${dir.existsSync()}');
 
-      // Test write permission
       final testFile = File(p.join(docsDir.path, '.write_test'));
       testFile.writeAsStringSync('test');
       debugPrint('Write test: SUCCESS');
@@ -504,8 +500,6 @@ class StorageService {
     return 0;
   }
 
-  // KeyValue Compatibility Layer
-
   KeyValueRecord? _getKv(String key) {
     if (kvBox == null) return null;
     final query = kvBox!.query(KeyValueRecord_.key.equals(key)).build();
@@ -514,15 +508,13 @@ class StorageService {
     return result;
   }
 
+  // Key-value setters write SimplePrefs first (available before the DB), then ObjectBox; getters prefer ObjectBox.
   Future<bool> setInt(String key, int value) async {
-    // Always mirror to SimplePrefs
     SimplePrefs.instance.setInt(key, value);
 
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      // Settings are saved as a whole, so almost every key arrives unchanged.
-      // Skipping the write keeps a toggle from costing dozens of database puts.
       final next = value.toString();
       if (existing.value != next) {
         existing.value = next;
@@ -548,14 +540,11 @@ class StorageService {
   }
 
   Future<bool> setBool(String key, bool value) async {
-    // Always mirror to SimplePrefs
     SimplePrefs.instance.setBool(key, value);
 
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      // Settings are saved as a whole, so almost every key arrives unchanged.
-      // Skipping the write keeps a toggle from costing dozens of database puts.
       final next = value.toString();
       if (existing.value != next) {
         existing.value = next;
@@ -581,14 +570,11 @@ class StorageService {
   }
 
   Future<bool> setString(String key, String value) async {
-    // Always mirror to SimplePrefs
     SimplePrefs.instance.setString(key, value);
 
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      // Settings are saved as a whole, so almost every key arrives unchanged.
-      // Skipping the write keeps a toggle from costing dozens of database puts.
       final next = value;
       if (existing.value != next) {
         existing.value = next;
@@ -612,14 +598,11 @@ class StorageService {
   }
 
   Future<bool> setDouble(String key, double value) async {
-    // Always mirror to SimplePrefs
     SimplePrefs.instance.setDouble(key, value);
 
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      // Settings are saved as a whole, so almost every key arrives unchanged.
-      // Skipping the write keeps a toggle from costing dozens of database puts.
       final next = value.toString();
       if (existing.value != next) {
         existing.value = next;

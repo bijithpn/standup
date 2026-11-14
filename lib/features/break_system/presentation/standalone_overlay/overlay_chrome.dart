@@ -6,9 +6,11 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/looked_awa
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// Shared frame around a break template: context pill, preview badge, skip button, and swipe/strict-mode hints.
 class OverlayChrome extends StatelessWidget {
   final Widget child;
   final bool templateOwnsChrome;
+  final bool compactControls;
   final bool isInternalPreview;
   final bool canDismiss;
   final BreakModel breakInfo;
@@ -16,7 +18,6 @@ class OverlayChrome extends StatelessWidget {
   final String intensityLevel;
   final VoidCallback onSkip;
 
-  /// Eye-rest "I looked away" button: shown when [onLookedAway] is set.
   final bool lookedAway;
   final VoidCallback? onLookedAway;
 
@@ -24,6 +25,7 @@ class OverlayChrome extends StatelessWidget {
     super.key,
     required this.child,
     required this.templateOwnsChrome,
+    this.compactControls = false,
     required this.isInternalPreview,
     required this.canDismiss,
     required this.breakInfo,
@@ -114,7 +116,7 @@ class OverlayChrome extends StatelessWidget {
               ),
             ),
           ),
-        if (canDismiss)
+        if (canDismiss && !compactControls)
           Positioned(
             top: 28,
             right: 28,
@@ -137,14 +139,14 @@ class OverlayChrome extends StatelessWidget {
               ),
             ),
           ),
-        if (canDismiss)
+        if (canDismiss && !compactControls)
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
             child: const IgnorePointer(child: SwipeToDismissHint()),
           ),
-        if (!canDismiss)
+        if (!canDismiss && !compactControls)
           Positioned(
             bottom: 24,
             left: 24,

@@ -9,16 +9,18 @@ import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
+/// Shows and hides full-screen overlays (break, pre-break, reminders) through NativeBridge and restores the main window afterwards.
 class OverlayWindowService extends ChangeNotifier {
   final AppLogger _logger = AppLogger();
   bool _isOverlayVisible = false;
   OverlayType? _currentOverlayType;
+  // Remembers whether the dashboard was open so hideOverlay only restores it then.
   bool _wasMainVisibleBeforeOverlay = false;
   static const MethodChannel _windowsChannel = MethodChannel(
     'com.breakmate/overlay_window',
   );
 
-  /// Show a system-wide overlay window
+  /// Shows [type] on all or the primary display; a repeat call for the already-visible type only refreshes native overlay args.
   Future<void> showOverlay({
     required OverlayType type,
     required WidgetBuilder builder,
@@ -32,13 +34,13 @@ class OverlayWindowService extends ChangeNotifier {
   }) async {
     final settings = sl<SettingsRepository>().currentSettings;
     overlayData = {
-      'reduceMotion': settings.reduceMotion,
+      'reduceMotion': settings.reduceMotion || !settings.enableAnimations,
+      'experience': settings.experience.toMap(),
       'largeText': settings.largeOverlayText,
       ...?overlayData,
     };
     if (_isOverlayVisible && _currentOverlayType == type && !isPreview) {
       if (type != OverlayType.clockPreview) {
-        // If the overlay is already showing, we can still update its data in real-time
         final args = <String, dynamic>{
           'type': type.name,
           'overlayType': type.name,
@@ -60,7 +62,7 @@ class OverlayWindowService extends ChangeNotifier {
     }
 
     if (!_isOverlayVisible) {
-      // Only full break screens hide the main window; reminders leave it untouched.
+      // Captured only for the first overlay so a stacked overlay does not overwrite it.
       _wasMainVisibleBeforeOverlay =
           type == OverlayType.breakScreen && (await windowManager.isVisible());
       _logger.info(
@@ -75,7 +77,6 @@ class OverlayWindowService extends ChangeNotifier {
 
       if (type != OverlayType.clockPreview) {
         if (Platform.isWindows || Platform.isLinux) {
-          // Use unified bridge for Windows/Linux overlay configuration
           final args = <String, dynamic>{
             'type': type.name,
             'overlayType': type.name,
@@ -94,6 +95,7 @@ class OverlayWindowService extends ChangeNotifier {
           await NativeBridge.showOverlay(OverlayArgs(args: args));
 
           if (type == OverlayType.breakScreen) {
+            // Hide the main window shortly after the overlay appears so it does not flash or stay behind.
             Future.delayed(const Duration(milliseconds: 200), () {
               if (!isPreview) {
                 windowManager.hide();
@@ -101,7 +103,6 @@ class OverlayWindowService extends ChangeNotifier {
             });
           }
         } else if (Platform.isMacOS) {
-          // Use native multi-monitor overlay for all real overlays
           final args = <String, dynamic>{
             'type': type.name,
             'overlayType': type.name,
@@ -125,8 +126,6 @@ class OverlayWindowService extends ChangeNotifier {
             );
           }
 
-          // Only hide the main window for the full break screen.
-          // Quick reminders should not interfere with the main window's visibility.
           if (type == OverlayType.breakScreen) {
             Future.delayed(const Duration(milliseconds: 200), () {
               if (!isPreview) {
@@ -136,7 +135,6 @@ class OverlayWindowService extends ChangeNotifier {
           }
         }
       } else {
-        // Clock preview still uses main window for simplicity
         if (Platform.isMacOS) {
           await NativeBridge.setWindowLevel('floating');
         }
@@ -153,7 +151,7 @@ class OverlayWindowService extends ChangeNotifier {
     }
   }
 
-  /// Restore the window to its dashboard state
+  /// Closes any overlay and brings the main window back; skipped if the app was in the background before the overlay unless [forceShow].
   Future<void> showDashboard({bool forceShow = false}) async {
     try {
       _logger.info('Restoring dashboard window');
@@ -215,7 +213,7 @@ class OverlayWindowService extends ChangeNotifier {
     }
   }
 
-  /// Hide the current overlay and return to normal window state
+  /// Hides the overlay and resets window state (level, dock/menu bar, size); state is cleared even if a step throws.
   Future<void> hideOverlay() async {
     if (!_isOverlayVisible) {
       return;
@@ -224,7 +222,6 @@ class OverlayWindowService extends ChangeNotifier {
     try {
       _logger.info('Hiding overlay and resetting window state');
 
-      // Reset native state — may fail if overlay window already closed itself
       if (Platform.isWindows) {
         try {
           await _windowsChannel.invokeMethod('resetToNormal');
@@ -268,10 +265,6 @@ class OverlayWindowService extends ChangeNotifier {
       _currentOverlayType = null;
       notifyListeners();
 
-      // Restore the main window's geometry only. Visibility is restored by
-      // the native hideOverlay (without activating the app), so an automatic
-      // break completion/skip never steals focus from the user's current app.
-      // Explicit user actions use showDashboard(forceShow: true) instead.
       if (_wasMainVisibleBeforeOverlay) {
         await windowManager.setIgnoreMouseEvents(false);
         await windowManager.setSize(const Size(1100, 750));
@@ -281,7 +274,7 @@ class OverlayWindowService extends ChangeNotifier {
       _logger.info('Overlay hidden successfully');
     } catch (e) {
       _logger.error('Failed to hide overlay: $e');
-      // Last-resort recovery: reset state only; never activate the app here.
+
       try {
         _isOverlayVisible = false;
         _currentOverlayType = null;
@@ -292,13 +285,11 @@ class OverlayWindowService extends ChangeNotifier {
     }
   }
 
-  /// Check if overlay is currently visible
   bool get isOverlayVisible => _isOverlayVisible;
 
-  /// Get current overlay type
   OverlayType? get currentOverlayType => _currentOverlayType;
 
-  /// Reset overlay state (use when app is closing)
+  /// Force-clears overlay state without restoring the main window.
   Future<void> reset() async {
     _isOverlayVisible = false;
     _currentOverlayType = null;
@@ -320,17 +311,5 @@ class OverlayWindowService extends ChangeNotifier {
   }
 }
 
-/// Types of overlays supported
-enum OverlayType {
-  /// Pre-break warning overlay
-  preBreakWarning,
-
-  /// Break overlay (full break screen)
-  breakScreen,
-
-  /// Clock preview overlay (demo mode)
-  clockPreview,
-
-  /// Quick transparent health reminder
-  quickReminder,
-}
+// quickReminder and preBreakWarning are transparent and click-through; breakScreen is the blocking full overlay.
+enum OverlayType { preBreakWarning, breakScreen, clockPreview, quickReminder }

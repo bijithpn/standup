@@ -115,6 +115,44 @@ void main() {
       expect(explanation.stateSummary, 'Timer is manually paused.');
     });
 
+    test(
+      'schedule pauses and snoozes are distinguished from a manual pause',
+      () {
+        final repo = FakeSettingsRepository(const SettingsModel());
+        final context = FakeTimerContextManager(
+          settingsRepository: repo,
+          withinHours: false,
+        );
+        expect(
+          buildTimerExplanation(
+            timerState: TimerState.paused,
+            contextManager: context,
+            settings: repo.currentSettings,
+          ).stateSummary,
+          contains('outside working hours or during lunch'),
+        );
+        expect(
+          buildTimerExplanation(
+            timerState: TimerState.paused,
+            contextManager: context,
+            settings: repo.currentSettings,
+            isManualPause: true,
+          ).stateSummary,
+          'Timer is manually paused.',
+        );
+        expect(
+          buildTimerExplanation(
+            timerState: TimerState.paused,
+            contextManager: context,
+            settings: repo.currentSettings,
+            isManualPause: true,
+            snoozeResumeAt: DateTime(2026, 11, 16, 14, 30),
+          ).stateSummary,
+          startsWith('Snoozed until'),
+        );
+      },
+    );
+
     test('notes being outside working hours', () {
       final repo = FakeSettingsRepository(const SettingsModel());
       final explanation = buildTimerExplanation(

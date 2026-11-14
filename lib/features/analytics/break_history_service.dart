@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 
-/// One completed or skipped break, with the timestamp it ended at.
+/// A single break outcome: taken (completed) or skipped.
 class BreakEvent {
   final DateTime time;
   final bool completed;
@@ -24,11 +24,7 @@ class BreakEvent {
   }
 }
 
-/// Local, timestamped break history — separate from [StatsService]'s daily
-/// counters, which don't record *when* each break happened. Exists so break
-/// timing can be correlated against other timestamped data (e.g. focus
-/// sessions) rather than just compared day-to-day. Same pruned-JSON-blob
-/// shape as [AppUsageService]/[FocusSessionService].
+/// Persists the last 30 days of break outcomes; source for streaks, correlations and time-of-day insights.
 class BreakHistoryService extends ChangeNotifier {
   static const _maxAgeDays = 30;
 
@@ -48,7 +44,6 @@ class BreakHistoryService extends ChangeNotifier {
 
   List<BreakEvent> get events => List.unmodifiable(_events);
 
-  /// Events whose timestamp falls within `[start, end)`.
   List<BreakEvent> eventsBetween(DateTime start, DateTime end) {
     return _events
         .where((e) => !e.time.isBefore(start) && e.time.isBefore(end))

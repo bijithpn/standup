@@ -16,24 +16,7 @@ import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/features/analytics/insights_overview.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
-/// Delivers the single highest-priority [OverviewInsight] once per day via
-/// a local notification and the Desktop Companion's speech bubble, so the
-/// most useful finding reaches the user without a Statistics-screen visit —
-/// workflow-analysis plan doc §7.5/§7.6.
-///
-/// The companion delivery goes through the same cross-window IPC channel
-/// `TimerOrchestrator` already uses for its own state (`IpcBridge` →
-/// native broadcast → the companion window's isolate-local `EventBus`),
-/// piggybacking the insight text on `CompanionInteractionEvent.metadata`
-/// under a `'speech'` interaction type. This uses the same one-shot gating
-/// [FocusInsightService] already established, generalized from "the
-/// correlation insight" to "whatever ranks first today" across every
-/// finding type [buildOverviewInsights] knows about.
-///
-/// Deliberately excludes the calendar-focus comparison (§7.4) — that needs
-/// a native calendar round-trip better suited to the Statistics screen's
-/// one-shot `FutureBuilder` than a periodic background timer; this service
-/// only reads data already held in memory, same as [FocusInsightService].
+/// Every 15 min shows at most one top insight per day (notification plus companion speech), plus evening eye-care and end-of-day summary.
 class DailyInsightNotifierService {
   static const _checkInterval = Duration(minutes: 15);
 
@@ -76,9 +59,6 @@ class DailyInsightNotifierService {
     _checkTimer = null;
   }
 
-  /// Shows the day's top insight once, if one exists and none has been
-  /// shown today yet. Public (not test-only) since [start] also calls it
-  /// directly on launch.
   void checkAndMaybeShow({DateTime? now}) {
     final today = now ?? clock.now();
     final todayKey = _dateKey(today);
@@ -100,6 +80,7 @@ class DailyInsightNotifierService {
     _storage.setString(AppConstants.keyLastDailyInsightDateKey, todayKey);
   }
 
+  // After 8pm, once per day: enables macOS Night Shift and notifies.
   void _maybeShowEveningEyeCare() {
     final now = clock.now();
     if (now.hour < 20 ||
@@ -122,7 +103,7 @@ class DailyInsightNotifierService {
     }
   }
 
-  /// Fired at clock-out: breaks taken and focus time for today.
+  /// Notifies breaks taken/total and focus time for today; skipped when there is no data.
   void showEndOfDaySummary({DateTime? now}) {
     final today = now ?? clock.now();
     final events = _breakHistoryService.eventsBetween(

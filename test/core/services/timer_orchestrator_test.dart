@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fake_async/fake_async.dart';
 
 import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/objectbox.g.dart';
@@ -255,8 +256,17 @@ class FakeSessionStateRepository extends SessionStateRepository {
 class FakeActivityMonitor extends ActivityMonitor {
   ActivityCallback? callback;
 
+  void Function(DateTime at)? onAway;
+  VoidCallback? onBack;
+
   @override
-  void setIdleThreshold(int minutes) {}
+  void setAwayCallbacks({
+    required void Function(DateTime at) onAway,
+    required VoidCallback onBack,
+  }) {
+    this.onAway = onAway;
+    this.onBack = onBack;
+  }
 
   @override
   void setActivityCallback(ActivityCallback callback) {
@@ -466,34 +476,46 @@ void main() {
       timerEngine.startTimers();
       expect(timerEngine.state, equals(TimerState.running));
 
-      // Simulate going idle
       fakeActivityMonitor.callback?.call(false);
       expect(timerEngine.state, equals(TimerState.paused));
+      expect(timerEngine.pausedForInactivity, isTrue);
 
-      // Simulate coming back active
       fakeActivityMonitor.callback?.call(true);
       expect(timerEngine.state, equals(TimerState.running));
+      expect(timerEngine.pausedForInactivity, isFalse);
     });
 
-    test(
-      'a stuck systemSleepPaused flag self-heals on the next detected activity',
-      () {
+    test('idle pause survives engine ticks until activity returns', () {
+      fakeAsync((async) {
         timerEngine.startTimers();
-        expect(timerEngine.state, equals(TimerState.running));
+        fakeActivityMonitor.callback?.call(false);
+        async.elapse(const Duration(seconds: 30));
+        expect(timerEngine.state, equals(TimerState.paused));
+      });
+    });
 
-        // A sleep notification arrived but its matching wake notification
-        // was missed (e.g. dropped by the OS) — the tick loop would
-        // otherwise stay silently frozen forever with no visible state
-        // change.
-        timerEngine.handleSystemSleep();
-        expect(timerEngine.systemSleepPaused, isTrue);
+    test('activity never resumes a manual pause', () {
+      timerEngine.startTimers();
+      timerEngine.pauseTimers(isManual: true);
 
-        // Real activity is unambiguous proof the system is awake.
-        fakeActivityMonitor.callback?.call(true);
+      fakeActivityMonitor.callback?.call(false);
+      fakeActivityMonitor.callback?.call(true);
+      expect(timerEngine.state, equals(TimerState.paused));
 
-        expect(timerEngine.systemSleepPaused, isFalse);
-        expect(timerEngine.state, equals(TimerState.running));
-      },
-    );
+      fakeActivityMonitor.onAway?.call(DateTime.now());
+      fakeActivityMonitor.onBack?.call();
+      expect(timerEngine.state, equals(TimerState.paused));
+      expect(timerEngine.isManuallyPaused, isTrue);
+    });
+
+    test('lock then unlock resumes the work timer', () {
+      timerEngine.startTimers();
+      fakeActivityMonitor.onAway?.call(DateTime.now());
+      expect(timerEngine.systemSleepPaused, isTrue);
+
+      fakeActivityMonitor.onBack?.call();
+      expect(timerEngine.systemSleepPaused, isFalse);
+      expect(timerEngine.state, equals(TimerState.running));
+    });
   });
 }

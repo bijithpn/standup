@@ -10,11 +10,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// A one-tap fix attached to an [OverviewInsight] — the thing Opsis
-/// structurally can't offer, since it doesn't control your schedule (see
-/// the plan doc §7.1). [apply] is a pure settings transform; the caller
-/// (`InsightsOverviewCard`) is responsible for actually persisting it via
-/// `onSave`.
+/// One-tap settings change attached to an insight.
 class InsightAction {
   final String label;
   final SettingsModel Function(SettingsModel current) apply;
@@ -22,16 +18,6 @@ class InsightAction {
   const InsightAction({required this.label, required this.apply});
 }
 
-/// One short, ranked finding for the Overview tab's Insights card.
-///
-/// Every finding here is computed from data the Focus and App Usage tabs
-/// already compute individually ([BreakFocusCorrelation],
-/// [categoriesOverBudget], the focus streak), plus a break-skip check the
-/// roadmap explicitly asked for ("Add one clear recommended action when
-/// recent behavior shows repeated skips or postpones"). This file doesn't
-/// add new tracking or storage — it only ranks and surfaces what's already
-/// there in one place, since today it's scattered across three tabs a user
-/// has to click through to find.
 class OverviewInsight {
   final IconData icon;
   final Color color;
@@ -46,18 +32,13 @@ class OverviewInsight {
   });
 }
 
-/// Floor a shortened break interval won't go below — short enough to be a
-/// real change, not so short the timer becomes annoying.
 const int _minSuggestedIntervalMinutes = 20;
 
-/// How much a single "Apply" tap shortens the break interval by.
 const int _intervalShortenStepMinutes = 15;
 
-/// Meaningful gap, in percentage points, before the break-before-meeting
-/// skip pattern is worth surfacing.
 const double _meaningfulMeetingSkipDeltaPoints = 15;
 
-/// Builds up to [limit] findings, most actionable first.
+/// Builds prioritized, data-gated insights (skips, budgets, correlations, hours, meetings); order is priority and result is capped at [limit].
 List<OverviewInsight> buildOverviewInsights({
   required Map<AppCategory, int> todayCategoryTotals,
   required Map<String, int> budgetMinutes,

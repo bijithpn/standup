@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,11 +11,8 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
-import 'package:breakmate/features/settings/settings_repository.dart';
-import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/core/storage/models/daily_stats.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
-import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     show StatsService;
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -23,7 +21,10 @@ import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/core/utils/file_permissions.dart';
 import 'package:breakmate/features/settings/local_data_wiper.dart';
+import 'package:breakmate/features/settings/backup_service.dart';
+import 'package:intl/intl.dart';
 
+/// Settings > Data: JSON backup export/import, CSV stats export/import and full data wipe.
 class DataManagementSection extends StatefulWidget {
   const DataManagementSection({super.key});
 
@@ -35,6 +36,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
   final StorageService _storage = sl<StorageService>();
   int _dbSizeBytes = 0;
   bool _isLoading = true;
+  late final _backups = BackupService(_storage);
+  List<File> _localBackups = const [];
 
   @override
   void initState() {
@@ -44,9 +47,11 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _loadStats() async {
     final size = await _storage.getDatabaseSize();
+    final local = await _backups.list();
     if (mounted) {
       setState(() {
         _dbSizeBytes = size;
+        _localBackups = local;
         _isLoading = false;
       });
     }
@@ -58,9 +63,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return '${n.year}-${two(n.month)}-${two(n.day)}_${two(n.hour)}${two(n.minute)}';
   }
 
-  /// Asks the user where to save, so the export works inside the macOS sandbox
-  /// and never silently overwrites an earlier file. Returns the path, or null
-  /// if cancelled.
+  // Appends the extension when the picker omits it and restricts file permissions to the owner.
   Future<String?> _saveText(
     String dialogTitle,
     String fileName,
@@ -81,7 +84,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return target;
   }
 
-  /// Lets the user choose a backup file; null if cancelled.
   Future<({String path, String content})?> _pickFile(List<String> exts) async {
     final result = await FilePicker.pickFiles(
       dialogTitle: 'Import Data',
@@ -95,30 +97,11 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _exportBackupJson() async {
     try {
-      final backup = <String, dynamic>{
-        'schemaVersion': AppConstants.backupSchemaVersion,
-        'timestamp': DateTime.now().toIso8601String(),
-        // The app's own settings format, so restore reads back what it wrote.
-        'settingsFormat': 'model',
-        'settings': sl<SettingsRepository>().currentSettings.toMap(),
-        'companion': _storage.companionPreferencesBox?.get(1)?.toMap() ?? {},
-        'global_stats': _storage.globalStatsBox?.get(1)?.toMap() ?? {},
-        'daily_stats':
-            _storage.dailyStatsBox?.getAll().map((e) => e.toMap()).toList() ??
-            [],
-        'kv_records':
-            _storage.kvBox
-                ?.getAll()
-                .map((e) => {'key': e.key, 'value': e.value, 'type': e.type})
-                .toList() ??
-            [],
-      };
-
       final saved = await _saveText(
         'Export Backup',
         'breakmate_backup_${_stamp()}.json',
         'json',
-        const JsonEncoder.withIndent('  ').convert(backup),
+        const JsonEncoder.withIndent('  ').convert(_backups.build()),
       );
       if (saved != null && mounted) {
         Toast.showSuccess(context, 'Backup saved to $saved');
@@ -241,7 +224,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     }
   }
 
-  /// One import entry point: the file's type decides how it is read.
   Future<void> _importData() async {
     try {
       final picked = await _pickFile(['json', 'csv', 'tsv']);
@@ -281,111 +263,57 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return ok ?? false;
   }
 
+  // Validates the backup shape and asks for confirmation before replacing settings and stats.
   Future<void> _importBackupJson(String content) async {
     try {
-      final decoded = jsonDecode(content);
-      if (decoded is! Map<String, dynamic> ||
-          !decoded.containsKey('timestamp')) {
-        throw AppException(
-          type: AppErrorType.backup,
-          message: "Invalid backup file format",
-        );
-      }
-      final Map<String, dynamic> data = decoded;
-      if (!await _confirmReplace('settings and statistics')) return;
-
-      // Older backups stored the database's internal settings layout, which
-      // the model cannot read; those restore through the key-value records.
-      if (data['settingsFormat'] == 'model' &&
-          data.containsKey('settings') &&
-          data['settings'] is Map) {
-        final settingsMap = Map<String, dynamic>.from(data['settings']);
-        if (settingsMap.isNotEmpty) {
-          final settingsModel = SettingsModel.fromMap(settingsMap);
-          final repository = sl<SettingsRepository>();
-          await repository.save(settingsModel);
-        }
-      }
-
-      // Global and daily stats are restored directly because their ObjectBox
-      if (data.containsKey('global_stats') && data['global_stats'] is Map) {
-        final globalStatsMap = Map<String, dynamic>.from(data['global_stats']);
-        if (globalStatsMap.isNotEmpty) {
-          final globalStats = GlobalStats(
-            id: 1,
-            currentStreak: globalStatsMap['currentStreak'] ?? 0,
-            longestStreak: globalStatsMap['longestStreak'] ?? 0,
-            totalWorkSessions: globalStatsMap['totalWorkSessions'] ?? 0,
-            lastActiveDate: globalStatsMap['lastActiveDate'] ?? '',
-          );
-          _storage.globalStatsBox?.put(globalStats);
-        }
-      }
-
-      if (data.containsKey('daily_stats') && data['daily_stats'] is List) {
-        final dailyList = data['daily_stats'] as List;
-        _storage.dailyStatsBox?.removeAll();
-        for (final item in dailyList) {
-          if (item is Map) {
-            final dailyStatsMap = Map<String, dynamic>.from(item);
-            final dailyStats = DailyStats(
-              id: 0,
-              date: dailyStatsMap['date'] ?? '',
-              breaksCompleted: dailyStatsMap['breaksCompleted'] ?? 0,
-              breaksSkipped: dailyStatsMap['breaksSkipped'] ?? 0,
-              usageMinutes: dailyStatsMap['usageMinutes'] ?? 0,
-              wellnessActions: dailyStatsMap['wellnessActions'] ?? 0,
-            );
-            _storage.dailyStatsBox?.put(dailyStats);
-          }
-        }
-      }
-
-      if (data.containsKey('kv_records') && data['kv_records'] is List) {
-        final kvList = data['kv_records'] as List;
-        _storage.kvBox?.removeAll();
-        for (final item in kvList) {
-          if (item is Map) {
-            final key = item['key'] as String?;
-            final value = item['value'] as String?;
-            final type = item['type'] as String?;
-            if (key != null && value != null && type != null) {
-              final record = KeyValueRecord(key: key, value: value, type: type);
-              _storage.kvBox?.put(record);
-
-              if (type == 'int') {
-                final intVal = int.tryParse(value);
-                if (intVal != null) SimplePrefs.instance.setInt(key, intVal);
-              } else if (type == 'bool') {
-                SimplePrefs.instance.setBool(key, value == 'true');
-              } else if (type == 'string') {
-                SimplePrefs.instance.setString(key, value);
-              } else if (type == 'double') {
-                final doubleVal = double.tryParse(value);
-                if (doubleVal != null) {
-                  SimplePrefs.instance.setDouble(key, doubleVal);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      await sl<SettingsRepository>().load();
+      final data = BackupService.parse(content);
+      if (!await _confirmRestore(BackupService.preview(data))) return;
+      await _backups.restore(data);
       if (sl.isRegistered<StatsService>()) {
         await sl<StatsService>().initialize();
       }
       await _loadStats();
-
       if (mounted) Toast.showSuccess(context, 'Backup restored successfully!');
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to import backup: $e');
     }
   }
 
+  Future<bool> _confirmRestore(BackupPreview pv) async {
+    final when = pv.savedAt == null
+        ? 'unknown date'
+        : DateFormat.yMMMd().add_jm().format(pv.savedAt!);
+    final ok = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('Restore this backup?'),
+        content: Text(
+          'Saved $when\n'
+          '${pv.statDays} days of stats, ${pv.breaksCompleted} breaks'
+          '${pv.hasSettings ? ', settings included' : ''}\n\n'
+          'This replaces your current settings and statistics.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  Future<void> _restoreLocal(File f) async =>
+      _importBackupJson(await f.readAsString());
+
   Future<void> _importStatsTable(String picked) async {
     try {
-      // Spreadsheet apps often prepend a byte-order mark.
       final content = picked.replaceFirst('\uFEFF', '');
       final lines = content.split(RegExp(r'\r?\n'));
       if (lines.length <= 1) {
@@ -396,6 +324,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       String clean(String v) => v.trim().replaceAll('"', '');
+      // Tolerates tab, semicolon and comma exports (e.g. spreadsheet re-saves) and a leading BOM.
       final delimiter = lines.first.contains('\t')
           ? '\t'
           : lines.first.contains(';') && !lines.first.contains(',')
@@ -551,6 +480,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     );
   }
 
+  // Delegates to [wipeAllLocalData] then refreshes the displayed DB size.
   Future<void> _clearAllData() async {
     try {
       await wipeAllLocalData();
@@ -669,6 +599,32 @@ class _DataManagementSectionState extends State<DataManagementSection> {
               ],
             ),
           ),
+          divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: toggleRow(
+              'Daily automatic backup',
+              'Keeps the last ${BackupService.keepLast} days on this device.',
+              _backups.autoEnabled,
+              (v) async {
+                _backups.autoEnabled = v;
+                await _backups.runIfDue();
+                await _loadStats();
+              },
+            ),
+          ),
+          for (final f in _localBackups) ...[
+            divider(),
+            actionRow(
+              label: p
+                  .basename(f.path)
+                  .replaceFirst('breakmate_auto_', '')
+                  .replaceFirst('.json', ''),
+              subtitle: 'Local backup',
+              buttonText: 'Restore',
+              onPressed: () => _restoreLocal(f),
+            ),
+          ],
         ]),
 
         sectionHeader('Danger Zone', subtitle: 'Irreversible data actions.'),

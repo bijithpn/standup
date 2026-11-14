@@ -7,8 +7,7 @@ import 'package:breakmate/features/settings/presentation/sections/calendar_event
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// The one place to connect a calendar and configure how BreakMate uses it.
-/// Everything else (Today, Smart detection) links here instead of repeating it.
+/// Settings > Calendar: connect/disconnect, meeting-quiet toggle and event previews; refreshes on app resume to pick up permission changes made in System Settings.
 class CalendarSyncSection extends StatefulWidget {
   const CalendarSyncSection({super.key});
 
@@ -24,7 +23,7 @@ class _CalendarSyncSectionState extends State<CalendarSyncSection>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Throttled and de-duplicated by the controller.
+
     _controller.refresh();
   }
 
@@ -36,7 +35,6 @@ class _CalendarSyncSectionState extends State<CalendarSyncSection>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Returning from System Settings: pick up a permission change.
     if (state == AppLifecycleState.resumed) _controller.refresh(force: true);
   }
 
@@ -87,6 +85,7 @@ class _CalendarSyncSectionState extends State<CalendarSyncSection>
   }
 }
 
+// Connection banner whose copy and action depend on [CalendarConnectionState].
 class _StatusCard extends StatelessWidget {
   final CalendarSyncController controller;
   const _StatusCard({required this.controller});

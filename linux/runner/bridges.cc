@@ -335,8 +335,19 @@ bool HandleSystemCall(FlMethodCall* call, bool is_main_engine) {
     g_autoptr(FlValue) v = fl_value_new_bool(is_main_engine);
     Ok(call, v);
   } else if (method == "getIdleTime") {
-    g_autoptr(FlValue) v = fl_value_new_float(sys::GetIdleSeconds());
-    Ok(call, v);
+    const double idle = sys::GetIdleSeconds();
+    if (idle < 0) {
+      Fail(call, "IDLE_UNAVAILABLE", "No idle detection provider for this desktop session");
+    } else {
+      g_autoptr(FlValue) v = fl_value_new_float(idle);
+      Ok(call, v);
+    }
+  } else if (method == "getSessionState") {
+    const sys::SessionState st = sys::GetSessionState();
+    g_autoptr(FlValue) map = fl_value_new_map();
+    if (st.locked >= 0) SetBool(map, "locked", st.locked == 1);
+    if (st.active >= 0) SetBool(map, "active", st.active == 1);
+    Ok(call, map);
   } else if (method == "getAppearance") {
     g_autoptr(FlValue) v = fl_value_new_string(sys::GetAppearance().c_str());
     Ok(call, v);
@@ -434,6 +445,39 @@ void RegisterMainBridges(FlView* view, GtkWindow* window) {
   RegisterSmartDetection(messenger);
 
   WatchDisplays();
+
+  struct Sub {
+    GBusType bus;
+    const char* iface;
+    const char* signal;
+  };
+  // Lock/unlock and session switches arrive as signals; the Dart side reconciles with getSessionState.
+  static const Sub kSubs[] = {
+      {G_BUS_TYPE_SESSION, "org.gnome.ScreenSaver", nullptr},
+      {G_BUS_TYPE_SESSION, "org.freedesktop.ScreenSaver", nullptr},
+      {G_BUS_TYPE_SYSTEM, "org.freedesktop.login1.Session", "Lock"},
+      {G_BUS_TYPE_SYSTEM, "org.freedesktop.login1.Session", "Unlock"},
+  };
+  for (const Sub& sub : kSubs) {
+    GDBusConnection* conn = g_bus_get_sync(sub.bus, nullptr, nullptr);
+    if (conn == nullptr) continue;  // intentionally kept for the process lifetime
+    g_dbus_connection_signal_subscribe(
+        conn, nullptr, sub.iface, sub.signal, nullptr, nullptr, G_DBUS_SIGNAL_FLAGS_NONE,
+        [](GDBusConnection*, const gchar*, const gchar*, const gchar*, const gchar* signal,
+           GVariant* params, gpointer data) {
+          const std::string name = signal;
+          const char* event = nullptr;
+          if (name == "Lock") event = "sessionLocked";
+          else if (name == "Unlock") event = "sessionUnlocked";
+          else if (name == "ActiveChanged") {
+            gboolean active = FALSE;
+            g_variant_get(params, "(b)", &active);
+            event = active ? "sessionLocked" : "sessionUnlocked";
+          }
+          if (event != nullptr) Invoke(static_cast<FlMethodChannel*>(data), event, nullptr);
+        },
+        bridge, nullptr);
+  }
 
   g_autoptr(GDBusConnection) system_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, nullptr, nullptr);
   if (system_bus != nullptr) {

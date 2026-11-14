@@ -1,9 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 
-/// Short, actionable tips per break type, so templates that rotate guidance
-/// (Split View, the companion's bubbles) have more than the one tip a break
-/// arrives with.
+/// Static pool of short break tips; eye-rest for short breaks, recovery for long ones.
 abstract final class BreakTips {
   static const List<String> eyeRest = [
     'Look at something about 20 feet away.',
@@ -26,8 +24,7 @@ abstract final class BreakTips {
   static List<String> forBreak(BreakModel info) =>
       info.type == BreakType.long ? recovery : eyeRest;
 
-  /// Up to [count] tips other than the break's own, starting from a point that
-  /// moves by day so repeated breaks do not always show the same ones.
+  /// Extra tips excluding the main one, rotated by day so they change daily but stay stable within it.
   static List<String> extra(BreakModel info, {int count = 2}) {
     final pool = forBreak(info).where((t) => t != info.tip).toList();
     if (pool.isEmpty) return const [];

@@ -2,23 +2,18 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
-/// Frosted surface: backdrop blur (sigma 20), translucent surface fill and a
-/// 1px inner border. The blur is clipped to the widget's own bounds, which
-/// keeps its cost proportional to the card, not the screen.
+/// Frosted-glass panel: blurred backdrop, translucent palette surface, hairline border and soft shadow.
 class BreakGlass extends StatelessWidget {
   final Widget child;
   final double radius;
   final EdgeInsetsGeometry padding;
 
-  /// Surface fill alpha (spec: 0.6).
   final double fillAlpha;
 
-  /// Border alpha: white in dark, ink in light (spec: 0.10).
   final double borderAlpha;
   final bool shadow;
   final Color? borderColor;
 
-  /// Skip the backdrop blur (an opaque-ish pill that sits on a plain scrim).
   final bool blur;
 
   const BreakGlass({
@@ -74,8 +69,6 @@ class BreakGlass extends StatelessWidget {
   }
 }
 
-/// Paints the surface drop shadow *outside* the rounded rect only, so it does
-/// not show through the translucent glass fill.
 class _OuterShadowPainter extends CustomPainter {
   final double radius;
 

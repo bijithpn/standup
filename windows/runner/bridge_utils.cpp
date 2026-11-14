@@ -59,9 +59,17 @@ double GetIdleTime() {
     LASTINPUTINFO lii;
     lii.cbSize = sizeof(LASTINPUTINFO);
     if (GetLastInputInfo(&lii)) {
-        return (GetTickCount() - lii.dwTime) / 1000.0;
+        return static_cast<DWORD>(GetTickCount() - lii.dwTime) / 1000.0;
     }
-    return 0.0;
+    return -1.0;
+}
+
+bool IsSessionLocked() {
+    // The input desktop is inaccessible while the secure (lock) desktop is showing or the session is disconnected.
+    HDESK desktop = OpenInputDesktop(0, FALSE, DESKTOP_SWITCHDESKTOP);
+    if (!desktop) return true;
+    CloseDesktop(desktop);
+    return false;
 }
 
 } // namespace bridge_utils

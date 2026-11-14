@@ -7,6 +7,7 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
+// Per-app, per-day aggregate stored in prefs.
 class _AppUsageRecord {
   final String name;
   final AppCategory category;
@@ -36,8 +37,7 @@ class _AppUsageRecord {
   }
 }
 
-/// Local, opt-in per-app usage history: a JSON blob in [StorageService],
-/// keyed by date then app identifier, pruned to a 30-day rolling window.
+/// Persisted per-day app usage (30-day retention) keyed by date then appKey; fed by AppUsageTracker, read by analytics UI.
 class AppUsageService extends ChangeNotifier {
   final StorageService _storage;
   final Map<String, Map<String, _AppUsageRecord>> _cache = {};
@@ -66,7 +66,7 @@ class AppUsageService extends ChangeNotifier {
 
   bool _commitScheduled = false;
 
-  // A flush adds one entry per app; commit once per batch, not per entry.
+  // Coalesces bursts of addUsageSeconds into one prune/persist/notify per microtask.
   void _scheduleCommit() {
     if (_commitScheduled) return;
     _commitScheduled = true;
@@ -78,10 +78,7 @@ class AppUsageService extends ChangeNotifier {
     });
   }
 
-  /// Returns usage entries for [period], sorted by time spent descending.
-  /// Pass `limit: null` to return every tracked app instead of a cut-off
-  /// top N — used by the Privacy dashboard, which promises to show
-  /// everything that's been recorded, not just the highlights.
+  /// Apps ranked by total seconds over [period]; pass limit null for all.
   List<AppUsageEntry> topApps(
     UsagePeriod period, {
     int? limit = 8,
@@ -133,6 +130,7 @@ class AppUsageService extends ChangeNotifier {
     return totals;
   }
 
+  // Dates are 'yyyy-MM-dd' keys; 'week' is the trailing 7 days, 'month' is the calendar month.
   bool _dateInPeriod(String date, UsagePeriod period, DateTime now) {
     final parts = date.split('-');
     if (parts.length != 3) return false;
@@ -159,7 +157,6 @@ class AppUsageService extends ChangeNotifier {
     }
   }
 
-  /// Deletes all stored per-app usage history, in memory and on disk.
   void clear() {
     _cache.clear();
     _persist();

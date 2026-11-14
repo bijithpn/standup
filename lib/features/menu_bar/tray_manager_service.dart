@@ -25,8 +25,11 @@ import 'controllers/menu_bar_controller.dart';
 import 'tray_avatar_renderer.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
+/// What the tray icon shows: static app icon, animated companion, minimal glyph, or countdown text only.
 enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }
 
+/// Owns the system tray/menu-bar item: animated or drawn icon, countdown title, tooltip and context menu.
+/// Reacts to [TimerEngine]/[BreakController] changes and forwards menu clicks to [MenuBarController].
 class TrayManagerService with TrayListener, WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
   bool _isMeetingActive = false;
@@ -58,8 +61,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
-  // Menu bar style ('countdown', 'progress', 'icon', 'focusdot') and the
-  // animated, drawn icon used by 'progress' / 'focusdot'.
   String _menuStyle = 'countdown';
   double _progress = 0;
   double _shownProgress = 0;
@@ -83,6 +84,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   String? _lastAppliedIconPath;
   String _currentTitle = '';
 
+  /// Registers tray listeners, applies the saved icon style and builds the menu; avatar frames load later in the background.
   Future<void> init() async {
     trayManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
@@ -91,21 +93,17 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     if (settingsRepo != null) {
       setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
       _menuStyle = settingsRepo.currentSettings.menuBarStyle;
-      // Older builds saved companion + 'icon'; companion owns the icon then.
+
       if (_iconMode == TrayIconMode.companion && _menuStyle == 'icon') {
         _menuStyle = 'companion';
       }
     }
 
-    // Show the bundled icon straight away. The recoloured template icon and
-    // the pet frames are built shortly after the first frame (see
-    // _initializeFramesInBackground), which keeps pixel work off startup.
     _defaultIconPath = AppConstants.trayIconPath;
 
     await _applyIcon();
     await _buildMenu();
 
-    // Perform cleanup and frame extraction in background to avoid blocking main isolate startup
     unawaited(_initializeFramesInBackground());
 
     _logger.info('Tray manager initialized (mode: $_iconMode)');
@@ -118,8 +116,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     });
   }
 
+  // Deferred and old frame files wiped so startup isn't blocked and stale themes/brightness variants don't linger.
   Future<void> _initializeFramesInBackground() async {
-    // Rendering pet frames is CPU heavy; let the first dashboard frame land.
     await WidgetsBinding.instance.endOfFrame;
     await Future<void>.delayed(const Duration(seconds: 2));
     try {
@@ -129,7 +127,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         for (final file in list) {
           if (file is File) {
             final filename = p.basename(file.path);
-            // Only delete icon frame caches, never touch database or metadata
+
             if (filename.startsWith('bm_pframe_') ||
                 filename.startsWith('bm_ccat_') ||
                 filename.startsWith('bm_tray_')) {
@@ -160,6 +158,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     await _applyIcon();
   }
 
+  /// Extracts the default icon plus per-state frames (or 3D avatar renders) for the selected companion theme to disk for the tray API.
   Future<void> _extractIcons() async {
     final supportDir = await getApplicationSupportDirectory();
 
@@ -237,7 +236,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         if (paths.isNotEmpty) {
           _stateFramePaths[state] = paths;
         } else {
-          // Fallback to the first frame of the idle animation for the selected theme
           String fallbackPath = '';
           if (state != PetAnimationState.idle) {
             fallbackPath = await PetAssetLoader.extractPetFramePath(
@@ -281,6 +279,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  /// Maps timer state to the companion animation: break -> notification, paused -> sleep, tray click -> excited.
   PetAnimationState _determineActiveState() {
     final state = _timerEngine?.state;
     if (state == TimerState.breakActive) {
@@ -295,9 +294,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> _applyIcon() async {
-    // Frame timers can fire before init() has chosen the bundled icon.
     if (_defaultIconPath == null) return;
-    // Windows tray requires .ico files — LoadImage cannot load .png
+
     if (Platform.isWindows) {
       await _applyWindowsIcon();
       return;
@@ -366,7 +364,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
             _logger.warning('Tray icon file at $path is missing or empty.');
           }
         } else {
-          isPathValid = true; // Asset paths are validated by Flutter bundle
+          isPathValid = true;
         }
       }
 
@@ -374,7 +372,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         _lastAppliedIconPath = path;
         await _setTrayIconSafe(path!, isTemplate: true);
 
-        // On macOS, setting the icon sometimes clears the title depending on implementation.
         if (_currentTitle.isNotEmpty) {
           if (Platform.isMacOS) {
             await trayManager.setTitle(_currentTitle);
@@ -391,6 +388,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  // On macOS the icon is pushed as base64 over the tray_manager channel to control size/position directly.
   Future<void> _setTrayIconSafe(String path, {bool isTemplate = true}) async {
     try {
       if (Platform.isMacOS) {
@@ -427,10 +425,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  /// Restarts the frame-advance timer using the active animation's step time (companion mode, non-Windows only).
   void _updateTimerSpeed() {
     _animTimer?.cancel();
     if (_iconMode != TrayIconMode.companion) return;
-    if (Platform.isWindows) return; // Windows uses static .ico, no animation
+    if (Platform.isWindows) return;
 
     final settingsRepo = _settingsRepo;
     final selectedThemeId =
@@ -445,7 +444,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       stepTime = config.stepTime;
     }
 
-    // Clamp to a safe minimum of 120ms to protect macOS system tray resource consumption
     final ms = _avatarFrames != null
         ? switch (_determineActiveState()) {
             PetAnimationState.sleep => 300,
@@ -473,7 +471,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   void setBreakActive(bool active) {
-    // This method is now effectively a trigger for rebuild since _isBreakActive is gone
     _currentFrameIndex = 0;
     _updateTimerSpeed();
     _applyIcon();
@@ -497,8 +494,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     });
   }
 
-  /// Switches the menu bar style and plays a short sweep-in so the change is
-  /// visible immediately.
   void setMenuStyle(String style) {
     if (_menuStyle == style) return;
     _menuStyle = style;
@@ -512,13 +507,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       _applyIcon();
       return;
     }
-    // Slow breathing pulse keeps the icon alive between progress updates.
+
     _startPulse();
     _shownProgress = 0;
     _animateProgressTo(_progress, const Duration(milliseconds: 1800));
   }
 
-  /// [fraction] is 0..1 of the current work interval (or break) elapsed.
+  /// Feeds the countdown fraction (0..1) for the drawn 'progress'/'focusdot' icon styles and animates toward it.
   void updateProgress(double fraction, {bool onBreak = false}) {
     _progress = fraction.clamp(0.0, 1.0);
     if (_onBreak != onBreak) {
@@ -530,12 +525,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     _animateProgressTo(_progress, const Duration(milliseconds: 900));
   }
 
+  // Slow pulse; throttled to every other tick while far from the break to save CPU.
   void _startPulse() {
     _pulseTimer?.cancel();
     if (!_usesDrawnIcon) return;
     var tick = 0;
     _pulseTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
-      // Far from a break the pulse is purely decorative: redraw at half rate.
       tick++;
       if (!_onBreak && _progress < 0.7 && tick.isOdd) return;
       _pulse = (_pulse + 1 / 24) % 1.0;
@@ -566,8 +561,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     });
   }
 
-  /// Calm green early on, amber as the break nears, red when it is due.
-  /// While a break is running the icon turns blue.
+  // Green -> yellow -> red as the break approaches; blue while on break.
   Color _accent(double progress) {
     if (_onBreak) return const Color(0xFF4DA3FF);
     if (progress < 0.5) {
@@ -584,6 +578,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     )!;
   }
 
+  // Quantized key + cache avoid re-rendering and re-pushing identical icons.
   Future<void> _applyDrawnIcon() async {
     final q = (_shownProgress * 120).round();
     final pulseStep = (_pulse * 24).floor();
@@ -622,6 +617,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  /// Paints the progress ring / badge / focus dot icon at 36px with the current [_accent].
   Future<Uint8List> _renderIcon(double progress, double pulse) async {
     const size = 36.0;
     final recorder = ui.PictureRecorder();
@@ -629,13 +625,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     const center = Offset(size / 2, size / 2);
     const white = Color(0xFFFFFFFF);
     final color = _accent(progress);
-    // Smooth breathing factor 0..1..0 over one pulse cycle.
+
     final breathe = (1 - math.cos(pulse * math.pi * 2)) / 2;
     final urgent = _onBreak || progress > 0.9;
 
     if (_menuStyle == 'icon') {
-      // Status-coloured badge with the app mark inside. Works on light and
-      // dark menu bars alike because the mark sits on a solid colour.
       final badge = 30.0 + breathe * 2.5;
       final rect = RRect.fromRectAndRadius(
         Rect.fromCenter(center: center, width: badge, height: badge),
@@ -672,7 +666,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       const stroke = 5.0;
       const radius = 13.0;
       final rect = Rect.fromCircle(center: center, radius: radius);
-      // Neutral track reads on both light and dark menu bars.
+
       canvas.drawCircle(
         center,
         radius,
@@ -705,17 +699,16 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           ..strokeCap = StrokeCap.round
           ..color = color,
       );
-      // Centre dot, kept well inside the ring.
+
       canvas.drawCircle(
         center,
         3 + breathe * (urgent ? 1.5 : 0.8),
         Paint()..color = color,
       );
     } else {
-      // focusdot: a core, a clear gap, then ripples that fade outward.
       final core = 5.0 + 3.0 * progress + breathe * (urgent ? 1.2 : 0.6);
       const outer = 16.5;
-      // Faint resting ring at the edge so the gap is always visible.
+
       canvas.drawCircle(
         center,
         outer,
@@ -724,7 +717,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           ..strokeWidth = 1.6
           ..color = color.withValues(alpha: 0.35),
       );
-      // One ripple travelling from just outside the core to the edge ring.
+
       final t = Curves.easeOut.transform(pulse);
       final rippleR = core + 4 + t * (outer - core - 6);
       canvas.drawCircle(
@@ -780,6 +773,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  /// Switches icon mode and resets caches and animation timers.
   void setIconMode(TrayIconMode mode) {
     _iconMode = mode;
     _lastAvatarKey = null;
@@ -817,6 +811,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   bool _isRebuildingMenu = false;
   bool _menuRebuildPending = false;
 
+  // Coalesces rebuilds: requests arriving mid-rebuild trigger a single follow-up pass.
   void _scheduleMenuRebuild() {
     if (_isRebuildingMenu) {
       _menuRebuildPending = true;
@@ -846,7 +841,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
     if (_timerEngine != null) {
       if (_isMeetingActive) {
-        statusLabel = 'In a Meeting (Paused)';
+        statusLabel = isPaused
+            ? 'Meeting detected · timer paused'
+            : 'Meeting detected · quiet reminders';
       } else if (isBreakActive) {
         statusLabel = 'On Break';
       } else if (isPaused) {
@@ -897,6 +894,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           MenuItem(key: 'focus_25', label: 'Focus 25 min'),
           MenuItem(key: 'focus_50', label: 'Focus 50 min'),
         ],
+        MenuItem(key: 'snooze_2', label: 'Snooze 2 min'),
+        MenuItem(key: 'snooze_5', label: 'Snooze 5 min'),
         MenuItem(key: 'snooze_15', label: 'Snooze 15 min'),
         MenuItem(key: 'snooze_60', label: 'Snooze 1 hour'),
         MenuItem(key: 'snooze_today', label: 'Snooze rest of today'),
@@ -916,15 +915,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     return items;
   }
 
-  // ---- live menu text (macOS) ------------------------------------------
-  // The tray plugin shows the menu, so it opens like any native menu (also
-  // over full-screen apps). While it is open the native side edits the
-  // visible items' titles in place from the labels sent here every second.
+  // Native bridge used to update the open macOS tray menu in place.
   static const MethodChannel _bridge = MethodChannel(
     'com.breakmate.desktop/bridge',
   );
   Timer? _liveMenuTimer;
 
+  // Native menus are static while open, so push fresh labels every second until the menu closes.
   Future<void> _armLiveMenu() async {
     _liveMenuTimer?.cancel();
     try {
@@ -956,8 +953,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     return '$h:$m ${t.hour >= 12 ? 'PM' : 'AM'}';
   }
 
-  /// Countdown line(s) under the title: when the next break is, or why the
-  /// countdown is frozen.
+  /// Status text shown at the top of the tray menu (next break time, pause reason, break remaining).
   List<String> _statusLines() {
     final engine = _timerEngine;
     if (engine == null) return const [];
@@ -970,6 +966,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           'Break ends in ${_mmss(Duration(seconds: engine.countdownSeconds))}',
         ];
       case TimerState.paused:
+        final resumeAt = _breakController?.snoozeResumeAt;
+        if (resumeAt != null) {
+          return [
+            'Snooze ends at ${_clock(resumeAt)}',
+            'Next break around ${_clock(resumeAt.add(until))} if working',
+          ];
+        }
         final why = engine.stateData.isManuallyPaused
             ? 'paused by you'
             : ctx.isSmartPauseActive()
@@ -994,6 +997,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     controller.handleAction(action);
   }
 
+  /// Wires the timer and break controllers; any state change triggers [_onTimerChanged].
   void setDependencies(
     TimerEngine timerEngine,
     BreakController breakController,
@@ -1005,12 +1009,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     timerEngine.addListener(_onTimerChanged);
     breakController.addListener(_onTimerChanged);
 
-    // Initial sync
     _onTimerChanged();
   }
 
   TimerState? _lastState;
 
+  // Only reacts to state transitions; animation timers are stopped while the system sleeps.
   void _onTimerChanged() {
     final timerEngine = _timerEngine;
     if (timerEngine != null) {
@@ -1018,7 +1022,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         _animTimer?.cancel();
         _actionAnimTimer?.cancel();
         _pulseTimer?.cancel();
-        _lastState = null; // Reset to force rebuild on wake
+        _lastState = null;
         return;
       }
       final state = timerEngine.state;
@@ -1034,19 +1038,17 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   void updatePauseState(bool isPaused) {
-    // This is now handled via the TimerEngine listener, but we can trigger a check here for safety
     _onTimerChanged();
   }
 
+  // Title (countdown) is shown only in 'countdown' style; Windows has no tray title so it goes into the tooltip.
   Future<void> setTrayTitle(String title) async {
-    // Only the countdown style shows text; focus dot / progress are icon-only.
     if (_menuStyle != 'countdown') title = '';
     _currentTitle = title;
     try {
       if (Platform.isMacOS) {
         await trayManager.setTitle(title);
       } else if (Platform.isWindows && title.isNotEmpty) {
-        // Windows doesn't support tray title — show countdown in tooltip instead
         final tooltip = title.isNotEmpty && _currentTooltip.isNotEmpty
             ? '$title — $_currentTooltip'
             : title.isNotEmpty
@@ -1079,8 +1081,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     _popUpMenu();
   }
 
+  // Rebuild right before showing so labels are current; left and right click both open the menu.
   void _popUpMenu() {
-    // Rebuilt right before showing so the countdown is current when it opens.
     _buildMenu().whenComplete(() async {
       if (Platform.isMacOS) await _armLiveMenu();
       await trayManager.popUpContextMenu();
@@ -1103,6 +1105,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  // Icons are tinted for light/dark menu bars, so regenerate on theme switch.
   @override
   void didChangePlatformBrightness() {
     _logger.info('Platform brightness changed, regenerating tray icons...');
@@ -1113,6 +1116,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     });
   }
 
+  // Stop animations while hidden to save CPU.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.hidden ||

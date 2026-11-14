@@ -192,6 +192,29 @@ void main() {
   });
 
   group('TimerEngine Exhaustive Edge-Case Tests', () {
+    test('ending snooze respects the schedule until work hours return', () {
+      fakeAsync((async) {
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          eventBus: eventBus,
+        );
+        engine.startTimers();
+        engine.pauseTimers(isManual: true);
+        fakeSettingsRepository.setSettings(
+          const SettingsModel(workingHoursEnabled: true, workingDays: []),
+        );
+        engine.resumeTimers(isManual: false);
+        expect(engine.state, TimerState.paused);
+        expect(engine.isManuallyPaused, isFalse);
+        fakeSettingsRepository.setSettings(
+          const SettingsModel(workingHoursEnabled: false),
+        );
+        async.elapse(const Duration(seconds: 1));
+        expect(engine.state, TimerState.running);
+        engine.dispose();
+      });
+    });
+
     test('Tick Accuracy: workElapsed and countdown update correctly', () {
       fakeAsync((async) {
         final engine = TimerEngine(

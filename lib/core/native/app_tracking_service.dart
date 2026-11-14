@@ -3,15 +3,12 @@ import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
+/// Snapshot of the frontmost app; [url] is only set when the browser URL was requested.
 class ActiveAppInfo {
   final String name;
   final String bundleId;
   final String executableName;
 
-  /// The frontmost browser tab's address-bar URL, when the frontmost app is
-  /// a known browser (Safari/Chrome/Edge/Brave/Opera/Vivaldi on macOS;
-  /// Chrome/Edge/Firefox on Windows) and the OS-level lookup succeeded.
-  /// `null` for non-browser apps or when the lookup isn't available.
   final String? url;
 
   ActiveAppInfo({
@@ -34,21 +31,17 @@ class ActiveAppInfo {
   String toString() => 'ActiveAppInfo(name: $name, bundleId: $bundleId)';
 }
 
+/// Queries the native side for the frontmost app and its icon; used by activity tracking and meeting detection.
 class AppTrackingService {
   static const _channel = MethodChannel('com.breakmate/app_tracking');
   final AppLogger _logger = AppLogger();
 
-  /// Meeting detection, app-usage tracking and the wellness engine all ask for
-  /// the active app on their own timers, and their ticks often land together.
-  /// Callers asking for the same detail within this window share one native
-  /// lookup. Short enough that no poller sees a stale app for a whole tick.
+  // Concurrent callers within this window share one native call instead of each hitting the platform channel.
   static const Duration _shareWindow = Duration(milliseconds: 1500);
   final Map<String, ({DateTime at, Future<ActiveAppInfo?> result})> _recent =
       {};
 
-  /// By default only the app identity is read. The window title and the
-  /// browser tab URL are privacy-sensitive, so the native side fetches them
-  /// only when a caller explicitly asks.
+  /// Returns the active app, reusing an in-flight/recent result per (title, url) option combo.
   Future<ActiveAppInfo?> getActiveApp({
     bool includeTitle = false,
     bool includeUrl = false,

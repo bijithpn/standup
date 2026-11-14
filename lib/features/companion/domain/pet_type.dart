@@ -1,21 +1,22 @@
 enum MovementType { walk, hop, fly }
 
+/// Per-species tuning of movement, mouse attraction and sleepiness for the sprite pet.
 class PetBehaviorProfile {
-  final double mouseAttraction; // Curiosity multiplier
-  final double sleepLikelihood; // Fatigue rate multiplier
-  final double edgePreference; // Likelihood to stay near boundaries
+  final double mouseAttraction;
+  final double sleepLikelihood;
+  final double edgePreference;
   final List<String> customActions;
 
-  final double movementSpeed; // max follow/wander speed
-  final double acceleration; // stiffness rate (springStiffness)
-  final double damping; // damping factor for spring system
-  final double lookDelay; // seconds of "looking" before moving
-  final double wanderRadius; // local prowl radius limit
-  final double specialAbilityProbability; // chance to trigger custom actions
-  final double strideFrequency; // foot step frequency multiplier
-  final double maxTilt; // max lean angle in radians for flying/climbing
-  final double bobIntensity; // breathing/movement vertical scaling factor
-  final double stopRadius; // stop this many px away from cursor
+  final double movementSpeed;
+  final double acceleration;
+  final double damping;
+  final double lookDelay;
+  final double wanderRadius;
+  final double specialAbilityProbability;
+  final double strideFrequency;
+  final double maxTilt;
+  final double bobIntensity;
+  final double stopRadius;
 
   const PetBehaviorProfile({
     this.mouseAttraction = 1.0,
@@ -94,6 +95,7 @@ enum PetSpecies {
   const PetSpecies(this.movementType, this.defaultProfile);
 }
 
+/// One sprite asset (colour/breed) of a species, with sprite-sheet layout.
 class PetVariant {
   final String id;
   final String name;

@@ -1,10 +1,7 @@
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// A composed "how was your week" summary — pure data, built from services
-/// that already track everything it needs ([StatsService], [FocusSessionService],
-/// [CompanionStreakService]). This class only holds the result and formats it;
-/// [WeeklyDigestService] does the composing and scheduling.
+/// Summary of the last 7 days (adherence, top focus category, budgets, milestone) rendered as a notification message or markdown.
 class WeeklyDigest {
   final double breakAdherenceRate;
   final int breaksCompleted;
@@ -13,16 +10,8 @@ class WeeklyDigest {
   final int longestDeepWorkSessionSeconds;
   final String? companionMilestoneLabel;
 
-  /// How many of the last 7 tracked days each category (by its
-  /// [SettingsModel.categoryDailyBudgetMinutes] key) met or exceeded its
-  /// daily budget. A category never over budget, or never budgeted, is
-  /// absent from this map — never present with a 0.
   final Map<AppCategory, int> daysOverBudgetByCategory;
 
-  /// Break-adherence rate averaged over the 4 weeks *before* this one —
-  /// the trend-regression check from the workflow-analysis plan doc §7.3
-  /// ("what changed," not just a snapshot). Null when there isn't at least
-  /// a week of prior history to trust a comparison against.
   final double? trailingAverageAdherenceRate;
 
   const WeeklyDigest({
@@ -36,18 +25,12 @@ class WeeklyDigest {
     this.trailingAverageAdherenceRate,
   });
 
-  /// Percentage-point gap between this week's break adherence and
-  /// [trailingAverageAdherenceRate]. Positive means this week is better.
-  /// Null when there's no trailing average to compare against.
   double? get adherenceDeltaPoints {
     final trailing = trailingAverageAdherenceRate;
     if (trailing == null) return null;
     return (breakAdherenceRate - trailing) * 100;
   }
 
-  /// A one-sentence trend note, only when the swing is large enough to be
-  /// worth mentioning (avoids noise on an ordinary week) — shared by
-  /// [toMessage] and [toMarkdown] so the wording stays consistent.
   String? _trendNote() {
     final delta = adherenceDeltaPoints;
     if (delta == null || delta.abs() < 10) return null;
@@ -83,8 +66,6 @@ class WeeklyDigest {
         : parts.join(' ');
   }
 
-  /// A short "over budget N/7 days" note for whichever budgeted category
-  /// went over most often this week, or null if nothing did.
   String? _budgetSummary() {
     if (daysOverBudgetByCategory.isEmpty) return null;
     final worst = daysOverBudgetByCategory.entries.reduce(
@@ -93,10 +74,6 @@ class WeeklyDigest {
     return '${worst.key.label} was over its daily budget ${worst.value}/7 days.';
   }
 
-  /// Renders the digest as a small Markdown document — for the Statistics
-  /// screen's "Export This Week" action, so someone can paste it into a
-  /// personal log or a 1:1. Fully local: this only formats data the app
-  /// already computed, no cloud call involved.
   String toMarkdown({DateTime? generatedAt}) {
     final date = generatedAt ?? DateTime.now();
     final dateStr =

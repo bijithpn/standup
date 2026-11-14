@@ -4,11 +4,7 @@ import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Opt-in, local-only daily time budgets per category — a soft nudge
-/// threshold the user sets for themselves, never enforced by blocking
-/// anything. Deliberately excludes [AppCategory.general] (a catch-all, not
-/// a meaningful thing to budget) and [AppCategory.meeting] (meetings aren't
-/// discretionary time to cap).
+/// Stepper UI for per-category daily time budgets (15-minute steps, max 4h); reports the full map via onChanged.
 class CategoryBudgetsCard extends StatelessWidget {
   static const _budgetableCategories = [
     AppCategory.coding,

@@ -1,6 +1,4 @@
-import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -32,27 +30,39 @@ class ActivitiesBreakTemplate extends StatefulWidget {
       _ActivitiesBreakTemplateState();
 }
 
-class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
-    with SingleTickerProviderStateMixin {
-  static const double _tabWidth = 168;
-  static const double _controlHeight = 44;
-
+class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate> {
   late _Activity _selected;
   Key _activityKey = UniqueKey();
-  final FocusNode _controlFocus = FocusNode(debugLabel: 'activity tabs');
+  final FocusNode _controlFocus = FocusNode(debugLabel: 'activity switch');
 
-  /// Capsule position in tab units (0 = first tab). Unbounded so the spring
-  /// can overshoot slightly.
-  late final AnimationController _capsule;
+  static const BreakPalette _lavender = BreakPalette(
+    canvas: Color(0xFF1D202A),
+    canvasRaised: Color(0xFF272B38),
+    surface: Color(0xFF272B38),
+    border: Color(0x426B746B),
+    track: Color(0x426B746B),
+    textPrimary: Color(0xFFDFE2EB),
+    textSecondary: Color(0xFFBCC4D8),
+    textMuted: Color(0xFFA5AEC7),
+    isDark: true,
+  );
 
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
+  static const BreakPalette _stage = BreakPalette(
+    canvas: Color(0xFF171C27),
+    canvasRaised: Color(0xFF222938),
+    surface: Color(0xFF222938),
+    border: Color(0x33FFFFFF),
+    track: Color(0x33FFFFFF),
+    textPrimary: Color(0xFFF4F2FF),
+    textSecondary: Color(0xFFD3CEF5),
+    textMuted: Color(0xFFB0AADF),
+    isDark: true,
+  );
 
-  Color get _accent => BreakPalette.of(context).accentOn(
-    BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'activities',
-      _kind.accent,
-    ),
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'activities',
+    const Color(0xFFA6B4D4),
   );
 
   @override
@@ -61,15 +71,10 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
     _selected = widget.breakInfo.type == BreakType.short
         ? _Activity.eyeSync
         : _Activity.breathing;
-    _capsule = AnimationController.unbounded(
-      vsync: this,
-      value: _selected.index.toDouble(),
-    );
   }
 
   @override
   void dispose() {
-    _capsule.dispose();
     _controlFocus.dispose();
     super.dispose();
   }
@@ -80,19 +85,6 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
       _selected = a;
       _activityKey = UniqueKey();
     });
-    final target = a.index.toDouble();
-    if (BreakMotion.reduced(context)) {
-      _capsule.value = target;
-    } else {
-      _capsule.animateWith(
-        SpringSimulation(
-          BreakMotion.spring,
-          _capsule.value,
-          target,
-          _capsule.velocity,
-        ),
-      );
-    }
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -110,232 +102,196 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
     final isShort = widget.breakInfo.type == BreakType.short;
 
     return BreakScaffold(
+      palette: _lavender,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
-      background: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.topCenter,
-            radius: 0.9,
-            colors: [_accent.withValues(alpha: 0.06), Colors.transparent],
-          ),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: 48,
-            left: 64,
-            right: 64,
-            child: Row(
-              children: [
-                BreakLabel(_kind.label, textAlign: TextAlign.left),
-                const Spacer(),
-                BreakCountdown(
-                  seconds: widget.remainingSeconds,
-                  style: BreakOverlayTheme.title,
-                  color: breakClockColor(widget.settings, palette),
-                ),
-              ],
+
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(72, 72, 72, 96),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: 320,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BreakCountdown(
+                    seconds: widget.remainingSeconds,
+                    textAlign: TextAlign.left,
+                    style: BreakOverlayTheme.display.copyWith(
+                      fontSize: 84,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -3,
+                      height: 1,
+                    ),
+                    color: breakClockColor(widget.settings, _lavender),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'A moment to reset',
+                    style: BreakOverlayTheme.title.copyWith(
+                      color: _lavender.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Choose a gentle exercise and follow at your own pace.',
+                    style: BreakOverlayTheme.body.copyWith(
+                      color: _lavender.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  _buildSwitch(),
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            top: 112,
-            left: 0,
-            right: 0,
-            child: Center(child: _buildControl(palette)),
-          ),
-          Positioned(
-            top: 112 + _controlHeight + 32,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 720,
-                  maxHeight: 440,
-                ),
-                child: SizedBox(
-                  height: 440,
-                  child: Center(
-                    child: AnimatedSwitcher(
-                      duration: BreakMotion.medium,
-                      switchInCurve: BreakMotion.enter,
-                      switchOutCurve: BreakMotion.enter,
-                      transitionBuilder: (child, anim) {
-                        final incoming = child.key == _activityKey;
-                        final reduced = BreakMotion.reduced(context);
-                        final dx = reduced ? 0.0 : 12 / 720;
-                        return FadeTransition(
-                          opacity: anim,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: Offset(incoming ? dx : -dx, 0),
-                              end: Offset.zero,
-                            ).animate(anim),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: _selected == _Activity.breathing
-                          ? GuidedBreathingWidget(
-                              key: _activityKey,
-                              targetCycles: isShort ? 2 : 4,
-                            )
-                          : EyeSyncGameWidget(
-                              key: _activityKey,
-                              targetSessions: isShort ? 2 : 3,
-                            ),
+            const SizedBox(width: 56),
+            Expanded(
+              child: BreakPaletteScope(
+                palette: _stage,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: _stage.canvas,
+                    border: Border.all(color: _stage.border),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 560,
+                          maxHeight: 480,
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: BreakMotion.medium,
+                          switchInCurve: BreakMotion.enter,
+                          switchOutCurve: BreakMotion.enter,
+                          transitionBuilder: (child, anim) =>
+                              FadeTransition(opacity: anim, child: child),
+                          child: _selected == _Activity.breathing
+                              ? GuidedBreathingWidget(
+                                  key: _activityKey,
+                                  targetCycles: isShort ? 2 : 4,
+                                )
+                              : EyeSyncGameWidget(
+                                  key: _activityKey,
+                                  targetSessions: isShort ? 2 : 3,
+                                ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildControl(BreakPalette palette) {
+  Widget _buildSwitch() {
     return Semantics(
       container: true,
       inMutuallyExclusiveGroup: true,
       child: Focus(
         focusNode: _controlFocus,
         onKeyEvent: _onKey,
-        child: ListenableBuilder(
-          listenable: _controlFocus,
-          builder: (context, _) {
-            final focused = _controlFocus.hasFocus;
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: BreakOverlayTheme.glassBlur,
-                  sigmaY: BreakOverlayTheme.glassBlur,
-                ),
-                child: Container(
-                  height: _controlHeight,
-                  padding: const EdgeInsets.all(4),
-                  decoration: ShapeDecoration(
-                    color: palette.isDark
-                        ? Colors.white.withValues(alpha: 0.10)
-                        : Colors.black.withValues(alpha: 0.06),
-                    shape: StadiumBorder(
-                      side: BorderSide(
-                        color: focused ? _accent : palette.border,
-                        width: focused ? 2 : 1,
-                      ),
-                    ),
-                  ),
-                  child: SizedBox(
-                    width: _tabWidth * 2,
-                    child: Stack(
-                      children: [
-                        RepaintBoundary(
-                          child: AnimatedBuilder(
-                            animation: _capsule,
-                            builder: (context, _) => Transform.translate(
-                              offset: Offset(_capsule.value * _tabWidth, 0),
-                              child: Container(
-                                width: _tabWidth,
-                                decoration: ShapeDecoration(
-                                  color: _accent.withValues(alpha: 0.22),
-                                  shape: const StadiumBorder(),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            _Tab(
-                              label: 'Breathing',
-                              selected: _selected == _Activity.breathing,
-                              onTap: () {
-                                _controlFocus.requestFocus();
-                                _switch(_Activity.breathing);
-                              },
-                            ),
-                            _Tab(
-                              label: 'Eye sync',
-                              selected: _selected == _Activity.eyeSync,
-                              onTap: () {
-                                _controlFocus.requestFocus();
-                                _switch(_Activity.eyeSync);
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Choice(
+              label: 'Breathing',
+              hint: 'Slow your breath',
+              selected: _selected == _Activity.breathing,
+              accent: _accent,
+              onTap: () {
+                _controlFocus.requestFocus();
+                _switch(_Activity.breathing);
+              },
+            ),
+            const SizedBox(height: 12),
+            _Choice(
+              label: 'Eye sync',
+              hint: 'Follow the dot',
+              selected: _selected == _Activity.eyeSync,
+              accent: _accent,
+              onTap: () {
+                _controlFocus.requestFocus();
+                _switch(_Activity.eyeSync);
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _Tab extends StatefulWidget {
+class _Choice extends StatelessWidget {
   final String label;
+  final String hint;
   final bool selected;
+  final Color accent;
   final VoidCallback onTap;
 
-  const _Tab({
+  const _Choice({
     required this.label,
+    required this.hint,
     required this.selected,
+    required this.accent,
     required this.onTap,
   });
 
   @override
-  State<_Tab> createState() => _TabState();
-}
-
-class _TabState extends State<_Tab> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final color = widget.selected
-        ? palette.textPrimary
-        : (_hovered ? palette.textSecondary : palette.textMuted);
     return Semantics(
       container: true,
       button: true,
-      selected: widget.selected,
-      label: widget.label,
+      selected: selected,
+      label: label,
       excludeSemantics: true,
-      onTap: widget.onTap,
+      onTap: onTap,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: widget.onTap,
-          child: SizedBox(
-            width: _ActivitiesBreakTemplateState._tabWidth,
-            child: Center(
-              child: AnimatedDefaultTextStyle(
-                duration: BreakMotion.fast,
-                style: BreakOverlayTheme.body.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w500,
-                  height: 1.0,
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: BreakMotion.fast,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            decoration: BoxDecoration(
+              color: selected
+                  ? accent.withValues(alpha: 0.12)
+                  : palette.surface,
+              border: Border.all(color: selected ? accent : palette.border),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: BreakOverlayTheme.title.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: palette.textPrimary,
+                  ),
                 ),
-                child: Text(widget.label),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  hint,
+                  style: BreakOverlayTheme.body.copyWith(
+                    color: palette.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

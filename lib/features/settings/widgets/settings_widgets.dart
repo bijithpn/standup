@@ -4,6 +4,7 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
+// Shared row/section builders used by every settings page so they look consistent.
 Widget sectionHeader(String title, {String? subtitle}) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 12, left: 4, top: 12),
@@ -36,7 +37,6 @@ Widget sectionHeader(String title, {String? subtitle}) {
   );
 }
 
-/// A group of rows: no box, just hairlines above and below (same as Goals).
 Widget buildCard(List<Widget> children) {
   return Container(
     margin: const EdgeInsets.only(bottom: 32),
@@ -96,6 +96,8 @@ Widget toggleRow(
             child: CupertinoSwitch(
               value: value,
               activeTrackColor: AppTheme.accentColor,
+              inactiveTrackColor: AppTheme.border,
+              thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
               onChanged: onChanged,
             ),
           ),
@@ -141,7 +143,7 @@ Widget inputRow(
                 Text(
                   value,
                   style: TextStyle(
-                    color: AppTheme.accentColor,
+                    color: AppTheme.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Inter',
@@ -359,6 +361,8 @@ Widget buildListRow(
               value: value,
               onChanged: onChanged,
               activeTrackColor: AppTheme.accentColor,
+              inactiveTrackColor: AppTheme.border,
+              thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
             ),
           ),
         ?trailing,
@@ -429,7 +433,7 @@ void showPicker({
             width: 320,
             constraints: const BoxConstraints(maxHeight: 400),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppTheme.surfaceElevated,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.border),
               boxShadow: [
@@ -447,8 +451,8 @@ void showPicker({
                   padding: const EdgeInsets.all(20),
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       fontFamily: 'Inter',
@@ -462,7 +466,7 @@ void showPicker({
                     separatorBuilder: (context, index) => Divider(
                       height: 1,
                       thickness: 0.5,
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: AppTheme.borderSubtle,
                     ),
                     itemBuilder: (context, index) {
                       final opt = options[index];
@@ -497,7 +501,10 @@ void showPicker({
                   child: MinimalButton(
                     isSecondary: true,
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: AppTheme.textPrimary),
+                    ),
                   ),
                 ),
               ],
@@ -542,11 +549,12 @@ Widget segmentedControl(
           return Semantics(
             button: true,
             selected: isSelected,
+            onTap: () => onSelected(entry.key),
             label: entry.value,
             excludeSemantics: true,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
-              child: GestureDetector(
+              child: TapTarget(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => onSelected(entry.key),
                 child: Container(

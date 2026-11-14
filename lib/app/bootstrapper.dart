@@ -6,7 +6,9 @@ import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
+/// Bridges typed IPC events from overlay/companion windows onto the main isolate's EventBus.
 class AppBootstrapper {
+  /// Installs the single typed IPC handler; unknown events are ignored.
   static void initializeIpc() {
     final ipc = IpcBridge.instance;
     final eventBus = sl<EventBus>();
@@ -104,9 +106,7 @@ class AppBootstrapper {
             ),
           );
         },
-        unknown: (eventName, payload) {
-          // Do nothing for unknown events
-        },
+        unknown: (eventName, payload) {},
       );
     });
   }

@@ -3,12 +3,14 @@ import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
+/// Picks break tips and exercises that match the app the user is currently working in.
 class WellnessEngine {
   final AppTrackingService _appTracking;
 
   WellnessEngine({required AppTrackingService appTracking})
     : _appTracking = appTracking;
 
+  // Falls back to general when the active app can't be read.
   Future<AppCategory> getCurrentContext() async {
     final activeApp = await _appTracking.getActiveApp();
     if (activeApp == null) return AppCategory.general;
@@ -42,6 +44,7 @@ class WellnessEngine {
     }
   }
 
+  /// Returns a random exercise id from the category that suits the current app, else a time-based pick.
   Future<String> getSuggestedExerciseId(List<ExerciseModel> available) async {
     if (available.isEmpty) return '';
     final context = await getCurrentContext();
@@ -53,13 +56,13 @@ class WellnessEngine {
         break;
       case AppCategory.writing:
         targetCategory = ExerciseCategory.stretch;
-        break; // No wrist cat, use stretch
+        break;
       case AppCategory.browsing:
         targetCategory = ExerciseCategory.eyeRest;
         break;
       case AppCategory.design:
         targetCategory = ExerciseCategory.stretch;
-        break; // No neck cat, use stretch
+        break;
       default:
         targetCategory = ExerciseCategory.stretch;
     }

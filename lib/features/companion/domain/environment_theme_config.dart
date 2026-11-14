@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 
+/// Image path plus sprite-sheet slicing info for one environment asset.
 class ThemeAssetConfig {
   final String path;
   final bool isSpriteSheet;
@@ -21,6 +22,7 @@ class ThemeAssetConfig {
   });
 }
 
+/// Resolved render config for the pet stage background (built-in or from a custom theme).
 class EnvironmentThemeConfig {
   final String id;
   final String name;
@@ -39,7 +41,6 @@ class EnvironmentThemeConfig {
   final double birdScale;
   final double rabbitScale;
 
-  // Dynamic theme assets
   final ThemeAssetConfig birdAsset;
   final ThemeAssetConfig rabbitIdleAsset;
   final ThemeAssetConfig rabbitRunAsset;
@@ -51,7 +52,6 @@ class EnvironmentThemeConfig {
   final Map<String, ThemeAssetConfig> toyAssets;
   final Map<String, ThemeAssetConfig> foodAssets;
 
-  // asset-migration: bird/rabbit/environment sprite assets removed
   static const _defaultBird = ThemeAssetConfig(path: '');
   static const _defaultRabbitIdle = ThemeAssetConfig(path: '');
   static const _defaultRabbitRun = ThemeAssetConfig(path: '');
@@ -60,7 +60,6 @@ class EnvironmentThemeConfig {
   static const _defaultRockLeft = ThemeAssetConfig(path: '');
   static const _defaultRockRight = ThemeAssetConfig(path: '');
 
-  // asset-migration: throw_particles/throwable assets removed
   static const _defaultToys = <String, ThemeAssetConfig>{};
   static const _defaultFoods = <String, ThemeAssetConfig>{};
 
@@ -93,7 +92,6 @@ class EnvironmentThemeConfig {
     this.foodAssets = _defaultFoods,
   });
 
-  // asset-migration: all background/environment asset paths removed
   static const List<EnvironmentThemeConfig> themes = [
     EnvironmentThemeConfig(
       id: 'forest',
@@ -192,7 +190,6 @@ class EnvironmentThemeConfig {
   static EnvironmentThemeConfig getByPath(String path) {
     final lower = path.toLowerCase();
 
-    // 1. Prioritize exact match by id (case-insensitive)
     for (final theme in customThemes) {
       if (theme.id.toLowerCase() == lower) return theme;
     }
@@ -200,7 +197,6 @@ class EnvironmentThemeConfig {
       if (theme.id.toLowerCase() == lower) return theme;
     }
 
-    // 2. Exact match by skyPath (case-insensitive)
     for (final theme in customThemes) {
       if (theme.skyPath.toLowerCase() == lower) return theme;
     }
@@ -208,7 +204,6 @@ class EnvironmentThemeConfig {
       if (theme.skyPath.toLowerCase() == lower) return theme;
     }
 
-    // 3. Fallback to contains match, sorted by ID length descending to prevent shorter prefix collisions (e.g. 'forest' matching 'mist_forest')
     final sortedCustom = List<EnvironmentThemeConfig>.from(customThemes)
       ..sort((a, b) => b.id.length.compareTo(a.id.length));
     for (final theme in sortedCustom) {
@@ -227,6 +222,6 @@ class EnvironmentThemeConfig {
       }
     }
 
-    return themes.first; // Default is Forest
+    return themes.first;
   }
 }

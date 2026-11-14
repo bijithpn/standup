@@ -1,13 +1,11 @@
 part of 'productivity_cards.dart';
 
-/// The daily bars behind the week and month views.
+/// Per-day stacked active/idle/break bars with an optional daily goal line.
 class DailyActivityBars extends StatefulWidget {
   const DailyActivityBars({super.key, required this.days, this.goalSeconds});
 
   final List<DailyProductivitySummary> days;
 
-  /// The daily focus goal. When set, a dashed line marks it and days that
-  /// reach it turn green, so "was this a good day?" needs no arithmetic.
   final int? goalSeconds;
 
   @override
@@ -48,7 +46,7 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
     final dataPeak = widget.days
         .map((day) => day.activeSeconds)
         .fold<int>(0, (best, value) => value > best ? value : best);
-    // The scale must reach the goal line or it would sit off the chart.
+
     final peak = goal != null && goal > dataPeak ? goal : dataPeak;
 
     final activeDays = widget.days.where((d) => d.activeSeconds > 0).toList();

@@ -8,6 +8,7 @@ import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
+/// Samples the native cursor, smooths velocity (EMA) and emits enter/exit/fast-move/dwell events around the pet for InteractionController.
 class CursorTracker {
   static final CursorTracker instance = CursorTracker();
 
@@ -15,11 +16,11 @@ class CursorTracker {
     : _bridge = bridge ?? NativeBridge.instance,
       _eventBus = eventBus ?? EventBus.instance;
 
-  static const double interactionZoneRadius = 80.0; // logical px
-  static const double fastVelocityThreshold = 800.0; // logical px/s
-  static const double dwellTimeThreshold = 3.0; // seconds
+  static const double interactionZoneRadius = 80.0;
+  static const double fastVelocityThreshold = 800.0;
+  static const double dwellTimeThreshold = 3.0;
   static const double _emaAlpha = 0.4;
-  static const double _stationarySpeedThreshold = 5.0; // px/s
+  static const double _stationarySpeedThreshold = 5.0;
 
   final NativeBridgePlatform _bridge;
   final EventBus _eventBus;
@@ -27,7 +28,7 @@ class CursorTracker {
       StreamController<Offset>.broadcast();
 
   Offset _lastPosition = Offset.zero;
-  Offset _velocity = Offset.zero; // EMA-smoothed px/s
+  Offset _velocity = Offset.zero;
 
   bool _inZone = false;
 
@@ -38,12 +39,12 @@ class CursorTracker {
   Offset get velocity => _velocity;
   Stream<Offset> get positionStream => _positionController.stream;
 
+  /// Call periodically with dt; dwell fires once after dwellTimeThreshold seconds of near-stationary cursor in the zone.
   Future<void> sample(double dt, Offset petCenter) async {
     if (dt <= 0) return;
 
     var rawPos = await _bridge.getCursorPosition();
 
-    // macOS returns coordinates in screen-bottom-left origin.
     if (Platform.isMacOS) {
       rawPos = _convertMacOSOrigin(rawPos);
     }
@@ -100,11 +101,7 @@ class CursorTracker {
     _positionController.close();
   }
 
-  /// Convert a macOS screen-bottom-left coordinate to Flame screen-top-left.
-  /// This requires knowledge of the primary screen height. On macOS,
-  /// the native bridge.  The bridge already compensates on modern macOS if
   Offset _convertMacOSOrigin(Offset macOsPos) {
-    // The native bridge for macOS is expected to return coordinates already
     return macOsPos;
   }
 

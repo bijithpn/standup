@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
-/// One-shot entrance: opacity 0->1 and scale 0.96->1 over [BreakMotion.slow]
-/// after [delay] (use 60ms steps to stagger text). Reduced motion becomes an
-/// opacity-only fade over [BreakMotion.medium]; gallery thumbnails render the
-/// final state immediately.
+/// Fade-and-scale entrance with an optional delay; skipped in previews, shortened under reduced motion.
 class BreakEntrance extends StatefulWidget {
   final Widget child;
   final Duration delay;
   final bool scale;
 
-  /// Length of the fade/scale itself; defaults to [BreakMotion.slow].
   final Duration? duration;
 
   const BreakEntrance({
@@ -21,7 +17,6 @@ class BreakEntrance extends StatefulWidget {
     this.duration,
   });
 
-  /// Stagger helper: the n-th text element enters n * 60ms after the focal one.
   static Duration stagger(int index) => Duration(milliseconds: 60 * index);
 
   @override
@@ -38,6 +33,12 @@ class _BreakEntranceState extends State<BreakEntrance>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (BreakMotion.reduced(context)) {
+      _controller?.stop();
+      _controller?.value = 1;
+      _started = true;
+      return;
+    }
     if (_started) return;
     _started = true;
     if (BreakPreviewScope.isPreview(context)) return;
@@ -81,9 +82,6 @@ class _BreakEntranceState extends State<BreakEntrance>
   }
 }
 
-/// Plays the completion moment once when [complete] turns true: the child
-/// pulses 1.0 -> [peak] -> 1.0 over 400ms (an opacity flash under reduced
-/// motion). Does not close the overlay; that stays with the break controller.
 class BreakCompletionPulse extends StatefulWidget {
   final bool complete;
   final Widget child;

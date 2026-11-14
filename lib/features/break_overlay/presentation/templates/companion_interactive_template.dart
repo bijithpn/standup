@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -12,6 +10,7 @@ import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart
 import 'package:breakmate/features/break_overlay/domain/break_tips.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+/// Break template: a draggable pet companion that snaps to screen edges and cycles through tips.
 class CompanionInteractiveTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -42,23 +41,17 @@ class _CompanionInteractiveTemplateState
   double? _lastHeight;
   bool _isDragging = false;
   bool _hasDragged = false;
-  bool _petHovered = false;
 
   static const double _widgetSize = 130.0;
 
-  /// Idle bob: one full sine period every 2.4s.
   late final AnimationController _bob = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2400),
   );
 
-  /// One-shot effects: landing squash (260ms) and the completion hop (400ms).
   late final AnimationController _fx = AnimationController(vsync: this);
   bool _hopping = false;
 
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
-
-  /// The break's own tip first, then library tips that rotate every 12 s.
   late final List<String> _tips = [
     if (widget.breakInfo.tip.isNotEmpty) widget.breakInfo.tip,
     ...BreakTips.extra(widget.breakInfo),
@@ -66,14 +59,25 @@ class _CompanionInteractiveTemplateState
   int _tipIndex = 0;
   Timer? _tipTimer;
 
-  Color get _accent => BreakPalette.of(context).accentOn(
-    BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'companion',
-      _kind.accent,
-    ),
+  static const BreakPalette _mint = BreakPalette(
+    canvas: Color(0xFF1C2823),
+    canvasRaised: Color(0xFF26382F),
+    surface: Color(0xFF26382F),
+    border: Color(0x426B746B),
+    track: Color(0x426B746B),
+    textPrimary: Color(0xFFDCE6DC),
+    textSecondary: Color(0xFFB8CEBE),
+    textMuted: Color(0xFFA1BAA9),
+    isDark: true,
   );
 
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'companion',
+    const Color(0xFF1F9D78),
+  );
+
+  // Tips rotate every 12s unless frozen or the user is dragging the pet.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -86,6 +90,7 @@ class _CompanionInteractiveTemplateState
     }
   }
 
+  // Hops once when the countdown hits zero.
   @override
   void didUpdateWidget(covariant CompanionInteractiveTemplate old) {
     super.didUpdateWidget(old);
@@ -106,6 +111,7 @@ class _CompanionInteractiveTemplateState
     super.dispose();
   }
 
+  // Snaps to whichever screen edge is nearest.
   void _snapToEdge(double sw, double sh) {
     if (_x == null || _y == null) return;
     final dists = {
@@ -162,32 +168,19 @@ class _CompanionInteractiveTemplateState
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
+    final palette = _mint;
     final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
     final reduced = BreakMotion.reduced(context);
-    final scrimBase = palette.canvas;
 
     return BreakScaffold(
-      canvas: Colors.transparent,
-      scrim: scrimBase.withValues(alpha: 0.55),
+      palette: palette,
+      background: const CustomPaint(painter: _RoomPainter()),
       scaled: false,
-      showSkip: false,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
-      background: const IgnorePointer(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              radius: 0.95,
-              colors: [Colors.transparent, Color(0x40000000)],
-            ),
-          ),
-        ),
-      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 760;
           if (_lastWidth != constraints.maxWidth ||
               _lastHeight != constraints.maxHeight) {
             if (_x != null && _lastWidth != null && _lastWidth! > 0) {
@@ -198,10 +191,7 @@ class _CompanionInteractiveTemplateState
             if (_y != null && _lastHeight != null && _lastHeight! > 0) {
               _y = (_y! / _lastHeight!) * constraints.maxHeight;
             } else {
-              _y = math.max(
-                0.0,
-                (constraints.maxHeight - _widgetSize) / 2 - 24,
-              );
+              _y = math.max(0.0, constraints.maxHeight * 0.74 - _widgetSize);
             }
             _lastWidth = constraints.maxWidth;
             _lastHeight = constraints.maxHeight;
@@ -225,22 +215,20 @@ class _CompanionInteractiveTemplateState
                   constraints: const BoxConstraints(maxWidth: 220),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: palette.surface.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(
-                        BreakOverlayTheme.radiusMd,
-                      ),
-                      border: Border.all(color: palette.border),
+                      color: palette.surface,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       _tips[_tipIndex % _tips.length],
                       textAlign: TextAlign.center,
-                      style: BreakOverlayTheme.body.copyWith(
-                        color: palette.textSecondary,
-                        fontSize: 13,
+                      style: BreakOverlayTheme.serif.copyWith(
+                        color: palette.textPrimary,
+                        fontSize: 15,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -252,7 +240,7 @@ class _CompanionInteractiveTemplateState
                 curve: Curves.easeOutCubic,
                 left: 0,
                 right: 0,
-                // Below the pet, unless the tip bubble is there: then above.
+
                 top: bubbleAbove
                     ? _y! + _widgetSize + 32
                     : math.max(8.0, _y! - 32),
@@ -282,8 +270,6 @@ class _CompanionInteractiveTemplateState
                     cursor: _isDragging
                         ? SystemMouseCursors.grabbing
                         : SystemMouseCursors.grab,
-                    onEnter: (_) => setState(() => _petHovered = true),
-                    onExit: (_) => setState(() => _petHovered = false),
                     child: GestureDetector(
                       onPanStart: (_) => setState(() {
                         _isDragging = true;
@@ -323,35 +309,10 @@ class _CompanionInteractiveTemplateState
                           child: SizedBox(
                             width: _widgetSize,
                             height: _widgetSize,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                AnimatedContainer(
-                                  duration: BreakMotion.fast,
-                                  width: _widgetSize - 8,
-                                  height: _widgetSize - 8,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: _accent.withValues(alpha: 0.4),
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _accent.withValues(
-                                          alpha: _petHovered ? 0.28 : 0.18,
-                                        ),
-                                        blurRadius: 24,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                CompanionSpriteWidget(
-                                  petTheme: petTheme,
-                                  animationState: PetAnimationState.idle,
-                                  scale: 3.5,
-                                ),
-                              ],
+                            child: CompanionSpriteWidget(
+                              petTheme: petTheme,
+                              animationState: PetAnimationState.idle,
+                              scale: 3.5,
                             ),
                           ),
                         ),
@@ -362,25 +323,17 @@ class _CompanionInteractiveTemplateState
               ),
 
               Positioned(
-                bottom: compact ? 20 : 48,
-                left: 0,
-                right: 0,
-                child: Center(child: _buildDock(palette, compact)),
-              ),
-
-              Positioned(
-                bottom: compact ? 36 : 64,
-                left: compact ? 24 : 40,
-                child: Semantics(
-                  label: 'Current time',
-                  excludeSemantics: true,
-                  child: Text(
-                    DateFormat('HH:mm').format(clock.now()),
-                    style: BreakOverlayTheme.micro.copyWith(
-                      color: palette.textMuted,
-                      fontFeatures: BreakOverlayTheme.tabular,
-                    ),
+                top: math.min(40.0, constraints.maxHeight * 0.1),
+                left: math.min(56.0, constraints.maxWidth * 0.08),
+                child: BreakCountdown(
+                  seconds: widget.remainingSeconds,
+                  textAlign: TextAlign.left,
+                  style: BreakOverlayTheme.display.copyWith(
+                    fontSize: (constraints.maxHeight * 0.14).clamp(28.0, 64.0),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -2,
                   ),
+                  color: breakClockColor(widget.settings, palette),
                 ),
               ),
             ],
@@ -389,35 +342,100 @@ class _CompanionInteractiveTemplateState
       ),
     );
   }
+}
 
-  Widget _buildDock(BreakPalette palette, bool compact) {
-    final canSkip = breakCanSkip(widget.settings, widget.onSkip);
-    return BreakGlass(
-      radius: BreakOverlayTheme.radiusPill,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        height: 56,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            BreakCountdown(
-              seconds: widget.remainingSeconds,
-              style: BreakOverlayTheme.title,
-              color: breakClockColor(widget.settings, palette),
-            ),
-            if (!compact) ...[
-              const SizedBox(width: 12),
-              BreakLabel(_kind.label),
-            ],
-            if (canSkip) ...[
-              const SizedBox(width: 12),
-              Container(width: 1, height: 20, color: palette.border),
-              const SizedBox(width: 8),
-              BreakSkipButton(onPressed: widget.onSkip!, accent: _accent),
-            ],
-          ],
-        ),
+class _RoomPainter extends CustomPainter {
+  const _RoomPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final floorY = h * 0.72;
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, w, floorY),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1C2823), Color(0xFF25352D)],
+        ).createShader(Rect.fromLTWH(0, 0, w, floorY)),
+    );
+
+    final win = Rect.fromLTWH(w * 0.7, h * 0.12, w * 0.16, h * 0.34);
+    final winRRect = RRect.fromRectAndCorners(
+      win,
+      topLeft: Radius.circular(w * 0.08),
+      topRight: Radius.circular(w * 0.08),
+      bottomLeft: const Radius.circular(10),
+      bottomRight: const Radius.circular(10),
+    );
+    canvas.drawRRect(
+      winRRect.inflate(math.max(4, w * 0.008)),
+      Paint()..color = const Color(0xFF3B5144),
+    );
+    canvas.drawRRect(
+      winRRect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF263D49), Color(0xFF384B4A)],
+        ).createShader(win),
+    );
+    final mullion = Paint()
+      ..color = const Color(0xFF3B5144)
+      ..strokeWidth = math.max(3, w * 0.005);
+    canvas.drawLine(win.topCenter, win.bottomCenter, mullion);
+    canvas.drawLine(
+      Offset(win.left, win.center.dy),
+      Offset(win.right, win.center.dy),
+      mullion,
+    );
+
+    final beam = Path()
+      ..moveTo(win.left, win.bottom)
+      ..lineTo(win.right, win.bottom)
+      ..lineTo(win.right - w * 0.22, h)
+      ..lineTo(win.left - w * 0.34, h)
+      ..close();
+    canvas.drawPath(beam, Paint()..color = const Color(0x107C9A83));
+
+    final floor = Rect.fromLTRB(0, floorY, w, h);
+    canvas.drawRect(
+      floor,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF302E28), Color(0xFF252923)],
+        ).createShader(floor),
+    );
+    final plank = Paint()
+      ..color = const Color(0x1F8A5A2B)
+      ..strokeWidth = 1.5;
+    for (var i = 1; i < 4; i++) {
+      final y = floorY + (h - floorY) * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(w, y), plank);
+    }
+    canvas.drawLine(
+      Offset(0, floorY),
+      Offset(w, floorY),
+      Paint()
+        ..color = const Color(0xFF3B5144)
+        ..strokeWidth = math.max(3, h * 0.008),
+    );
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.85),
+        width: w * 0.36,
+        height: h * 0.12,
       ),
+      Paint()..color = const Color(0xFF344B3B),
     );
   }
+
+  @override
+  bool shouldRepaint(covariant _RoomPainter old) => false;
 }

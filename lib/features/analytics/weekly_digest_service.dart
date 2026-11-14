@@ -13,15 +13,7 @@ import 'package:breakmate/features/companion/services/companion_streak_service.d
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// Composes and — once a week, at most — shows a local "how was your week"
-/// notification. Every input already exists ([StatsService] for break
-/// adherence, [FocusSessionService] for focus data, [CompanionStreakService]
-/// for milestones); this only combines them and decides when to surface it.
-///
-/// Deliberately app-side scheduling (checked on a periodic timer while the
-/// app runs), matching how [TimerEngine]'s clock-out reminder already works
-/// — not OS-level cron, which desktop `flutter_local_notifications` doesn't
-/// support here.
+/// Shows the weekly digest notification once per week, on Sunday at or after 18:00.
 class WeeklyDigestService {
   static const int _digestWeekday = DateTime.sunday;
   static const int _digestHour = 18;
@@ -63,9 +55,6 @@ class WeeklyDigestService {
     _checkTimer = null;
   }
 
-  /// Shows the digest if it's the configured day/hour and one hasn't
-  /// already been shown for this calendar week. Public (not test-only)
-  /// since [start] also calls it directly on launch.
   void checkAndMaybeShow({DateTime? now}) {
     final today = now ?? clock.now();
     if (today.weekday != _digestWeekday || today.hour < _digestHour) return;
@@ -80,9 +69,7 @@ class WeeklyDigestService {
     _storage.setString(AppConstants.keyLastWeeklyDigestWeekKey, weekKey);
   }
 
-  /// Composes the current week's digest on demand — used both by the
-  /// scheduled notification (via [checkAndMaybeShow]) and by the
-  /// Statistics screen's manual "Export This Week" action.
+  /// Aggregates the last 7 days of break stats, focus sessions and budget overruns.
   WeeklyDigest buildDigest({DateTime? now}) {
     final today = now ?? clock.now();
 
@@ -134,11 +121,7 @@ class WeeklyDigestService {
     );
   }
 
-  /// Break-adherence rate over the 4 weeks *before* this digest's 7-day
-  /// window (days 8-35 back) — the comparison baseline for
-  /// [WeeklyDigest.adherenceDeltaPoints]. Null when there isn't at least a
-  /// week of prior data to trust, so a brand-new install never gets a
-  /// misleading "worse than usual" note.
+  // Average of days 7-34 back; null unless at least 7 of those days have data.
   double? _trailingAverageAdherence(
     List<DailyStats> weeklyData,
     DateTime today,
@@ -163,10 +146,6 @@ class WeeklyDigestService {
     return total > 0 ? completed / total : null;
   }
 
-  /// How many of the last 7 days each budgeted category went over its
-  /// `SettingsModel.categoryDailyBudgetMinutes` cap — reuses
-  /// [categoriesOverBudget], the same check [AppUsageSection] runs for
-  /// today alone, once per day of the week.
   Map<AppCategory, int> _daysOverBudget(DateTime today) {
     final budgetMinutes =
         _settingsRepository.currentSettings.categoryDailyBudgetMinutes;
@@ -186,9 +165,6 @@ class WeeklyDigestService {
     return counts;
   }
 
-  /// A "once per calendar week" key. Doesn't need to be true ISO-8601 week
-  /// numbering — it only has to be stable within a week and change across
-  /// weeks, since it's compared against itself, never parsed.
   String _weekKey(DateTime date) {
     final firstDayOfYear = DateTime(date.year, 1, 1);
     final daysSinceYearStart = date.difference(firstDayOfYear).inDays;

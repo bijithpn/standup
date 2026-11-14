@@ -1,11 +1,12 @@
+// Background themes for the classic break template.
 enum BreakTheme {
   image,
   ocean,
   forest,
   minimal,
-  sunset, // Warm orange and purple gradients
-  nebula, // Deep space purple and blue
-  midnight, // Pure deep dark navy
-  cyberpunk, // Neon pink and blue
-  zen, // Soft earth tones and cream
+  sunset,
+  nebula,
+  midnight,
+  cyberpunk,
+  zen,
 }

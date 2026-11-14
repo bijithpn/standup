@@ -6,9 +6,7 @@ import 'package:breakmate/features/break_system/presentation/widgets/break_templ
 import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/overlay_chrome.dart';
 
-/// Renders the visual body of the overlay: switches between
-/// [QuickReminderOverlay] and [OverlayChrome] + [BreakTemplateSwitcher],
-/// with drag-to-dismiss gesture handling.
+/// Chooses what the overlay shows: a compact reminder/warning, or a full break template wrapped in [OverlayChrome].
 class BreakOverlayContent extends StatelessWidget {
   final OverlayWindowConfig config;
   final AnimationController fadeAnimation;
@@ -37,14 +35,17 @@ class BreakOverlayContent extends StatelessWidget {
     required this.onLookedAway,
   });
 
+  bool get _isCompactTemplate =>
+      config.breakTemplate == 'quiet_pill' ||
+      config.breakTemplate == 'floating';
+
+  // Wind-down template draws its own header, so the shared pill/buttons are hidden.
   bool get _templateOwnsChrome {
-    // Only full-screen custom routines (like wind_down) own their entire layout.
-    // All other templates receive unified OverlayChrome (context pill, controls).
     final isWindDown =
         config.title.toUpperCase().contains('WIND DOWN') ||
         (config.breakType == 'windDown') ||
         config.breakTemplate == 'wind_down';
-    return isWindDown;
+    return isWindDown || _isCompactTemplate;
   }
 
   @override
@@ -66,6 +67,7 @@ class BreakOverlayContent extends StatelessWidget {
     } else {
       content = OverlayChrome(
         templateOwnsChrome: _templateOwnsChrome,
+        compactControls: _isCompactTemplate,
         isInternalPreview: config.isPreview,
         canDismiss: canDismiss,
         breakInfo: breakInfo,
@@ -88,8 +90,7 @@ class BreakOverlayContent extends StatelessWidget {
               settings: settings,
               remaining: remaining,
               total: config.durationSeconds,
-              onSkip:
-                  null, // OverlayChrome handles the authoritative skip button
+              onSkip: _isCompactTemplate && canDismiss ? onSkip : null,
               currentTemplate: currentTemplate,
               kenBurnsController: kenBurnsController,
               exerciseTitle: config.exerciseTitle,
@@ -101,6 +102,7 @@ class BreakOverlayContent extends StatelessWidget {
     }
 
     return GestureDetector(
+      // Swipe up to dismiss, only when dismissing is allowed.
       onVerticalDragUpdate: (details) {
         if (canDismiss && details.delta.dy < -10) {
           onSkip();

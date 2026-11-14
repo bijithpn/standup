@@ -1,16 +1,7 @@
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// Turns a stream of per-tick category observations into completed deep-work
-/// sessions. Pure and clock-independent — the caller supplies `now` on each
-/// tick — so it needs no fakes or timers to test.
-///
-/// A session is a run of ticks in the same focus category ([kFocusCategories])
-/// with no gap wider than [maxGap] (tolerates a couple of missed/idle polls
-/// without splitting one sitting into several sessions). It closes when the
-/// category changes, a gap is exceeded, or [closeOpenSession] is called
-/// (e.g. when tracking stops) — and is only reported if it met
-/// [minDurationSeconds].
+/// Turns per-tick active-app categories into focus sessions; a session ends on a non-focus category, category change or gap > maxGap.
 class FocusSessionDetector {
   final Duration maxGap;
   final int minDurationSeconds;
@@ -24,9 +15,7 @@ class FocusSessionDetector {
     this.minDurationSeconds = kMinFocusSessionSeconds,
   });
 
-  /// Feed one tick's observed category and timestamp. Returns the session
-  /// that just closed, if this tick ended one that met the minimum
-  /// duration — otherwise null.
+  /// Returns the session that just closed (if long enough), otherwise null.
   FocusSession? onTick(AppCategory category, DateTime now) {
     if (!isFocusCategory(category)) {
       return _closeSession();
@@ -46,8 +35,6 @@ class FocusSessionDetector {
     return null;
   }
 
-  /// Finalizes whatever session is currently open, e.g. when tracking stops
-  /// mid-session. Same minimum-duration rule applies.
   FocusSession? closeOpenSession() => _closeSession();
 
   FocusSession? _closeSession() {

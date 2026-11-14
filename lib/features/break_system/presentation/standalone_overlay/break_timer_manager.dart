@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
+/// Countdown and dismissal logic for the overlay state: ticks against a wall-clock end time and reports completion/skip to native.
 mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
   static const MethodChannel bridgeChannel = MethodChannel(
     'com.breakmate.desktop/bridge',
   );
 
-  // Only shown until the real break arrives; a minute, not five, so a late or
-  // missing config never makes a short break look like a five-minute one.
   int durationSeconds = 60;
   int remainingSeconds = 60;
   DateTime? targetEndTime;
@@ -20,17 +19,13 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
 
   bool isDismissing = false;
 
-  /// The user confirmed they looked away during this break; reported with the
-  /// natural completion so it can count as a wellness action.
   bool lookedAway = false;
 
-  /// How long the finished state ("Recharged & Ready") stays on screen before
-  /// the overlay fades out. Natural completion only; skip fades immediately.
   static const Duration completionHold = Duration(milliseconds: 400);
 
-  /// True from the moment the countdown ends until the fade-out begins.
   final ValueNotifier<bool> completing = ValueNotifier<bool>(false);
 
+  // Derived from targetEndTime each second (not decremented) so it stays accurate across missed ticks.
   void startLocalTimer(VoidCallback onComplete) {
     localTimer?.cancel();
     localTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -60,6 +55,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     localTimer = null;
   }
 
+  /// Plays the completion animation, then tells native; the fallback timer guarantees dismissal if the fade never finishes.
   void completeBreak(
     bool isInternalPreview,
     String overlayType,
@@ -83,7 +79,6 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
       }
     }
 
-    // Safety net in case the fade never finishes.
     Timer(completionHold + const Duration(milliseconds: 800), triggerDismiss);
 
     Timer(completionHold, () {
@@ -92,6 +87,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     });
   }
 
+  /// Dismisses early; previews and reminders only hide the window, real breaks call native skip so the main app records it.
   void skipBreak(
     bool isInternalPreview,
     String overlayType,

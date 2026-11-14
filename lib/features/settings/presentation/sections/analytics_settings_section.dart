@@ -1,3 +1,5 @@
+import 'package:breakmate/features/settings/widgets/advanced_settings.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/weekly_actionable_insight_card.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,16 +23,21 @@ import 'package:breakmate/features/analytics/focus_trend.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/focus_score_card.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/focus_trend_chart.dart';
 
+/// Settings > Analytics page: period-filtered (today/week/month) break, focus and app-usage stats.
 class AnalyticsSettingsSection extends StatefulWidget {
   final StatsModel stats;
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
+  final Future<void> Function(SettingsModel)? onApplySuggestion;
+  final SettingsModel Function()? currentSettings;
 
   const AnalyticsSettingsSection({
     super.key,
     required this.stats,
     required this.settings,
     required this.onSave,
+    this.onApplySuggestion,
+    this.currentSettings,
   });
 
   @override
@@ -39,7 +46,7 @@ class AnalyticsSettingsSection extends StatefulWidget {
 }
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
-  int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
+  int _selectedFilter = 0;
 
   StatsModel get _stats => widget.stats;
 
@@ -61,6 +68,13 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
+        WeeklyActionableInsightCard(
+          days: _stats.weeklyData,
+          settings: widget.settings,
+          currentSettings: widget.currentSettings ?? () => widget.settings,
+          onApply:
+              widget.onApplySuggestion ?? (value) async => widget.onSave(value),
+        ),
         const SizedBox(height: 18),
         _buildPeriodBar(),
         const SizedBox(height: 20),
@@ -75,8 +89,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         _buildTrendSection(),
         const SizedBox(height: 32),
 
-        // Time spent per app lives on the Productivity screen; only when that
-        // screen is switched off do we fall back to a short summary here.
         if (!ProductivityConfig.current.enabled) ...[
           _groupHeader(
             CupertinoIcons.time,
@@ -92,7 +104,11 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           'Focus',
           'Uninterrupted deep-work sessions $_periodLabel.',
         ),
-        _buildFocusTab(),
+        AdvancedSettings(
+          title: 'Focus details',
+          subtitle: 'Sessions, score and trends',
+          children: [_buildFocusTab()],
+        ),
         const SizedBox(height: 32),
 
         BreakStatisticsSection(stats: _stats, selectedFilter: _selectedFilter),
@@ -101,8 +117,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
-  /// The top of the page: how well breaks were kept as a ring, with the
-  /// numbers behind it as colour-coded tiles.
   Widget _buildHero(_ViewMetrics m) {
     final total = m.breaksCompleted + m.breaksSkipped;
     final rate = m.successRate;
@@ -113,8 +127,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         : rate >= 60
         ? ('Good', AppTheme.accent)
         : rate >= 40
-        ? ('Could be better', AppTheme.warning)
-        : ('Skipping a lot', AppTheme.error);
+        ? ('Finding your rhythm', AppTheme.warning)
+        : ('Try a gentler rhythm', AppTheme.warning);
 
     final ring = Column(
       mainAxisSize: MainAxisSize.min,
@@ -198,7 +212,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
-  /// A clear heading for each part of the one-page view.
   Widget _groupHeader(
     IconData icon,
     String title,
@@ -248,7 +261,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
-  /// One period selector for the whole page — every section follows it.
   Widget _buildPeriodBar() {
     return Row(
       children: [
@@ -326,7 +338,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               onEnable: () => widget.onSave(
                 widget.settings.copyWith(appUsageTrackingEnabled: true),
               ),
-              // Daily budgets only mean something against today's totals.
+
               budgetMinutes: period == UsagePeriod.today
                   ? widget.settings.categoryDailyBudgetMinutes
                   : const {},
@@ -337,9 +349,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
-  /// 30 days on "Month" (matching how [ProductivityTrendChart] reshapes
-  /// itself per period), 7 otherwise — see the workflow-analysis plan doc
-  /// §3.2/PROJECT_ANALYSIS_AND_IMPROVEMENTS.md §3.2.
   int get _focusTrendDays => _selectedFilter == 2 ? 30 : 7;
 
   Widget _buildFocusTrendSection() {
@@ -720,6 +729,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   }
 }
 
+// Per-period totals derived from [StatsModel] for the selected filter.
 class _ViewMetrics {
   final int breaksCompleted;
   final int breaksSkipped;

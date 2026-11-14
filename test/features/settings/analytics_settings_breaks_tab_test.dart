@@ -89,18 +89,23 @@ void main() {
     await tester.pumpAndSettle();
 
     // No tabs to switch between: all the groups are present at once.
-    for (final heading in ['Overview', 'Focus', 'Breaks']) {
+    for (final heading in [
+      'One thing from this week',
+      'Focus',
+      'Break Statistics',
+    ]) {
       expect(find.text(heading), findsOneWidget, reason: heading);
     }
     // Time and app usage are on the Productivity screen, not repeated here.
     expect(find.text('Where your time goes'), findsNothing);
     // Focus is the longest block, so it starts folded.
-    expect(find.text('Focus Score'), findsNothing);
-    await tester.tap(find.text('Show'));
+    expect(find.text('App tracking is off'), findsNothing);
+    await tester.ensureVisible(find.text('Focus details'));
+    await tester.tap(find.text('Focus details'));
     await tester.pumpAndSettle();
-    expect(find.text('Focus Score'), findsOneWidget);
+    expect(find.text('App tracking is off'), findsOneWidget);
     expect(find.text('Break Statistics'), findsOneWidget);
-    expect(find.text('Current Streak'), findsWidgets);
+    expect(find.text('Current streak'), findsWidgets);
     // One period selector for the whole page.
     expect(find.text('This Week'), findsOneWidget);
   });
@@ -142,7 +147,8 @@ void main() {
 
       expect(tester.takeException(), isNull);
       // Unfold the longest block too, so it is checked for overflow as well.
-      await tester.tap(find.text('Show'));
+      await tester.ensureVisible(find.text('Focus details'));
+      await tester.tap(find.text('Focus details'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });

@@ -11,8 +11,10 @@ namespace bridge_utils {
 // Checks if any known meeting applications are currently frontmost
 bool IsMeetingActive(std::string& out_bundle_id);
 
-// Gets system idle time in seconds
+// Gets system idle time in seconds, or a negative value when unavailable
 double GetIdleTime();
+
+bool IsSessionLocked();
 
 } // namespace bridge_utils
 

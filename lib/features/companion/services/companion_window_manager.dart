@@ -14,6 +14,7 @@ import 'package:breakmate/features/companion/domain/behavior_engine_models.dart'
 import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
+/// Owns the PiP window's size and position: restores, clamps, persists, recovers off-screen windows, and converts coordinates.
 class CompanionWindowManager {
   CompanionWindowManager({
     WindowService? windowService,
@@ -68,6 +69,7 @@ class CompanionWindowManager {
   static const String _keyWindowX = 'companion_window_x';
   static const String _keyWindowY = 'companion_window_y';
 
+  /// Restores saved size/position (default bottom-right of primary display), recovers if off-screen, then shows the window non-activating.
   Future<void> initialize() async {
     final prefs = SimplePrefs.instance;
 
@@ -179,14 +181,7 @@ class CompanionWindowManager {
     _persistPosition(_currentPosition);
   }
 
-  /// Moves the window without the off-screen recovery pass or a preference
-  /// write.
-  ///
-  /// [setPosition] enumerates displays and writes two preferences on every
-  /// call. That is right for a one-off move and far too heavy for an animation
-  /// running twenty-five times a second, which is what the companion's
-  /// wandering is — so a caller that has already clamped its own path to a
-  /// display takes this instead, and calls [persistPosition] once it arrives.
+  /// Instant move without persisting (used per-frame by the wanderer); call persistPosition at the end.
   Future<void> moveTo(Offset position) async {
     _currentPosition = position;
 
@@ -196,21 +191,11 @@ class CompanionWindowManager {
           await _primaryScreenHeight() - position.dy - _currentSize.height;
     }
 
-    // Never animated: the caller is already drawing the motion frame by frame,
-    // and on macOS an animated move blocks the main thread until it finishes.
     await _applyPosition(position.dx, targetY, animate: false);
   }
 
-  /// Writes the current position to preferences. Pairs with [moveTo].
   void persistPosition() => _persistPosition(_currentPosition);
 
-  /// The primary screen's height, cached.
-  ///
-  /// Flipping into AppKit's bottom-left origin needs this on every frame of a
-  /// move, and enumerating displays that often would undo the point of
-  /// [moveTo]. The cache expires because monitors get swapped and resolutions
-  /// change, and a stale height would put the companion at the wrong height on
-  /// screen rather than merely being slow.
   Future<double> _primaryScreenHeight() async {
     final cached = _cachedPrimaryHeight;
     final measuredAt = _primaryHeightMeasuredAt;
@@ -249,8 +234,6 @@ class CompanionWindowManager {
     await _windowService.setIgnoresMouseEvents(!accepts);
   }
 
-  // ── Native window ─────────────────────────────────────────────────────────
-
   bool _isVisible = false;
   double _opacity = 0.9;
   bool _acceptsMouse = true;
@@ -278,21 +261,15 @@ class CompanionWindowManager {
     _logger.info('Companion window resized to ${width}x$height');
   }
 
-  /// Forgets what was learned about the displays.
-  ///
-  /// Call after a display is attached, removed or rearranged, or after the
-  /// machine wakes: the primary height is what converts between Flutter's and
-  /// AppKit's coordinates, and a stale one puts the companion, and the
-  /// companion's idea of where the cursor is, at the wrong height.
   void invalidateDisplayCache() {
     _cachedPrimaryHeight = null;
     _primaryHeightMeasuredAt = null;
   }
 
+  /// Reads the real native frame, adopts user-resized size, and returns top-left-origin coordinates.
   Future<Offset> getPosition() async {
     final pos = await (_readWindowFrame ?? _windowService.getWindowPosition)();
 
-    // The size is read first: the flip below depends on the window's height.
     if (pos.containsKey('width') && pos.containsKey('height')) {
       final w = pos['width'] as double;
       final h = pos['height'] as double;
@@ -304,9 +281,6 @@ class CompanionWindowManager {
 
     double y = pos['y'] as double;
     if (Platform.isMacOS) {
-      // Cached: this runs several times a second, and enumerating displays
-      // natively each time is a round-trip that buys nothing while they have
-      // not changed.
       final primaryHeight = await _primaryScreenHeight();
       y = primaryHeight - y - _currentSize.height;
     }
@@ -321,6 +295,7 @@ class CompanionWindowManager {
     );
   }
 
+  /// Off-screen means the window overlaps every display by less than minIntersection.
   Future<bool> _isOffScreen(Offset position, Size size) async {
     if (_displayManager == null) return false;
 

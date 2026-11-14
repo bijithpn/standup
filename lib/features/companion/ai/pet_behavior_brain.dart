@@ -3,7 +3,7 @@ import '../domain/pet_behavior_context.dart';
 import '../domain/pet_state_machine.dart';
 import '../domain/pet_mood.dart';
 
-/// Uses weighted scoring across multiple factors to avoid repetitive actions.
+/// Picks the pet's next PetState by scoring candidates (recency, mood, personality, context) and sampling from the top few.
 class PetBehaviorBrain {
   final Random _random = Random();
   final Map<PetState, DateTime> _lastStateTimes = {};
@@ -43,7 +43,6 @@ class PetBehaviorBrain {
   List<PetState> _getCandidateStates(PetBehaviorContext context) {
     final candidates = <PetState>[];
 
-    // Spontaneous ambient candidates so the pet always has an active, unpredictable life
     candidates.addAll([
       PetState.idle,
       PetState.blink,
@@ -107,6 +106,7 @@ class PetBehaviorBrain {
     return candidates.toSet().toList();
   }
 
+  /// Higher is better; penalises recently/frequently used states so behaviour does not repeat.
   double _calculateStateScore(PetState state, PetBehaviorContext context) {
     var score = 1.0;
 
@@ -142,7 +142,7 @@ class PetBehaviorBrain {
       } else if (state == PetState.run ||
           state == PetState.playing ||
           state == PetState.jumping) {
-        score *= (1.0 - context.fatigue); // heavily penalize high energy states
+        score *= (1.0 - context.fatigue);
       }
     }
 
@@ -156,7 +156,7 @@ class PetBehaviorBrain {
       } else if (state == PetState.run ||
           state == PetState.playing ||
           state == PetState.jumping) {
-        score /= (1.2 * fatigueMultiplier); // heavily penalize active states
+        score /= (1.2 * fatigueMultiplier);
       }
     }
 
@@ -266,7 +266,6 @@ class PetBehaviorBrain {
     _lastStateTimes[state] = DateTime.now();
     _stateFrequency[state] = (_stateFrequency[state] ?? 0) + 1;
 
-    // Decay old frequencies to prevent permanent bias
     if (_stateFrequency.length > 20) {
       _stateFrequency.updateAll((key, value) => (value * 0.9).round());
     }

@@ -15,6 +15,7 @@ import 'package:breakmate/core/errors/error_handler.dart';
 
 import 'package:breakmate/core/ipc/overlay_config.dart';
 
+/// Companion overlay window: receives settings over the companion_data method channel and reports interactions via EventBus.
 class CompanionOverlayWindow extends StatefulWidget {
   const CompanionOverlayWindow({super.key});
 
@@ -142,8 +143,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         if (s != null) {
           final clip = s.toAvatarClip();
           _avatarController.playAnimation(clip, loop: clip.isLooping);
-          // The pet is drawn natively now, so an incoming state is something
-          // it should notice rather than a clip to play.
+
           _petKey.currentState?.nudge();
         }
       }

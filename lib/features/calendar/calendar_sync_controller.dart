@@ -7,31 +7,25 @@ import 'package:breakmate/core/services/calendar_permission_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
+/// UI-facing summary of calendar permission + sync status, derived in [CalendarSyncController.state].
 enum CalendarConnectionState {
-  /// Permission/status check in progress.
   checking,
 
-  /// Sync is turned off in BreakMate.
   disconnected,
 
-  /// Sync is on and macOS has granted access.
   connected,
 
-  /// Sync is on but macOS access is missing; the user can grant or open
-  /// System Settings.
   permissionNeeded,
 
-  /// Access is blocked at system level (denied before / restricted).
   permissionBlocked,
 
-  /// Connected, but the last event query failed.
   error,
 }
 
-/// The single owner of Calendar Sync: connection state, permission, sync
-/// preferences, and the (de-duplicated, throttled) event query that every
-/// screen — Calendar Sync settings, Today, Smart detection — reads from.
+/// Owns calendar permission and today's events; shared by Settings and Dashboard.
+/// Enabling/disabling is driven by [SettingsRepository.calendarEnabled].
 class CalendarSyncController extends ChangeNotifier {
+  // Throttle for non-forced refreshes so UI rebuilds don't hit the native calendar API.
   static const Duration minRefreshInterval = Duration(seconds: 30);
 
   final SettingsRepository _settingsRepo;
@@ -85,12 +79,11 @@ class CalendarSyncController extends ChangeNotifier {
     }
   }
 
-  /// Only a real on/off change touches the calendar; the many unrelated
-  /// settings saves (every slider drag) must not trigger a native query.
+  // Fetch on enable, drop cached events on disable; other setting changes just rebuild listeners.
   void _onSettingsChanged() {
     final now = enabled;
     if (now == _lastEnabled) {
-      notifyListeners(); // quietDuringMeetings may have changed
+      notifyListeners();
       return;
     }
     _lastEnabled = now;
@@ -103,9 +96,7 @@ class CalendarSyncController extends ChangeNotifier {
     }
   }
 
-  /// Re-reads permission and, when connected, today's events. Concurrent calls
-  /// share one in-flight query; calls within [minRefreshInterval] of the last
-  /// successful sync are skipped unless [force].
+  /// Reloads today's events; concurrent calls share one in-flight future.
   Future<void> refresh({bool force = false}) {
     final running = _inFlight;
     if (running != null) return running;
@@ -120,8 +111,7 @@ class CalendarSyncController extends ChangeNotifier {
   }
 
   Future<void> _refresh() async {
-    // Callers often invoke refresh() from initState; yield once so listeners
-    // are never notified while the framework is still building.
+    // Defer so notifyListeners never fires synchronously during a widget build.
     await Future<void>.value();
     _checking = _permission == CalendarPermissionStatus.notDetermined;
     notifyListeners();
@@ -156,21 +146,17 @@ class CalendarSyncController extends ChangeNotifier {
     }
   }
 
-  /// Events in [start, end) for views that browse beyond today (month view).
   Future<List<CalendarEvent>> eventsBetween(DateTime start, DateTime end) =>
       _calendar.getEvents(start, end);
 
-  /// Requests macOS access (or opens System Settings if it can no longer be
-  /// requested) and turns sync on when granted.
+  /// Requests calendar permission (or opens system settings if blocked) and enables sync + meeting detection on success.
   Future<bool> connect() async {
     if (_requesting) return false;
     _requesting = true;
     notifyListeners();
     try {
       var status = await _permissions.getStatus();
-      // "Denied" before this session is often a stale entry (e.g. a rebuilt
-      // dev binary with a new signature), so ask once more; macOS answers
-      // immediately without a prompt if it really is denied.
+
       if (status == CalendarPermissionStatus.permanentlyDenied) {
         final granted = await _permissions.requestPermission();
         status = granted
@@ -189,9 +175,8 @@ class CalendarSyncController extends ChangeNotifier {
             ? CalendarPermissionStatus.granted
             : await _permissions.getStatus();
       }
-      // macOS refused without showing a prompt: the entry in System Settings
-      // is stale (e.g. toggled on for an older build of the app). Surface the
-      // blocked state instead of silently snapping back.
+
+      // A denied answer after our prompt means the OS won't prompt again.
       if (status == CalendarPermissionStatus.denied) {
         status = CalendarPermissionStatus.permanentlyDenied;
       }
@@ -212,8 +197,7 @@ class CalendarSyncController extends ChangeNotifier {
     }
   }
 
-  /// Turns sync off. macOS keeps the permission it already granted; only the
-  /// user can revoke it in System Settings.
+  /// Turns off calendar sync and meeting detection; the settings listener clears cached events.
   Future<void> disconnect() async {
     await _settingsRepo.save(
       _settingsRepo.currentSettings.copyWith(

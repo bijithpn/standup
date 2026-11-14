@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:breakmate/features/settings/work_schedule.dart';
 
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
@@ -7,6 +8,7 @@ import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
+/// Answers "should the timer run right now?" from working hours, presentations, video, meetings, calendar and context-switch data.
 class TimerContextManager {
   final SettingsRepository _settingsRepository;
   final SmartDetectionService? _smartDetectionService;
@@ -29,54 +31,62 @@ class TimerContextManager {
        _meetingDetectionService = meetingDetectionService,
        _contextSwitchTracker = contextSwitchTracker;
 
-  /// Number of app switches observed in the last hour — a soft fragmented-
-  /// attention signal, purely informational (see [isHighContextSwitchRate]).
   int recentContextSwitchCount({DateTime? now}) {
     final tracker = _contextSwitchTracker;
     if (tracker == null) return 0;
     return tracker.switchesInWindow(now ?? clock.now());
   }
 
-  /// Whether app-switching has been frequent enough recently to suggest
-  /// fragmented focus. Deliberately never consulted by [shouldRunWorkTimer]
-  /// or any break-timing decision — it's surfaced to the user (dashboard
-  /// nudge), never used to silently change scheduling.
   bool isHighContextSwitchRate({DateTime? now}) {
     final tracker = _contextSwitchTracker;
     if (tracker == null) return false;
     return tracker.isHighSwitchRate(now ?? clock.now());
   }
 
+  // Malformed times fall back to permissive/default values rather than blocking the timer.
   bool isWithinWorkingHours() {
     final settings = _settingsRepository.currentSettings;
     if (!settings.workingHoursEnabled) return true;
 
     final now = clock.now();
-    final weekday = now.weekday;
-
-    final workingDays = settings.workingDays;
-    if (!workingDays.contains(weekday)) return false;
-
-    final startParts = settings.workStartTime.split(':');
-    final endParts = settings.workEndTime.split(':');
-    if (startParts.length != 2 || endParts.length != 2) return true;
-
-    final startH = int.tryParse(startParts[0]) ?? 9;
-    final startM = int.tryParse(startParts[1]) ?? 0;
-    final endH = int.tryParse(endParts[0]) ?? 18;
-    final endM = int.tryParse(endParts[1]) ?? 0;
-
-    final startMinutes = startH * 60 + startM;
-    final endMinutes = endH * 60 + endM;
-    final nowMinutes = now.hour * 60 + now.minute;
-
-    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+    // Check yesterday as well: an overnight shift belongs to its start day.
+    for (final date in [now, DateTime(now.year, now.month, now.day - 1)]) {
+      if (!settings.workingDays.contains(date.weekday)) continue;
+      final shift =
+          settings.weeklySchedule[date.weekday] ??
+          WorkSchedule(
+            start: settings.workStartTime,
+            end: settings.workEndTime,
+          );
+      if (!shift.isValid || shift.contains(date, now)) return true;
+    }
+    return false;
   }
 
-  /// Whether the work timer should be auto-paused right now. Deliberately
-  /// limited to reasons the user can see and control directly — being in a
-  /// meeting or video call is never one of them; see [isMeetingActive],
-  /// which only affects how break reminders are displayed.
+  /// The next enabled shift or end of lunch, including yesterday's overnight shift.
+  DateTime? nextWorkingTime() {
+    final settings = _settingsRepository.currentSettings;
+    final now = clock.now();
+    if (!settings.workingHoursEnabled) return now;
+    DateTime? next;
+    for (var offset = -1; offset <= 7; offset++) {
+      final date = DateTime(now.year, now.month, now.day + offset);
+      if (!settings.workingDays.contains(date.weekday)) continue;
+      final shift =
+          settings.weeklySchedule[date.weekday] ??
+          WorkSchedule(
+            start: settings.workStartTime,
+            end: settings.workEndTime,
+          );
+      final candidate = shift.nextActiveTime(date, now);
+      if (candidate != null && (next == null || candidate.isBefore(next))) {
+        next = candidate;
+      }
+    }
+    return next;
+  }
+
+  /// Pauses the work timer (presenting or watching video); meetings are handled separately via [isMeetingActive].
   bool isSmartPauseActive() {
     final settings = _settingsRepository.currentSettings;
     final pauseForPresentation =
@@ -88,9 +98,7 @@ class TimerContextManager {
     return pauseForPresentation || pauseForVideo;
   }
 
-  /// Whether the user currently appears to be in a meeting or video call —
-  /// covers both calendar-synced meeting detection, hardware microphone/camera,
-  /// and intelligent video playback detection.
+  /// Calendar meeting or video call; the timer keeps running but breaks use the quiet reminder instead of the full overlay.
   bool isMeetingActive() {
     final settings = _settingsRepository.currentSettings;
     final inCalendarMeeting =
@@ -102,24 +110,33 @@ class TimerContextManager {
     return inCalendarMeeting || inVideoCall;
   }
 
-  /// Whether a fullscreen presentation/screen-share appears to be up right
-  /// now (see [PresentationDetectionService]). Independent of
-  /// [isSmartPauseActive]/[shouldRunWorkTimer] and of
-  /// `settings.presentationPauseEnabled` — that setting only controls
-  /// whether presentations *pause the work timer*. This is consulted purely
-  /// to decide how a break is presented: a full break overlay would cover
-  /// (or show up in) whatever is being presented, so break UI should stay
-  /// out of the way, the same as [isMeetingActive].
   bool isPresentationActive() {
-    final settings = _settingsRepository.currentSettings;
-    if (!settings.presentationPauseEnabled) return false;
     return _presentationDetectionService?.isPresenting ?? false;
+  }
+
+  DateTime? _healthReminderResumeAt;
+
+  bool get shouldSuppressHealthReminders {
+    final settings = _settingsRepository.currentSettings;
+    final blocked =
+        isMeetingActive() ||
+        isPresentationActive() ||
+        (settings.quietModeEnabled &&
+            (settings.quietModePreset == 'presenting' ||
+                settings.quietModePreset == 'deep_work'));
+    final now = clock.now();
+    if (blocked) {
+      _healthReminderResumeAt = now.add(const Duration(seconds: 30));
+      return true;
+    }
+    return _healthReminderResumeAt?.isAfter(now) ?? false;
   }
 
   bool shouldRunWorkTimer() {
     return isWithinWorkingHours() && !isSmartPauseActive();
   }
 
+  /// True once the clock-out time passes; [clockOutTriggered] prevents firing more than once per day.
   bool checkClockOut(DateTime now, bool clockOutTriggered) {
     final settings = _settingsRepository.currentSettings;
     if (!settings.enableClockOut || clockOutTriggered) return false;
@@ -136,6 +153,7 @@ class TimerContextManager {
     return false;
   }
 
+  /// True if a timed calendar event starts within 10 minutes.
   Future<bool> isMeetingUpcoming() async {
     final settings = _settingsRepository.currentSettings;
     if (!settings.calendarEnabled || _calendarService == null) return false;
@@ -146,12 +164,7 @@ class TimerContextManager {
     return events.any((e) => !e.isAllDay);
   }
 
-  /// Scans the calendar over [lookahead] and returns how many minutes from
-  /// now the next gap of at least the configured break duration begins, or
-  /// `null` if now is already clear (no calendar, or no imminent conflict).
-  ///
-  /// This lets a delayed break jump straight to an actual free slot between
-  /// back-to-back meetings, instead of retrying on a fixed timer.
+  /// Minutes until the calendar has a gap long enough for a break, or null if free now or calendar is unavailable.
   Future<int?> minutesUntilNextFreeGap({
     Duration lookahead = const Duration(hours: 2),
   }) async {

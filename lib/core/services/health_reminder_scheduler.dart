@@ -1,9 +1,9 @@
 import 'dart:math';
 
+// Kinds of health nudges; extension below holds each kind's cadence and relief rules.
 enum HealthReminderKind { eyeRest, blink, posture, hydration, stretch, standUp }
 
 extension HealthReminderKindInfo on HealthReminderKind {
-  /// Name carried by `HealthReminderEvent.reminderType` and the overlay.
   String get typeName => switch (this) {
     HealthReminderKind.eyeRest => 'eyeblink',
     HealthReminderKind.blink => 'blink',
@@ -13,9 +13,9 @@ extension HealthReminderKindInfo on HealthReminderKind {
     HealthReminderKind.standUp => 'standup',
   };
 
-  /// Minutes of active work between reminders on a normal day.
+  // Base interval before workload/backoff/jitter adjustments.
   int get baselineMinutes => switch (this) {
-    HealthReminderKind.eyeRest => 20, // the 20-20-20 rule
+    HealthReminderKind.eyeRest => 20,
     HealthReminderKind.blink => 12,
     HealthReminderKind.posture => 30,
     HealthReminderKind.stretch => 40,
@@ -23,24 +23,24 @@ extension HealthReminderKindInfo on HealthReminderKind {
     HealthReminderKind.standUp => 60,
   };
 
-  /// Idle time (no keyboard/mouse) that counts as the user having done it.
+  // Idle time that counts as the user already doing it (e.g. 20s away rests eyes), resetting the timer.
   double get reliefIdleSeconds => switch (this) {
     HealthReminderKind.eyeRest => 20,
     HealthReminderKind.blink => 10,
     HealthReminderKind.posture => 120,
     HealthReminderKind.stretch => 120,
     HealthReminderKind.standUp => 120,
-    HealthReminderKind.hydration => 300, // time to fetch a glass of water
+    HealthReminderKind.hydration => 300,
   };
 
-  /// How close a scheduled break may be before it covers this reminder.
+  // Skip the reminder if a regular break is due within this window.
   Duration get breakAbsorbWindow => switch (this) {
     HealthReminderKind.eyeRest => const Duration(minutes: 3),
     HealthReminderKind.hydration => const Duration(minutes: 3),
     _ => const Duration(minutes: 5),
   };
 
-  /// Reminders that this one also satisfies (standing up fixes posture, etc.).
+  // Firing this kind also resets these (e.g. standing up covers posture and stretch).
   Set<HealthReminderKind> get alsoSatisfies => switch (this) {
     HealthReminderKind.eyeRest => {HealthReminderKind.blink},
     HealthReminderKind.standUp => {
@@ -52,8 +52,7 @@ extension HealthReminderKindInfo on HealthReminderKind {
   };
 }
 
-/// Turns what we know about how hard the user is working into a multiplier on
-/// reminder intervals: below 1 means "remind more often", above 1 "less".
+/// Scales reminder frequency by hours worked today: more frequent as the day goes on or with heavy context switching.
 class WorkloadEstimator {
   const WorkloadEstimator._();
 
@@ -65,7 +64,7 @@ class WorkloadEstimator {
     required bool highContextSwitching,
   }) {
     final hours = workedToday.inMinutes / 60;
-    // Fatigue builds through the day; the first hour is a gentle warm-up.
+
     var f = hours < 1
         ? 1.25
         : hours < 3
@@ -73,31 +72,15 @@ class WorkloadEstimator {
         : hours < 6
         ? 0.85
         : 0.7;
-    // Constantly switching between apps is a busy, mentally heavy stretch.
+
     if (highContextSwitching) f *= 0.85;
     return f.clamp(minFactor, maxFactor);
   }
 }
 
-/// Decides *when* a health reminder should appear. Pure logic (no timers, no
-/// I/O) so every rule is unit-testable; [TimerEngine] feeds it the facts once
-/// per tick and acts on the answer.
-///
-///  * **Workload-aware.** The busier the day (long hours, constant app
-///    switching) the more often reminders come; light days get fewer.
-///  * **Random, not mechanical.** Each interval is jittered ±15%, and when
-///    several reminders are due the one shown is a weighted random pick.
-///  * **Real relief counts.** Stepping away resets the matching reminders; a
-///    completed break resets all but hydration (a long break resets that too);
-///    a skipped break resets nothing.
-///  * **Breaks absorb reminders** that would land just before them.
-///  * **Never in the way.** Meetings, calls and presentations defer them.
-///  * **No stacking.** A minimum gap between reminders, a quiet period after a
-///    break, and an hourly cap (higher on heavy days) keep it from nagging.
-///  * **Learns from the user.** Reminders that keep being ignored are spaced
-///    further apart (up to 2x); acting on one restores the normal cadence.
+/// Decides which health reminder fires next, with per-kind jittered targets, ignore backoff, minimum gaps and an hourly cap.
 class HealthReminderScheduler {
-  /// A reminder is followed if the user steps away this soon after it.
+  // After a reminder fires, the user has this long to go idle (follow it) or it counts as ignored.
   static const Duration followWindow = Duration(seconds: 90);
   static const double followIdleSeconds = 15;
 
@@ -106,7 +89,6 @@ class HealthReminderScheduler {
   static const int maxIgnoredBackoffSteps = 4;
   static const Duration capWindow = Duration(hours: 1);
 
-  /// Most reminders in any rolling hour; heavy days allow one more.
   static int hourlyCap(double workloadFactor) => workloadFactor < 0.85 ? 5 : 4;
 
   final Random _random;
@@ -119,14 +101,11 @@ class HealthReminderScheduler {
   DateTime? _lastAnyFired;
   DateTime? _lastBreakEnded;
 
-  /// Reminder awaiting a sign that the user acted on it.
   HealthReminderKind? _awaitingFollow;
   DateTime? _awaitingSince;
 
   int ignoredStreak(HealthReminderKind kind) => _ignored[kind] ?? 0;
 
-  /// Seconds of active work (before workload scaling) after which [kind] is
-  /// due.
   int targetSeconds(
     HealthReminderKind kind, {
     double activityRatio = 1.0,
@@ -139,14 +118,14 @@ class HealthReminderScheduler {
     );
   }
 
+  // Target grows 25% per ignored reminder (up to 4 steps); jitter avoids predictable timing.
   int _pickTarget(
     HealthReminderKind kind,
     double activityRatio,
     double cadenceMultiplier,
   ) {
-    // Back off (up to 2x) while the user keeps ignoring this reminder.
     final backoff = 1 + 0.25 * min(ignoredStreak(kind), maxIgnoredBackoffSteps);
-    // ±15% jitter so it doesn't feel mechanical.
+
     final jitter = 0.85 + _random.nextDouble() * 0.3;
     final minutes =
         kind.baselineMinutes *
@@ -157,10 +136,8 @@ class HealthReminderScheduler {
     return (minutes * 60).round().clamp(60, 4 * 60 * 60);
   }
 
-  /// Forgets the chosen target so the next one is computed fresh.
   void clearTarget(HealthReminderKind kind) => _targetSeconds[kind] = null;
 
-  /// A break was completed (not skipped).
   void onBreakCompleted(DateTime now, {bool long = false}) {
     _lastBreakEnded = now;
     for (final kind in HealthReminderKind.values) {
@@ -170,9 +147,7 @@ class HealthReminderScheduler {
     _awaitingFollow = null;
   }
 
-  /// Reports how long the user has been without input. Returns the kinds whose
-  /// elapsed counters should be reset because the user got real relief, and
-  /// updates the "did they act on the last reminder" learning.
+  /// Feeds idle time: clears targets for kinds the user already relieved and resolves follow/ignore of the last reminder.
   Set<HealthReminderKind> onIdleSample(double idleSeconds, DateTime now) {
     final relieved = <HealthReminderKind>{
       for (final k in HealthReminderKind.values)
@@ -184,7 +159,7 @@ class HealthReminderScheduler {
     if (awaiting != null) {
       final since = now.difference(_awaitingSince!);
       if (idleSeconds >= followIdleSeconds && since <= followWindow) {
-        _ignored[awaiting] = 0; // they acted on it
+        _ignored[awaiting] = 0;
         _awaitingFollow = null;
       } else if (since > followWindow) {
         _ignored[awaiting] = ignoredStreak(awaiting) + 1;
@@ -194,10 +169,7 @@ class HealthReminderScheduler {
     return relieved;
   }
 
-  /// Returns the reminder to show now, or null. [elapsedSeconds] is active
-  /// work time since the last relief for each enabled kind (omit disabled
-  /// kinds). [untilNextBreak] is null when no break is scheduled.
-  /// [workloadFactor] comes from [WorkloadEstimator].
+  /// Returns the kind to fire now or null; overdue kinds are picked by weighted random so the most overdue is likeliest.
   HealthReminderKind? nextDue({
     required DateTime now,
     required Map<HealthReminderKind, int> elapsedSeconds,
@@ -218,9 +190,6 @@ class HealthReminderScheduler {
     _recentFires.removeWhere((t) => now.difference(t) >= capWindow);
     if (_recentFires.length >= hourlyCap(workloadFactor)) return null;
 
-    // Everything that is due competes; the pick is random but weighted toward
-    // what is most overdue, so the reminders vary from one to the next instead
-    // of following a fixed order.
     final candidates = <HealthReminderKind, double>{};
     elapsedSeconds.forEach((kind, elapsed) {
       final target =
@@ -248,15 +217,14 @@ class HealthReminderScheduler {
     return candidates.keys.last;
   }
 
-  /// Call when a reminder is actually shown. Returns the kinds whose elapsed
-  /// counters should also reset because this reminder covers them.
+  /// Records a fired reminder and returns the other kinds it satisfies; an unanswered previous reminder counts as ignored.
   Set<HealthReminderKind> markFired(HealthReminderKind kind, DateTime now) {
     _lastAnyFired = now;
     _recentFires.add(now);
     _targetSeconds[kind] = null;
     final covered = kind.alsoSatisfies;
     covered.forEach(clearTarget);
-    // If a previous reminder was never acted on, count it as ignored.
+
     if (_awaitingFollow != null && _awaitingFollow != kind) {
       _ignored[_awaitingFollow!] = ignoredStreak(_awaitingFollow!) + 1;
     }

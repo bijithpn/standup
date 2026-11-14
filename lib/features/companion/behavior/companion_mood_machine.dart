@@ -1,42 +1,27 @@
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 
-/// What the companion is doing emotionally, as seen by the person watching it.
-///
-/// This is a presentation state, not a claim about the user: nothing here is
-/// inferred from their face, voice or text. Every transition is caused by an
-/// observable [CompanionEvent].
+/// Companion's high-level mood; higher priority wins, and reaction moods (with a duration) expire back to the standing mood.
 enum CompanionMood {
-  /// Relaxed, occasional blink, minimal movement.
   idle(0),
 
-  /// Asleep or drowsy after a long quiet spell. Sustained, not timed.
   sleepy(10),
 
-  /// The pointer came near. Lingers briefly after it leaves.
   curious(20),
 
-  /// A deliberate interaction: the pet was clicked.
   attentive(30),
 
-  /// A relevant break reminder, offered gently.
   encouraging(40),
 
-  /// A break was completed.
   happy(50),
 
-  /// A sudden, meaningful movement close by. Always brief.
   surprised(60),
 
-  /// Deliberately calm: animation or reactions are switched off.
   resting(100);
 
   const CompanionMood(this.priority);
 
-  /// Higher wins. A lower-priority event never replaces a higher one.
   final int priority;
 
-  /// How long a timed mood lasts before falling back, or null if it persists
-  /// until something ends it.
   Duration? get duration => switch (this) {
     CompanionMood.curious => const Duration(milliseconds: 2200),
     CompanionMood.attentive => const Duration(milliseconds: 1400),
@@ -46,7 +31,6 @@ enum CompanionMood {
     CompanionMood.idle || CompanionMood.sleepy || CompanionMood.resting => null,
   };
 
-  /// The face the renderer already knows how to draw for this mood.
   PetEmotion get emotion => switch (this) {
     CompanionMood.idle => PetEmotion.content,
     CompanionMood.sleepy => PetEmotion.sleepy,
@@ -58,7 +42,6 @@ enum CompanionMood {
     CompanionMood.resting => PetEmotion.content,
   };
 
-  /// How strongly the face should show it, 0..1.
   double get intensity => switch (this) {
     CompanionMood.idle => 0.3,
     CompanionMood.sleepy => 0.8,
@@ -70,38 +53,28 @@ enum CompanionMood {
     CompanionMood.resting => 0.2,
   };
 
-  /// Whether this mood is a short-lived reaction rather than a standing state.
   bool get isReaction => duration != null;
 }
 
-/// Something that happened that the companion may respond to.
+/// External triggers fed to CompanionMoodMachine.post.
 enum CompanionEvent {
-  /// The pointer moved into the interaction area.
   pointerEntered,
 
-  /// The pointer left the interaction area.
   pointerExited,
 
-  /// The companion was clicked or tapped.
   clicked,
 
-  /// A break was completed (not skipped).
   breakCompleted,
 
-  /// A break is starting or being suggested.
   breakReminder,
 
-  /// Something moved fast and close by.
   suddenMotion,
 
-  /// No input for the configured quiet period.
   quietPeriodStarted,
 
-  /// Input resumed after a quiet period.
   quietPeriodEnded,
 }
 
-/// The rules for which events are heard right now.
 class CompanionMoodConfig {
   const CompanionMoodConfig({
     this.animationsEnabled = true,
@@ -109,15 +82,10 @@ class CompanionMoodConfig {
     this.interactionsEnabled = true,
   });
 
-  /// False puts the companion into [CompanionMood.resting] and ignores
-  /// everything except the quiet-period bookkeeping.
   final bool animationsEnabled;
 
-  /// Whether celebratory and surprised reactions (happy, encouraging,
-  /// surprised) are shown. Clicks still get an attentive response.
   final bool reactionsEnabled;
 
-  /// Whether pointer proximity and clicks are heard at all.
   final bool interactionsEnabled;
 
   @override
@@ -132,21 +100,7 @@ class CompanionMoodConfig {
       Object.hash(animationsEnabled, reactionsEnabled, interactionsEnabled);
 }
 
-/// A deterministic, clock-driven state machine from [CompanionEvent]s to a
-/// [CompanionMood].
-///
-/// Holds at most one timed reaction at a time and never owns a timer: the
-/// caller passes the current time into [post] and [advance], so there is
-/// nothing to leak, nothing to overlap, and tests run without real time.
-///
-/// Rules:
-///  * A reaction only replaces the current one if its priority is higher.
-///  * The same reaction arriving again while it is showing does not restart
-///    it; [reactionSerial] only changes on a real change of mood.
-///  * Sleepy and resting are standing states. Reactions play on top of sleepy
-///    and the machine returns to it afterwards.
-///  * When a reaction ends the machine falls back to the standing state
-///    underneath, so an unrelated state is never reset by a reaction.
+/// Pure state machine (no timers): the caller supplies a monotonic clock via post/advance, and reactions are gated by CompanionMoodConfig.
 class CompanionMoodMachine {
   CompanionMoodMachine({
     CompanionMoodConfig config = const CompanionMoodConfig(),
@@ -165,14 +119,10 @@ class CompanionMoodMachine {
 
   CompanionMood get mood => _mood;
 
-  /// Changes each time the visible mood actually changes. Renderers can key
-  /// one-shot animations off this instead of watching for repeated events.
   int get reactionSerial => _serial;
 
   CompanionMoodConfig get config => _config;
 
-  /// Applies new rules. Takes effect immediately and without losing the
-  /// standing state (for example, the quiet period).
   void configure(CompanionMoodConfig config) {
     if (config == _config) return;
     _config = config;
@@ -182,7 +132,6 @@ class CompanionMoodMachine {
       return;
     }
 
-    // A reaction that is no longer permitted ends now.
     if (_mood.isReaction && !_permits(_mood)) {
       _enter(_standing(), null);
     } else if (_mood == CompanionMood.resting) {
@@ -190,7 +139,7 @@ class CompanionMoodMachine {
     }
   }
 
-  /// Delivers an event. Returns true if the visible mood changed.
+  /// Applies an event; returns true if the mood changed (reactionSerial is bumped for each new reaction).
   bool post(CompanionEvent event, Duration now) {
     _now = now;
     final before = _serial;
@@ -225,8 +174,6 @@ class CompanionMoodMachine {
     return _serial != before;
   }
 
-  /// Moves the clock forward, ending any reaction whose time is up. Returns
-  /// true if the visible mood changed.
   bool advance(Duration now) {
     _now = now;
     final before = _serial;
@@ -234,8 +181,7 @@ class CompanionMoodMachine {
     return _serial != before;
   }
 
-  /// Drops all transient state, e.g. after the machine's host was suspended
-  /// and the clock jumped. Standing configuration is kept.
+  /// Resets to the standing mood after a suspend/resume, dropping any stale reaction or hover state.
   void reconcile(Duration now) {
     _now = now;
     _pointerInside = false;
@@ -243,8 +189,7 @@ class CompanionMoodMachine {
     _enter(_standing(), null);
   }
 
-  // ── Internals ─────────────────────────────────────────────────────────────
-
+  /// Resting-state mood: resting if animations are off, sleepy in a quiet period, otherwise idle.
   CompanionMood _standing() {
     if (!_config.animationsEnabled) return CompanionMood.resting;
     return _quiet ? CompanionMood.sleepy : CompanionMood.idle;
@@ -278,8 +223,6 @@ class CompanionMoodMachine {
     if (candidate.priority < _mood.priority) return;
 
     if (candidate == _mood) {
-      // Already showing: keep the animation going rather than restarting it.
-      // Only a pointer that is still near keeps curiosity alive.
       if (candidate == CompanionMood.curious) {
         _reactionEndsAt = _now + candidate.duration!;
       }
@@ -294,7 +237,6 @@ class CompanionMoodMachine {
     if (end == null || _now < end) return;
     _reactionEndsAt = null;
 
-    // Linger on curiosity only while the pointer is still near.
     if (_mood == CompanionMood.curious && _pointerInside) {
       _reactionEndsAt = _now + CompanionMood.curious.duration!;
       return;

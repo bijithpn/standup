@@ -153,7 +153,7 @@ void main() {
       run(async, const Duration(minutes: 30));
       expect(reminders.where((r) => r.reminderType == 'eyeblink'), isEmpty);
       inCall = false;
-      run(async, const Duration(seconds: 5));
+      run(async, const Duration(seconds: 45));
       expect(reminders.where((r) => r.reminderType == 'eyeblink'), isNotEmpty);
       engine.dispose();
     });

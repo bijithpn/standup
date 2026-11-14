@@ -1,9 +1,10 @@
 import 'package:objectbox/objectbox.dart';
 
+/// Single-row persisted copy of all user settings; JSON-encoded fields hold lists/maps.
 @Entity()
 class SettingsSnapshot {
   @Id(assignable: true)
-  int id; // Will always be 1 for a singleton
+  int id;
 
   bool autoStart;
   String clockFaceStyle;
@@ -34,7 +35,7 @@ class SettingsSnapshot {
   String breakTemplate;
   bool showExercisesInBreak;
   String lastExerciseDate;
-  String shownExercisesTodayJson; // Stored as JSON string
+  String shownExercisesTodayJson;
   bool playMusicDuringBreak;
   bool autoPauseMedia;
 
@@ -45,7 +46,7 @@ class SettingsSnapshot {
   int resetTimerAfterMinutes;
 
   bool workingHoursEnabled;
-  String workingDaysJson; // Stored as JSON string
+  String workingDaysJson;
   String workStartTime;
   String workEndTime;
 
@@ -55,7 +56,7 @@ class SettingsSnapshot {
   bool enableClockOut;
   String clockOutTime;
 
-  String exercisesJson; // Stored as JSON string
+  String exercisesJson;
 
   bool autoSuggestExercises;
   bool useCursorCountdown;

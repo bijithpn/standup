@@ -3,6 +3,7 @@
 // it should only steer how break reminders are displayed (see
 // TimerContextManager.isMeetingActive / BreakController._handleGlobalOverlays).
 import 'package:flutter_test/flutter_test.dart';
+import 'package:clock/clock.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
@@ -39,6 +40,52 @@ class FakeMeetingDetectionService extends MeetingDetectionService {
 }
 
 void main() {
+  test(
+    'health reminders stay quiet through meetings and the post-call grace period',
+    () {
+      var now = DateTime(2026, 11, 13, 10);
+      withClock(Clock(() => now), () {
+        final meeting = FakeMeetingDetectionService();
+        final context = TimerContextManager(
+          settingsRepository: FakeSettingsRepository(
+            const SettingsModel(detectMeetings: true),
+          ),
+          meetingDetectionService: meeting,
+        );
+        expect(context.shouldSuppressHealthReminders, isFalse);
+        meeting.active = true;
+        expect(context.shouldSuppressHealthReminders, isTrue);
+        now = now.add(const Duration(minutes: 45));
+        expect(context.shouldSuppressHealthReminders, isTrue);
+        meeting.active = false;
+        now = now.add(const Duration(seconds: 29));
+        expect(context.shouldSuppressHealthReminders, isTrue);
+        now = now.add(const Duration(seconds: 2));
+        expect(context.shouldSuppressHealthReminders, isFalse);
+      });
+    },
+  );
+  test(
+    'a background video call and presenting both suppress health reminders',
+    () {
+      final smart = SmartDetectionService()
+        ..updateDetectionStatus(true, 'browser');
+      final presentation = FakePresentationDetectionService();
+      final context = TimerContextManager(
+        settingsRepository: FakeSettingsRepository(
+          const SettingsModel(detectVideoCalls: true),
+        ),
+        smartDetectionService: smart,
+        presentationDetectionService: presentation,
+      );
+      expect(context.shouldSuppressHealthReminders, isTrue);
+      smart.updateDetectionStatus(false, null);
+      presentation.presenting = true;
+      expect(context.shouldSuppressHealthReminders, isTrue);
+      smart.dispose();
+    },
+  );
+
   group('meeting/video-call detection never pauses the work timer', () {
     test(
       'isMeetingActive true (calendar meeting) leaves isSmartPauseActive false',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// Flat button with hover/press states used across settings pages.
 class MinimalButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget child;
@@ -34,10 +35,11 @@ class _MinimalButtonState extends State<MinimalButton>
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final bool isDisabled = widget.onPressed == null;
 
     Color defaultBg = widget.isSecondary
-        ? Colors.white.withValues(alpha: 0.05)
+        ? colors.surfaceContainerHigh
         : (widget.backgroundColor ?? AppTheme.primary);
 
     Color activeColor = isDisabled
@@ -64,8 +66,6 @@ class _MinimalButtonState extends State<MinimalButton>
 
     final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
-    // Keyboard users reach the button with Tab and press it with Enter/Space;
-    // screen readers announce it as an enabled/disabled button.
     return Semantics(
       button: true,
       enabled: !isDisabled,
@@ -113,17 +113,18 @@ class _MinimalButtonState extends State<MinimalButton>
               border: _isFocused
                   ? Border.all(color: AppTheme.accentColor, width: 2)
                   : widget.isSecondary
-                  ? Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      width: 1,
-                    )
+                  ? Border.all(color: AppTheme.border, width: 1)
                   : null,
             ),
             child: DefaultTextStyle(
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: widget.isSecondary ? AppTheme.textPrimary : Colors.white,
+                color: widget.isSecondary
+                    ? colors.onSurface
+                    : ((defaultBg.computeLuminance() > 0.179)
+                          ? Colors.black
+                          : Colors.white),
                 fontFamily: 'Inter',
               ),
               child: widget.child,
@@ -135,6 +136,7 @@ class _MinimalButtonState extends State<MinimalButton>
   }
 }
 
+/// Custom slider supporting drag, keyboard nudging and accessibility semantics.
 class MinimalSlider extends StatefulWidget {
   final double value;
   final double min;
@@ -176,8 +178,6 @@ class _MinimalSliderState extends State<MinimalSlider> {
     _interactionValue = null;
   }
 
-  /// Moves the value by [fraction] of the range and commits it, so arrow keys
-  /// and screen-reader increase/decrease behave like a finished drag.
   void _nudge(double fraction) {
     final next = (widget.value + (widget.max - widget.min) * fraction).clamp(
       widget.min,
@@ -255,7 +255,7 @@ class _MinimalSliderState extends State<MinimalSlider> {
                     _updateValue(details.localPosition, width),
                 onTapUp: (_) => _finishInteraction(),
                 child: Container(
-                  height: 24, // Touch target size
+                  height: 24,
                   color: Colors.transparent,
                   child: Center(
                     child: SizedBox(
@@ -266,7 +266,9 @@ class _MinimalSliderState extends State<MinimalSlider> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -323,12 +325,8 @@ class _MinimalSliderState extends State<MinimalSlider> {
   }
 }
 
-/// A tappable region that is reachable by Tab, activated with Enter/Space and
-/// announced by screen readers as a button. Use it instead of a bare
-/// [GestureDetector] for cards, chips and swatches. [selected] is announced
-/// for choice controls; [semanticLabel] is only needed when the child has no
-/// readable text of its own.
-class TapTarget extends StatelessWidget {
+/// Tap wrapper adding pointer cursor, focus and semantics to any child.
+class TapTarget extends StatefulWidget {
   final VoidCallback? onTap;
   final Widget child;
   final bool? selected;
@@ -345,15 +343,22 @@ class TapTarget extends StatelessWidget {
   });
 
   @override
+  State<TapTarget> createState() => _TapTargetState();
+}
+
+class _TapTargetState extends State<TapTarget> {
+  bool _focused = false;
+  @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
+    final enabled = widget.onTap != null;
     return Semantics(
       button: true,
       enabled: enabled,
-      selected: selected,
-      label: semanticLabel,
+      selected: widget.selected,
+      label: widget.semanticLabel,
       child: FocusableActionDetector(
         enabled: enabled,
+        onShowFocusHighlight: (value) => setState(() => _focused = value),
         mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
         shortcuts: const {
           SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
@@ -362,12 +367,27 @@ class TapTarget extends StatelessWidget {
         actions: {
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {
-              onTap?.call();
+              widget.onTap?.call();
               return null;
             },
           ),
         },
-        child: GestureDetector(behavior: behavior, onTap: onTap, child: child),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: _focused
+                ? Border.all(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    width: 2,
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: GestureDetector(
+            behavior: widget.behavior,
+            onTap: widget.onTap,
+            child: widget.child,
+          ),
+        ),
       ),
     );
   }

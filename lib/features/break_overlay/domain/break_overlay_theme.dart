@@ -1,9 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Resolved colors for a break overlay surface. Obtain with
-/// [BreakPalette.of]; templates marked "fixed" in the design spec use their
-/// own colors and ignore this.
+/// Color set every break template reads via BreakPalette.of(context); the named presets back the per-template looks.
 @immutable
 class BreakPalette {
   final Color canvas;
@@ -32,8 +30,8 @@ class BreakPalette {
     canvas: Color(0xFF14181F),
     canvasRaised: Color(0xFF1B2029),
     surface: Color(0xFF1F2530),
-    border: Color(0x1FFFFFFF), // white 12 %
-    track: Color(0x24FFFFFF), // white 14 %
+    border: Color(0x1FFFFFFF),
+    track: Color(0x24FFFFFF),
     textPrimary: Color(0xFFF2F4F7),
     textSecondary: Color(0xFFB4BCC8),
     textMuted: Color(0xFF8A93A1),
@@ -44,16 +42,14 @@ class BreakPalette {
     canvas: Color(0xFFF4F2EE),
     canvasRaised: Color(0xFFFAF9F6),
     surface: Color(0xFFFFFFFF),
-    border: Color(0x1A1C1F24), // ink 10 %
-    track: Color(0x1F1C1F24), // ink 12 %
+    border: Color(0x1A1C1F24),
+    track: Color(0x1F1C1F24),
     textPrimary: Color(0xFF1C1F24),
     textSecondary: Color(0xFF4A515C),
     textMuted: Color(0xFF646B76),
     isDark: false,
   );
 
-  /// Photos are shown over a fixed dark treatment, so this template ignores
-  /// the light/dark theme.
   static const BreakPalette onPhoto = BreakPalette(
     canvas: Color(0xFF1E2A3A),
     canvasRaised: Color(0xFF26364A),
@@ -66,7 +62,6 @@ class BreakPalette {
     isDark: true,
   );
 
-  /// Twilight is always violet, so this ignores the light/dark theme.
   static const BreakPalette twilight = BreakPalette(
     canvas: Color(0xFF1B1530),
     canvasRaised: Color(0xFF281F45),
@@ -79,19 +74,6 @@ class BreakPalette {
     isDark: true,
   );
 
-  static const BreakPalette terminal = BreakPalette(
-    canvas: Color(0xFF0B0F0A),
-    canvasRaised: Color(0xFF121910),
-    surface: Color(0xFF141A12),
-    border: Color(0x33B5CC7A),
-    track: Color(0x33B5CC7A),
-    textPrimary: BreakOverlayTheme.phosphor,
-    textSecondary: Color(0xFFA9BE72),
-    textMuted: Color(0xFF8FA25F),
-    isDark: true,
-  );
-
-  /// A printed page is always light, whatever the theme.
   static const BreakPalette paper = BreakPalette(
     canvas: Color(0xFFF5F3EE),
     canvasRaised: Color(0xFFFAF9F6),
@@ -104,7 +86,6 @@ class BreakPalette {
     isDark: false,
   );
 
-  /// Light text over a landscape, whatever the theme.
   static const BreakPalette field = BreakPalette(
     canvas: Color(0xFF20324A),
     canvasRaised: Color(0xFF2B4258),
@@ -117,7 +98,6 @@ class BreakPalette {
     isDark: true,
   );
 
-  /// The night is always dark, so this ignores the light/dark theme.
   static const BreakPalette night = BreakPalette(
     canvas: Color(0xFF0A0E27),
     canvasRaised: Color(0xFF141A3A),
@@ -130,7 +110,6 @@ class BreakPalette {
     isDark: true,
   );
 
-  /// A sunset is always warm and blue-free, so this ignores the theme.
   static const BreakPalette sunset = BreakPalette(
     canvas: Color(0xFF1A120A),
     canvasRaised: Color(0xFF2A1A0D),
@@ -143,7 +122,6 @@ class BreakPalette {
     isDark: true,
   );
 
-  /// The end of the day is always warm, whatever the theme.
   static const BreakPalette evening = BreakPalette(
     canvas: Color(0xFF140D07),
     canvasRaised: Color(0xFF2E1C0C),
@@ -156,9 +134,7 @@ class BreakPalette {
     isDark: true,
   );
 
-  /// [accent] adjusted so strokes and glyphs stay visible on this palette:
-  /// unchanged on dark, deepened on light (the pastel accents are under 2:1
-  /// on cream).
+  /// Darkens a bright accent on light palettes so it stays readable.
   Color accentOn(Color accent) {
     if (isDark) return accent;
     final hsl = HSLColor.fromColor(accent);
@@ -169,24 +145,13 @@ class BreakPalette {
         .toColor();
   }
 
-  /// The palette for the `overlayThemeMode` setting (`dark`, `light` or
-  /// `system`); [system] is the OS brightness. Unknown values mean dark.
+  /// Resolves the user's overlay appearance setting ('light' / 'system' / otherwise dark) to a palette.
   static BreakPalette forMode(String mode, Brightness system) => switch (mode) {
     'light' => light,
     'system' => system == Brightness.light ? light : dark,
     _ => dark,
   };
 
-  /// The palette in effect: a [BreakPaletteScope] override if one exists,
-  /// otherwise dark.
-  ///
-  /// Templates must read colors from here (or the fixed palettes in
-  /// [BreakOverlayTheme]) and never from `Theme.of(context)`.
-  ///
-  /// This deliberately does not follow `Theme.of(context).brightness`: the
-  /// standalone overlay window runs a bare `MaterialApp`, whose default theme
-  /// is light, and break screens have always been dark. Wrap a subtree in
-  /// `BreakPaletteScope(palette: BreakPalette.light, ...)` to opt in to light.
   static BreakPalette of(BuildContext context) {
     final scoped = context
         .dependOnInheritedWidgetOfExactType<BreakPaletteScope>();
@@ -194,7 +159,7 @@ class BreakPalette {
   }
 }
 
-/// Pins a [BreakPalette] for a subtree, regardless of the ambient theme.
+/// Injects the active palette so descendants can find it with BreakPalette.of.
 class BreakPaletteScope extends InheritedWidget {
   final BreakPalette palette;
 
@@ -208,8 +173,7 @@ class BreakPaletteScope extends InheritedWidget {
   bool updateShouldNotify(BreakPaletteScope old) => palette != old.palette;
 }
 
-/// Marks a subtree as a static gallery thumbnail: animated templates park
-/// their loops at a representative mid-break frame and run no tickers.
+/// Marks a subtree as a settings preview so templates can skip side effects like timers and audio.
 class BreakPreviewScope extends InheritedWidget {
   const BreakPreviewScope({super.key, required super.child});
 
@@ -220,8 +184,7 @@ class BreakPreviewScope extends InheritedWidget {
   bool updateShouldNotify(BreakPreviewScope old) => false;
 }
 
-/// Tells templates the break has finished and the overlay is holding its
-/// final state before fading out (see `BreakTimerManager.completing`).
+/// Signals the overlay is in its finishing state so templates can play their exit animation.
 class BreakCompletionScope extends InheritedWidget {
   final bool completing;
 
@@ -242,38 +205,22 @@ class BreakCompletionScope extends InheritedWidget {
       completing != old.completing;
 }
 
-/// Central design tokens for all break overlay templates.
-/// Every template and overlay widget must reference these constants
-/// instead of hardcoding magic colors, font sizes, or padding values.
+/// Shared design tokens (accents, radii, type styles) for the break overlay templates.
 abstract final class BreakOverlayTheme {
-  // ── Accents (template identity; hues are kept from the original design) ──
   static const Color eyeRest = Color(0xFF7EC8E3);
   static const Color recovery = Color(0xFF86EFAC);
   static const Color amber = Color(0xFFD4A55A);
   static const Color nature = Color(0xFF74C69D);
   static const Color mint = Color(0xFF6EE7B7);
-  static const Color periwinkle = Color(0xFFA5B4FC);
   static const Color sage = Color(0xFF5BB898);
   static const Color sky = Color(0xFF93C5FD);
   static const Color dusk = Color(0xFFC4B5FD);
-  static const Color phosphor = Color(0xFFB5CC7A);
-
-  /// Accent at 18 % alpha, for halos.
-  static Color accentGlow(Color c) => c.withValues(alpha: 0.18);
-
-  // ── Spacing / radii ──
-  static const double space1 = 4;
-  static const double space2 = 8;
-  static const double space3 = 16;
-  static const double space4 = 24;
-  static const double space5 = 40;
 
   static const double radiusSm = 8;
   static const double radiusMd = 14;
   static const double radiusLg = 22;
   static const double radiusPill = 999;
 
-  // ── Typography ──
   static const String fontFamily = 'Inter';
   static const String monoFamily = 'JetBrains Mono';
   static const String serifFamily = 'Source Serif 4';
@@ -282,7 +229,7 @@ abstract final class BreakOverlayTheme {
   static const TextStyle hero = TextStyle(
     fontFamily: fontFamily,
     fontSize: 64,
-    fontWeight: FontWeight.w200,
+    fontWeight: FontWeight.w300,
     letterSpacing: -2,
     height: 1.0,
     fontFeatures: tabular,
@@ -297,7 +244,7 @@ abstract final class BreakOverlayTheme {
   static const TextStyle title = TextStyle(
     fontFamily: fontFamily,
     fontSize: 20,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     fontFeatures: tabular,
   );
   static const TextStyle body = TextStyle(
@@ -313,25 +260,19 @@ abstract final class BreakOverlayTheme {
     letterSpacing: 0.6,
   );
 
-  /// Serif for Haiku Card and Paper Light (bundled Source Serif 4).
   static const TextStyle serif = TextStyle(
     fontFamily: serifFamily,
     fontFamilyFallback: ['Georgia', 'Times New Roman', 'Times', 'serif'],
   );
 
-  // ── Depth ──
   static const List<BoxShadow> surfaceShadow = [
-    BoxShadow(color: Color(0x47000000), blurRadius: 32, offset: Offset(0, 12)),
+    BoxShadow(color: Color(0x24000000), blurRadius: 24, offset: Offset(0, 8)),
   ];
   static const double glassBlur = 20;
 
-  // ── Skip button placement ──
   static const double skipBottom = 36.0;
   static const double skipRight = 40.0;
 
-  /// Resolves the accent color for [templateId], honoring a user-pinned
-  /// override from `SettingsModel.templateAccentOverrides` when present and
-  /// falling back to the template's built-in [fallback] accent otherwise.
   static Color resolveAccent(
     Map<String, int> overrides,
     String templateId,
@@ -342,7 +283,7 @@ abstract final class BreakOverlayTheme {
   }
 }
 
-/// Motion tokens shared by every template.
+/// Shared durations, curves and the reduced-motion check for overlay animations.
 abstract final class BreakMotion {
   static const Duration fast = Duration(milliseconds: 160);
   static const Duration medium = Duration(milliseconds: 320);
@@ -358,7 +299,6 @@ abstract final class BreakMotion {
     damping: 18,
   );
 
-  /// True when the OS asks apps to minimise motion.
   static bool reduced(BuildContext context) =>
       MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 }

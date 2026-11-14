@@ -20,6 +20,7 @@ import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 
+/// Sidebar entry mapping a label/icon to a navigation section.
 class _NavItem {
   final String label;
   final IconData icon;
@@ -46,6 +47,7 @@ class _QuitIntent extends Intent {
   const _QuitIntent();
 }
 
+/// Main dashboard shell: sidebar plus page switcher, with keyboard shortcuts and responsive layouts.
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
 
@@ -148,8 +150,6 @@ class _MainLayoutState extends State<MainLayout> {
 
   List<_NavItem> get _allItems => [..._mainNavItems, ..._bottomNavItems];
 
-  /// Sections that were merged into another screen; saved or deep-linked
-  /// names keep working.
   static const Map<String, String> _legacySections = {
     'Exercises': 'Breaks & Profiles',
     'Wellness Library': 'Breaks & Profiles',
@@ -182,6 +182,7 @@ class _MainLayoutState extends State<MainLayout> {
     super.dispose();
   }
 
+  // Lets other code (e.g. notifications) switch sections through AppNavigationService.
   void _handleExternalNavigation() {
     final section = _canonicalSection(_navigationService.selectedSection.value);
     final index = _allItems.indexWhere((item) => item.section == section);
@@ -399,7 +400,7 @@ class _MainLayoutState extends State<MainLayout> {
       transitionBuilder: (child, animation) {
         final slideAnimation =
             Tween<Offset>(
-              begin: const Offset(0.0, 0.03), // premium vertical slide up
+              begin: const Offset(0.0, 0.03),
               end: Offset.zero,
             ).animate(
               CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),

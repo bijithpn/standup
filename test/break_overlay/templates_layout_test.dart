@@ -3,7 +3,6 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/shared_ove
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/overlay_chrome.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:clock/clock.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,7 +12,7 @@ void main() {
   setUpAll(setUpBreakTestEnvironment);
 
   group('extreme window sizes do not overflow', () {
-    for (final id in ['hud', 'clock_face', 'mono_time', 'haiku_card']) {
+    for (final id in ['hud', 'clock_face', 'haiku_card']) {
       for (final size in const [Size(320, 200), Size(3840, 2160)]) {
         testWidgets('$id @ ${size.width.toInt()}x${size.height.toInt()}', (
           tester,
@@ -74,46 +73,6 @@ void main() {
       final close = tester.getRect(find.byTooltip('Skip break'));
       expect(clock.overlaps(pill), isFalse);
       expect(clock.overlaps(close), isFalse);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-  });
-
-  group('pulse_dot hover (real mouse pointer)', () {
-    dynamic painter(WidgetTester tester) => tester
-        .widget<CustomPaint>(
-          find.byWidgetPredicate(
-            (w) =>
-                w is CustomPaint &&
-                w.painter.runtimeType.toString() == '_PulsePainter',
-          ),
-        )
-        .painter;
-
-    testWidgets('the core leans toward the pointer and returns', (
-      tester,
-    ) async {
-      await pumpBreakTemplate(tester, 'pulse_dot');
-      final centre = tester.getCenter(
-        find.byWidgetPredicate(
-          (w) =>
-              w is CustomPaint &&
-              w.painter.runtimeType.toString() == '_PulsePainter',
-        ),
-      );
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await mouse.addPointer(location: centre + const Offset(300, 0));
-      addTearDown(mouse.removePointer);
-
-      await mouse.moveTo(centre + const Offset(40, 0));
-      await tester.pump(const Duration(milliseconds: 16)); // starts the spring
-      await tester.pump(const Duration(seconds: 1));
-      expect(painter(tester).hoverX.value, greaterThan(1.0));
-      expect(painter(tester).hoverX.value, lessThanOrEqualTo(6.5));
-
-      await mouse.moveTo(centre + const Offset(300, 0));
-      await tester.pump(const Duration(milliseconds: 16));
-      await tester.pump(const Duration(seconds: 1));
-      expect(painter(tester).hoverX.value, closeTo(0, 0.2));
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

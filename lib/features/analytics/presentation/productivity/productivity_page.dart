@@ -16,7 +16,6 @@ import 'package:breakmate/features/analytics/segments/productivity_summary.dart'
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// How much of the past the page is showing.
 enum ProductivityRange {
   today('Today', 1),
   week('7 days', 7),
@@ -28,12 +27,7 @@ enum ProductivityRange {
   final int days;
 }
 
-/// Where the day goes.
-///
-/// One surface rather than a page per question: the point is to answer "how did
-/// I spend today, and what should I pay attention to" in a single read, so the
-/// overview, the timeline, the applications and the findings stack in the order
-/// someone would actually ask them.
+/// Segment-based productivity screen: range selector, overview, timeline, app list and insights; loads from ProductivityRepository and offers to enable tracking if off.
 class ProductivityPage extends StatefulWidget {
   const ProductivityPage({
     super.key,
@@ -43,13 +37,9 @@ class ProductivityPage extends StatefulWidget {
     this.range,
   });
 
-  /// When true the page renders only its content (no scaffold, header or own
-  /// scrolling) so it can sit inside the Statistics screen, which supplies
-  /// the period selector through [range].
   final bool embedded;
   final ProductivityRange? range;
 
-  /// Injected in tests; resolved from the service locator otherwise.
   final ProductivityRepository? repository;
   final SettingsRepository? settingsRepository;
 
@@ -89,8 +79,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
     _repository?.addListener(_onDataChanged);
     _settings?.addListener(_onSettingsChanged);
     _repository?.refreshToday();
-    // Keeps the numbers current while the screen is open, since a long stretch
-    // in one app is only written when it ends.
+
     _refreshTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) => _repository?.refreshToday(),
@@ -115,8 +104,6 @@ class _ProductivityPageState extends State<ProductivityPage> {
     if (next != null && next != _range) _selectRange(next);
   }
 
-  // Settings can finish loading (or change from another screen) after the
-  // first build; without this the page kept showing "tracking disabled".
   void _onSettingsChanged() {
     if (mounted) setState(() {});
   }
@@ -125,6 +112,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
     if (mounted) _load();
   }
 
+  // Re-run on range change; summary and insights are computed off the UI path where large.
   Future<void> _load() async {
     final repository = _repository;
     if (repository == null) {
@@ -174,8 +162,6 @@ class _ProductivityPageState extends State<ProductivityPage> {
     final repository = _repository;
     if (repository == null) return;
 
-    // Only the selected day's stretches, so the session list matches the
-    // numbers above it rather than silently spanning the whole range.
     final segments = repository.appSegments(_todayKey, app.appKey);
     final history = <String, int>{};
     final days = _rangeSummary?.days ?? const <DailyProductivitySummary>[];

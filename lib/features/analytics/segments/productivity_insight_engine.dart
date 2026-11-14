@@ -2,33 +2,13 @@ import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/features/analytics/segments/productivity_insight.dart';
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 
-/// Derives findings from recorded activity.
-///
-/// Pure functions over already-aggregated summaries, so this runs anywhere and
-/// is testable without a database. Two rules hold throughout:
-///
-/// * Every finding is computed from real recorded time. Nothing is inferred to
-///   fill a gap, and a thin week produces fewer insights rather than vaguer
-///   ones.
-/// * A finding that cannot clear [InsightEvidence.minimumDays] is not produced
-///   at all. The dashboard says it is still learning, which is true.
-
-/// The hour the afternoon is taken to begin, for before/after comparisons.
 const int kAfternoonStartHour = 13;
 
-/// A change smaller than this is noise, not a pattern worth reporting.
 const double kMeaningfulChangeRatio = 0.2;
 
-/// How much of the day must be active before the split is worth comparing.
 const int kMinComparableSeconds = 30 * 60;
 
-/// Generates every finding the data supports, most useful first.
-///
-/// [range] carries the history the patterns are drawn from; [today] is the day
-/// being looked at, used for the observations that are about right now.
-///
-/// [focusGoalSeconds] is the daily focus goal, and [todayTimeline] the day's
-/// stretches in order; both are optional and simply unlock more findings.
+/// Runs today-only rules plus multi-day pattern rules (needs enough active days); sorted by confidence, then priority, then evidence.
 List<ProductivityInsight> generateInsights({
   required RangeProductivitySummary range,
   DailyProductivitySummary? today,
@@ -38,8 +18,6 @@ List<ProductivityInsight> generateInsights({
   final days = range.activeDayCount;
   final insights = <ProductivityInsight>[];
 
-  // Today's observations stand on today's own data, so they do not need the
-  // multi-day history the patterns do.
   if (today != null && today.hasActivity) {
     final busiest = _busiestApplication(today);
     if (busiest != null) insights.add(busiest);
@@ -78,11 +56,7 @@ List<ProductivityInsight> generateInsights({
     if (breaks != null) insights.add(breaks);
   }
 
-  // Strongest evidence first, so a hedged possibility never sits above a
-  // finding the data actually supports.
   insights.sort((left, right) {
-    // Evidence strength always leads, so a possibility never outranks a
-    // measurement; priority then puts the actionable findings first.
     final byConfidence = left.confidence.index.compareTo(
       right.confidence.index,
     );
@@ -95,11 +69,8 @@ List<ProductivityInsight> generateInsights({
   return insights;
 }
 
-/// Whether there is enough recorded activity to say anything at all.
 bool hasEnoughDataForInsights(RangeProductivitySummary range) =>
     InsightEvidence.isSufficient(range.activeDayCount);
-
-// ── Today ───────────────────────────────────────────────────────────────────
 
 ProductivityInsight? _busiestApplication(DailyProductivitySummary today) {
   final app = today.mostUsedApp;
@@ -118,7 +89,7 @@ ProductivityInsight? _busiestApplication(DailyProductivitySummary today) {
         '${(share * 100).round()}% of your active time, '
         'across ${app.sessionCount} '
         '${app.sessionCount == 1 ? 'session' : 'sessions'}.',
-    // A single day's own total is a measurement, not an extrapolation.
+
     confidence: InsightConfidence.high,
     evidenceDayCount: 1,
     supportingData: <String, Object>{
@@ -183,7 +154,6 @@ ProductivityInsight? _fragmentedDay(DailyProductivitySummary today) {
   );
 }
 
-/// Working a long time with no break at all today.
 ProductivityInsight? _noBreakYet(DailyProductivitySummary today) {
   if (today.breakSeconds > 0) return null;
   if (today.activeSeconds < 90 * 60) return null;
@@ -205,7 +175,6 @@ ProductivityInsight? _noBreakYet(DailyProductivitySummary today) {
   );
 }
 
-/// How long the longest unbroken stretch of work was.
 ProductivityInsight? _longestStretch(
   DailyProductivitySummary today,
   List<TimelineEntry>? timeline,
@@ -237,7 +206,6 @@ ProductivityInsight? _longestStretch(
     );
   }
 
-  // Plenty of time at the computer, but never more than a short burst at once.
   if (today.activeSeconds >= 60 * 60 && longest < 20 * 60) {
     return ProductivityInsight(
       id: 'today-short-bursts',
@@ -258,7 +226,6 @@ ProductivityInsight? _longestStretch(
   return null;
 }
 
-/// How far today is from the daily focus goal.
 ProductivityInsight? _goalProgress(
   DailyProductivitySummary today,
   int? goalSeconds,
@@ -304,7 +271,6 @@ ProductivityInsight? _goalProgress(
   );
 }
 
-/// Today set against the user's own usual day.
 ProductivityInsight? _comparedWithUsual(
   DailyProductivitySummary today,
   RangeProductivitySummary range,
@@ -349,12 +315,6 @@ ProductivityInsight? _comparedWithUsual(
   );
 }
 
-// ── Patterns across days ────────────────────────────────────────────────────
-
-/// The stretch of the day that consistently holds the most active time.
-///
-/// Averaged across days rather than summed, so a single long Tuesday cannot
-/// pass itself off as a habit.
 ProductivityInsight? _focusWindow(RangeProductivitySummary range) {
   final activeDays = range.days.where((day) => day.hasActivity).toList();
   if (!InsightEvidence.isSufficient(activeDays.length)) return null;
@@ -366,8 +326,6 @@ ProductivityInsight? _focusWindow(RangeProductivitySummary range) {
     }
   }
 
-  // A three-hour window: long enough to be a working block, short enough to be
-  // advice rather than a description of the whole day.
   const windowHours = 3;
   var bestStart = -1;
   var bestSeconds = 0.0;
@@ -382,8 +340,6 @@ ProductivityInsight? _focusWindow(RangeProductivitySummary range) {
     }
   }
 
-  // Under twenty minutes a day in the best window means there is no shape to
-  // the day yet, only scattered minutes.
   if (bestStart < 0 || bestSeconds < 20 * 60) return null;
 
   final confidence = InsightEvidence.forDays(activeDays.length);
@@ -408,12 +364,10 @@ ProductivityInsight? _focusWindow(RangeProductivitySummary range) {
   );
 }
 
-/// Turns the focus window into something to do about it.
 List<ProductivityInsight> _focusOpportunity(
   RangeProductivitySummary range,
   ProductivityInsight window,
 ) {
-  // Only worth suggesting once the window is trustworthy enough to plan around.
   if (window.confidence == InsightConfidence.low) {
     return const <ProductivityInsight>[];
   }
@@ -440,7 +394,6 @@ List<ProductivityInsight> _focusOpportunity(
   ];
 }
 
-/// Whether attention fragments after lunch, compared with the morning.
 ProductivityInsight? _afternoonSwitching(RangeProductivitySummary range) {
   final activeDays = range.days.where((day) => day.hasActivity).toList();
   if (!InsightEvidence.isSufficient(activeDays.length)) return null;
@@ -450,7 +403,7 @@ ProductivityInsight? _afternoonSwitching(RangeProductivitySummary range) {
   for (final day in activeDays) {
     final morning = day.switchRateBetween(0, kAfternoonStartHour);
     final afternoon = day.switchRateBetween(kAfternoonStartHour, 24);
-    // Only days with enough of both halves can contribute to the comparison.
+
     if (morning == null || afternoon == null) continue;
     mornings.add(morning);
     afternoons.add(afternoon);
@@ -463,9 +416,6 @@ ProductivityInsight? _afternoonSwitching(RangeProductivitySummary range) {
 
   final confidence = InsightEvidence.forDays(mornings.length);
 
-  // An undisturbed morning is the most interesting version of this finding,
-  // and also the one a percentage cannot express — there is nothing to divide
-  // by. Report the two rates directly instead of discarding the comparison.
   if (morningRate <= 0) {
     if (afternoonRate < 1) return null;
     return ProductivityInsight(
@@ -513,7 +463,6 @@ ProductivityInsight? _afternoonSwitching(RangeProductivitySummary range) {
   );
 }
 
-/// How much of the working day is actually spent on breaks.
 ProductivityInsight? _breakRhythm(RangeProductivitySummary range) {
   final activeDays = range.days.where((day) => day.hasActivity).toList();
   if (!InsightEvidence.isSufficient(activeDays.length)) return null;
@@ -546,8 +495,6 @@ ProductivityInsight? _breakRhythm(RangeProductivitySummary range) {
     },
   );
 }
-
-// ── Formatting ──────────────────────────────────────────────────────────────
 
 String _formatDuration(int seconds) {
   final totalMinutes = seconds ~/ 60;

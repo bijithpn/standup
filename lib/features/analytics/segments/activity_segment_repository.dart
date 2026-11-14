@@ -5,14 +5,7 @@ import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/objectbox.g.dart';
 
-/// Stores and reads the activity timeline.
-///
-/// Writes are batched: the tracker produces a segment every time the active app
-/// changes, and committing each one individually would mean a transaction every
-/// few seconds all day. Segments are buffered and flushed together instead.
-///
-/// Every method is safe to call when storage is unavailable — productivity
-/// tracking failing must never take BreakMate down with it.
+/// Buffers segments in memory and batch-writes them to ObjectBox; backs the activity timeline and retention pruning.
 class ActivitySegmentRepository extends ChangeNotifier {
   ActivitySegmentRepository({
     required StorageService storage,
@@ -24,34 +17,27 @@ class ActivitySegmentRepository extends ChangeNotifier {
   final StorageService _storage;
   final AppLogger _logger;
 
-  /// How many segments accumulate before a write. A context switch every few
-  /// seconds is the busy case, so this is a handful of minutes of activity.
   final int flushThreshold;
 
   final List<ActivitySegment> _pending = <ActivitySegment>[];
 
   Box<ActivitySegment>? get _box => _storage.activitySegmentBox;
 
-  /// Segments recorded but not yet written. Visible for tests.
   @visibleForTesting
   int get pendingCount => _pending.length;
 
-  /// Queues [segment] for storage.
   void record(ActivitySegment segment) {
     if (!segment.isValid) return;
     _pending.add(segment);
     if (_pending.length >= flushThreshold) flush();
   }
 
-  /// Writes everything buffered. Called on the flush timer, when tracking
-  /// stops, and before the app shuts down.
   void flush() {
     if (_pending.isEmpty) return;
 
     final box = _box;
     if (box == null) {
-      // Storage is not open yet. Hold the segments rather than dropping them,
-      // but do not let the buffer grow without bound if it never opens.
+      // DB unavailable: keep only the newest 500 so memory stays bounded.
       if (_pending.length > 500) {
         _pending.removeRange(0, _pending.length - 500);
       }
@@ -67,7 +53,6 @@ class ActivitySegmentRepository extends ChangeNotifier {
     }
   }
 
-  /// Every segment on [date] (`YYYY-MM-DD`), oldest first.
   List<ActivitySegment> segmentsForDate(String date) {
     final box = _box;
     if (box == null) return const <ActivitySegment>[];
@@ -88,7 +73,6 @@ class ActivitySegmentRepository extends ChangeNotifier {
     }
   }
 
-  /// Every segment between [from] and [to] inclusive, oldest first.
   List<ActivitySegment> segmentsBetween(DateTime from, DateTime to) {
     final box = _box;
     if (box == null) return const <ActivitySegment>[];
@@ -124,7 +108,6 @@ class ActivitySegmentRepository extends ChangeNotifier {
     }
   }
 
-  /// The days that have any recorded activity, newest first.
   List<String> recordedDates() {
     final box = _box;
     if (box == null) return const <String>[];
@@ -141,11 +124,6 @@ class ActivitySegmentRepository extends ChangeNotifier {
     }
   }
 
-  /// Applies the user's retention window, at most once a day.
-  ///
-  /// [retentionDays] of 0 means keep everything. Self-throttling because this
-  /// is called from the flush timer, and a delete query every 30 seconds to
-  /// find nothing is pure waste.
   void applyRetention(int retentionDays, {DateTime? now}) {
     if (retentionDays <= 0) return;
 
@@ -165,9 +143,6 @@ class ActivitySegmentRepository extends ChangeNotifier {
 
   String? _lastRetentionDay;
 
-  /// Deletes segments that started before [cutoff].
-  ///
-  /// Returns how many were removed.
   int pruneBefore(DateTime cutoff) {
     final box = _box;
     if (box == null) return 0;
@@ -196,8 +171,6 @@ class ActivitySegmentRepository extends ChangeNotifier {
     }
   }
 
-  /// Deletes the entire activity history. Used by the "clear history" action,
-  /// which is destructive and always confirmed before it reaches here.
   int clearAll() {
     _pending.clear();
     final box = _box;
@@ -214,8 +187,6 @@ class ActivitySegmentRepository extends ChangeNotifier {
     }
   }
 
-  /// How many segments are stored. Used by the privacy screen to tell the user
-  /// what "clear history" would actually delete.
   int count() {
     final box = _box;
     if (box == null) return 0;

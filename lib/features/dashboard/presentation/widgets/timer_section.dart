@@ -1,3 +1,6 @@
+import 'package:intl/intl.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
@@ -30,6 +33,13 @@ class TimerSection extends StatelessWidget {
         if (isBreak) statusText = 'Break active';
 
         final nextReason = _nextBreakReason(engine, settingsRepo);
+        final meetingEnd = _activeMeetingEnd();
+        final scheduleResume =
+            isPaused &&
+                !engine.isManuallyPaused &&
+                !engine.contextManager.isWithinWorkingHours()
+            ? engine.contextManager.nextWorkingTime()
+            : null;
 
         final totalSeconds = isBreak
             ? (engine.activeBreak?.durationSeconds ??
@@ -157,13 +167,40 @@ class TimerSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                isPaused ? controller.pauseReason : nextReason,
+                isPaused || engine.contextManager.isMeetingActive()
+                    ? controller.pauseReason
+                    : nextReason,
                 style: TextStyle(
                   fontSize: 13,
                   height: 1.45,
                   color: AppTheme.textSecondary,
                 ),
               ),
+              if (scheduleResume != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Working hours resume ${DateFormat('EEE, h:mm a').format(scheduleResume)}.',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+              if (controller.snoozeResumeAt != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Snooze ends at ${DateFormat.jm().format(controller.snoozeResumeAt!)}. Next break around ${DateFormat.jm().format(controller.snoozeResumeAt!.add(engine.timeUntilNextShortBreak))} if working.',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+              if (isPaused || engine.contextManager.isMeetingActive())
+                TextButton(
+                  onPressed: () => sl<AppNavigationService>().openSection(
+                    engine.contextManager.isWithinWorkingHours()
+                        ? 'Intelligent Detection'
+                        : 'General',
+                  ),
+                  child: const Text('Check schedule or detection settings'),
+                ),
               const SizedBox(height: 22),
               Wrap(
                 spacing: 10,
@@ -195,11 +232,41 @@ class TimerSection extends StatelessWidget {
                       semanticsLabel: 'Start break immediately',
                     ),
                   ],
-                  if (isPaused)
-                    _SnoozeButton(
-                      onTap: () => controller.snooze(minutes: 15),
-                      label: 'Pause 15 more min',
+                  if (!isBreak && !controller.isFocusSessionActive) ...[
+                    PopupMenuButton<int>(
+                      tooltip: 'Snooze reminders',
+                      onSelected: (minutes) {
+                        if (minutes == -1 && meetingEnd != null) {
+                          controller.snoozeUntil(meetingEnd);
+                        } else {
+                          controller.snooze(minutes: minutes);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        for (final minutes in [2, 5, 15])
+                          PopupMenuItem(
+                            value: minutes,
+                            child: Text(
+                              '$minutes minutes · resume ${DateFormat.jm().format(DateTime.now().add(Duration(minutes: minutes)))}',
+                            ),
+                          ),
+                        if (meetingEnd != null)
+                          PopupMenuItem(
+                            value: -1,
+                            child: Text(
+                              'After this meeting · ${DateFormat.jm().format(meetingEnd)}',
+                            ),
+                          ),
+                      ],
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Text('Snooze ▾'),
+                      ),
                     ),
+                  ],
                 ],
               ),
             ],
@@ -223,7 +290,7 @@ class TimerSection extends StatelessWidget {
     if (conflict != null) {
       final minutes = conflict.start.difference(DateTime.now()).inMinutes;
       if (minutes <= 0) {
-        return 'Calendar conflict: a meeting is active, so breaks can wait until it ends.';
+        return 'A calendar event is active. If meeting detection is enabled, breaks use quiet reminders.';
       }
       return 'Calendar conflict in ${minutes}m. Take a short reset before it starts.';
     }
@@ -231,6 +298,21 @@ class TimerSection extends StatelessWidget {
       return 'Quiet mode is on, so BreakMate will keep interruptions restrained.';
     }
     return 'Next break follows your ${settings.shortBreakIntervalMinutes}-minute focus interval.';
+  }
+
+  DateTime? _activeMeetingEnd() {
+    final now = DateTime.now();
+    final events =
+        (calendarEvents ?? <CalendarEvent>[])
+            .where((e) => !e.isAllDay && e.end.isAfter(now))
+            .toList()
+          ..sort((a, b) => a.start.compareTo(b.start));
+    DateTime? end;
+    for (final event in events) {
+      if (event.start.isAfter(end ?? now)) break;
+      if (end == null || event.end.isAfter(end)) end = event.end;
+    }
+    return end;
   }
 
   CalendarEvent? _nextCalendarConflict() {
@@ -287,7 +369,7 @@ class _PrimaryButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isPrimary ? Colors.white : AppTheme.textPrimary,
+                color: isPrimary ? AppTheme.onAccent : AppTheme.textPrimary,
               ),
               const SizedBox(width: 8),
               Text(
@@ -295,38 +377,11 @@ class _PrimaryButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isPrimary ? Colors.white : AppTheme.textPrimary,
+                  color: isPrimary ? AppTheme.onAccent : AppTheme.textPrimary,
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SnoozeButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final String label;
-
-  const _SnoozeButton({required this.onTap, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceElevated,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
         ),
       ),
     );

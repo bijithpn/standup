@@ -1,10 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:breakmate/core/services/health_reminder_copy.dart';
+import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_start_warning_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
 
+/// Renders short reminders and the pre-break warning: break-start card, full poster, or a minimal pill depending on type and context.
 class QuickReminderOverlay extends StatefulWidget {
   final String? reminderType;
   final String overlayType;
@@ -14,11 +15,6 @@ class QuickReminderOverlay extends StatefulWidget {
   final ValueNotifier<int>? remainingSecondsNotifier;
   final VoidCallback? onSkip;
 
-  /// Whether it's safe to show the full-screen [PosterReminderOverlay]
-  /// instead of the small translucent pill. Defaults to `false` so every
-  /// existing caller keeps today's pill-only behavior unless it explicitly
-  /// opts in after checking meeting/presentation state (see
-  /// `poster_reminder_gate.dart`).
   final bool allowFullPoster;
 
   const QuickReminderOverlay({
@@ -38,8 +34,7 @@ class QuickReminderOverlay extends StatefulWidget {
 }
 
 class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
-  // Picked once per showing (and again if the reminder type changes) so the
-  // wording varies between reminders without flickering while one is visible.
+  // Re-rolled per reminder type so the pill wording varies between reminders.
   int _wordingSeed = Random().nextInt(1 << 30);
 
   @override
@@ -85,18 +80,18 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
             'hydration' => Icons.water_drop_rounded,
             'stretch' => Icons.self_improvement_rounded,
             'standup' => Icons.directions_walk_rounded,
-            _ when HealthReminderCopy.isCustom(reminderType) =>
+            _ when HealthReminderMessages.isCustom(reminderType) =>
               Icons.notifications_active_rounded,
             _ => Icons.remove_red_eye_rounded,
           };
     final pillText = isMeetingBreak
         ? 'Break ready after your meeting'
-        : HealthReminderCopy.pill(reminderType, Random(_wordingSeed));
+        : HealthReminderMessages.pill(reminderType, Random(_wordingSeed));
 
     if (allowFullPoster) {
       final posterText = isMeetingBreak
           ? 'Break ready after your meeting!'
-          : HealthReminderCopy.poster(reminderType);
+          : HealthReminderMessages.poster(reminderType);
 
       return PosterReminderOverlay(
         icon: icon,
@@ -135,26 +130,34 @@ class _MinimalReminderPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contrast = MediaQuery.highContrastOf(context);
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1;
     return Container(
       constraints: const BoxConstraints(maxWidth: 320),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.36),
+        color: Colors.black.withValues(alpha: contrast ? 1 : 0.36),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: contrast ? 1 : 0.12),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white.withValues(alpha: 0.86), size: 20),
+          Icon(
+            icon,
+            color: Colors.white.withValues(alpha: contrast ? 1 : 0.86),
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Flexible(
             child: Text(
               text,
-              maxLines: 1,
+              maxLines: largeText ? 3 : 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.88),
+                color: Colors.white.withValues(alpha: contrast ? 1 : 0.88),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Inter',

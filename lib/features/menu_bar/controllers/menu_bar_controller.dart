@@ -63,6 +63,12 @@ class MenuBarController {
       case 'focus_end':
         breakController.endFocusSession(completed: false);
         break;
+      case 'snooze_2':
+        breakController.snooze(minutes: 2);
+        break;
+      case 'snooze_5':
+        breakController.snooze(minutes: 5);
+        break;
       case 'snooze_15':
         breakController.snooze(minutes: 15);
         break;

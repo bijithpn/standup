@@ -1,3 +1,7 @@
+import 'settings_group.dart';
+import 'advanced_settings.dart';
+import 'accessibility_settings.dart';
+import 'weekly_schedule_editor.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/features/settings/widgets/menu_bar_mode_picker.dart';
 import 'dart:io' show Platform;
@@ -11,6 +15,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 
+/// Settings > General: launch at startup, menu-bar display, session resume, quiet-mode presets and global hotkey.
 class GeneralSection extends StatelessWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
@@ -27,37 +32,40 @@ class GeneralSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionHeader('Application'),
-        buildCard([
-          _buildLaunchAtStartup(context),
-          divider(),
-          _buildMenuBarDisplay(),
-          // divider(),
-          // _buildStrictMode(),
-          divider(),
-          _buildSessionResume(),
-          divider(),
-          _buildQuietModePresets(),
-          divider(),
-          _buildGlobalHotkey(),
-        ]),
-        const SizedBox(height: 48),
-        sectionHeader('Idle & Inactivity'),
-        const SizedBox(height: 24),
-        buildCard([_buildPauseTimer(), divider(), _buildResetTimer()]),
-        const SizedBox(height: 48),
+        SettingsGroup(
+          children: [_buildLaunchAtStartup(context), _buildMenuBarDisplay()],
+        ),
+        const SizedBox(height: 8),
+
         sectionHeader('Working Hours'),
-        const SizedBox(height: 24),
-        buildCard([
-          _buildWorkingHoursToggle(),
-          if (settings.workingHoursEnabled) ...[
-            divider(),
-            _buildDaysToggle(),
-            divider(),
-            _buildTimeSelector('Start Time', settings.workStartTime),
-            divider(),
-            _buildTimeSelector('End Time', settings.workEndTime),
+        SettingsGroup(
+          children: [
+            _buildWorkingHoursToggle(),
+            if (settings.workingHoursEnabled) ...[
+              _buildDaysToggle(),
+              _buildTimeSelector('Start Time', settings.workStartTime),
+              _buildTimeSelector('End Time', settings.workEndTime),
+              WeeklyScheduleEditor(settings: settings, onSave: onSave),
+            ],
           ],
-        ]),
+        ),
+        AccessibilitySettings(settings: settings, onSave: onSave),
+        AdvancedSettings(
+          subtitle:
+              'Session recovery, quiet presets, hotkeys and idle behavior',
+          children: [
+            _buildSessionResume(),
+            divider(),
+            _buildQuietModePresets(),
+            divider(),
+            _buildGlobalHotkey(),
+            const SizedBox(height: 16),
+            sectionHeader('Idle & Inactivity'),
+            _buildPauseTimer(),
+            divider(),
+            _buildResetTimer(),
+          ],
+        ),
       ],
     );
   }
@@ -84,7 +92,7 @@ class GeneralSection extends StatelessWidget {
             return;
           }
         } catch (_) {}
-        // Couldn't change it: put the toggle back and tell the user.
+
         onSave(settings.copyWith(autoStart: !v));
         if (context.mounted) {
           await showCupertinoDialog<void>(
@@ -109,7 +117,6 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-  // Windows tray uses a static .ico, so only the modes that work there show.
   static final _menuBarModes = Platform.isWindows
       ? const {'companion': 'Companion', 'countdown': 'Countdown timer'}
       : const {
@@ -159,19 +166,6 @@ class GeneralSection extends StatelessWidget {
       ],
     );
   }
-
-  // Widget _buildStrictMode() {
-  //   return buildListRow(
-  //     'Strict Mode',
-  //     'No skipping breaks',
-  //     settings.strictMode,
-  //     CupertinoIcons.lock_shield,
-  //     (v) {
-  //       onSave(settings.copyWith(strictMode: v));
-  //       sl<TrayManagerService>().triggerActionAnimation();
-  //     },
-  //   );
-  // }
 
   Widget _buildQuietModePresets() {
     return buildListRow(

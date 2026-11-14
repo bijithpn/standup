@@ -2,13 +2,6 @@ import 'dart:ui' show Color;
 
 import 'package:breakmate/features/companion/avatar3d/avatar_shape.dart';
 
-/// The authored description of one companion: a handful of 3D primitives, a
-/// face, a camera and a light.
-///
-/// This mirrors the editor's own data model so scenes exported from it drop
-/// straight in. Everything here is plain data — no Flutter bindings — so it can
-/// be built on a background isolate.
-
 Color? _parseColor(Object? value) {
   if (value is! String) return null;
   var hex = value.startsWith('#') ? value.substring(1) : value;
@@ -30,7 +23,6 @@ Color? _parseColor(Object? value) {
 double _toDouble(Object? value, double fallback) =>
     value is num ? value.toDouble() : fallback;
 
-/// One primitive in the scene, with its placement and its own four colours.
 class AvatarPart {
   const AvatarPart({
     required this.id,
@@ -61,7 +53,6 @@ class AvatarPart {
   final String label;
   final AvatarBodyShape shape;
 
-  /// Placement in authored scene units.
   final double x;
   final double y;
   final double z;
@@ -74,16 +65,13 @@ class AvatarPart {
   final double rotationY;
   final double rotationZ;
 
-  /// The body colour, its outline/ink, its lit side and its shadowed side.
   final Color baseColor;
   final Color foregroundColor;
   final Color highlightColor;
   final Color shadowColor;
 
-  /// Whether the face is drawn on this part.
   final bool hasFace;
 
-  /// Whether the face's part should draw over this one.
   final bool occludedByFace;
 
   final double? roundness;
@@ -137,7 +125,6 @@ class AvatarPart {
   }
 }
 
-/// Where the camera sits. Yaw and pitch are what make the companion turn.
 class AvatarViewState {
   const AvatarViewState({
     this.pitch = 0,
@@ -195,7 +182,6 @@ class AvatarOutlineStyle {
 
   final Color color;
 
-  /// 0–100, as the editor stores it.
   final double opacity;
   final double width;
 
@@ -226,7 +212,6 @@ class AvatarShadowStyle {
 
   final Color color;
 
-  /// Degrees; 0 points right, increasing anticlockwise as the editor draws it.
   final double direction;
   final double distance;
   final double opacity;
@@ -252,7 +237,7 @@ class AvatarShadowStyle {
   }
 }
 
-/// The face chart: two eyes, an optional nose and mouth, in authored units.
+/// Eye/nose/mouth layout and look; lerpTo/restyle/withEyeOpenness derive animated variants without mutating the authored face.
 class AvatarFaceStyle {
   const AvatarFaceStyle({
     this.gap = 42,
@@ -315,12 +300,6 @@ class AvatarFaceStyle {
   final double highlightOpacity;
   final double highlightSize;
 
-  /// This face blended toward [other] by [t] (0..1).
-  ///
-  /// Numbers move smoothly; the things that cannot be halfway — whether the
-  /// mouth is there at all, and which shape it is — follow [other] once the
-  /// blend is past the midpoint. Expressions are tweened with this, so a
-  /// change of feeling slides rather than snapping.
   AvatarFaceStyle lerpTo(AvatarFaceStyle other, double t) {
     if (t <= 0) return this;
     if (t >= 1) return other;
@@ -341,8 +320,7 @@ class AvatarFaceStyle {
       noseHeight: noseHeight,
       noseY: noseY,
       noseRotation: noseRotation,
-      // An absent mouth is treated as a closed, zero-width one, so it grows in
-      // and shrinks away instead of popping.
+
       mouthEnabled: mouthEnabled || other.mouthEnabled,
       mouthShape: late ? other.mouthShape : mouthShape,
       mouthWidth: mix(
@@ -365,8 +343,6 @@ class AvatarFaceStyle {
     );
   }
 
-  /// Whether [other] is close enough to this face that redrawing would change
-  /// nothing anyone could see.
   bool isCloseTo(AvatarFaceStyle other, {double epsilon = 0.15}) {
     bool near(double a, double b) => (a - b).abs() < epsilon;
     return mouthEnabled == other.mouthEnabled &&
@@ -385,15 +361,11 @@ class AvatarFaceStyle {
         near(highlightSize, other.highlightSize);
   }
 
-  /// Scales the eye openings, for blinking. 0 is shut, 1 is the authored size.
   AvatarFaceStyle withEyeOpenness(double openness) {
     if (openness >= 0.999) return this;
     return copyWith(height: height * openness.clamp(0.02, 1.0));
   }
 
-  /// A copy with any of the face's own proportions replaced. Used to give each
-  /// species eyes, nose and mouth that suit its body instead of the one shared
-  /// default.
   AvatarFaceStyle tuned({
     double? gap,
     double? width,
@@ -443,11 +415,6 @@ class AvatarFaceStyle {
     );
   }
 
-  /// A copy with the channels an expression is allowed to move.
-  ///
-  /// Deliberately narrow: an expression may reshape the eyes and mouth, but it
-  /// must not relocate the nose or change the eye shape the species was drawn
-  /// with, or a happy cat stops looking like a cat.
   AvatarFaceStyle copyWithExpression({
     double? height,
     double? width,
@@ -495,13 +462,6 @@ class AvatarFaceStyle {
     );
   }
 
-  /// A copy with the channels a *user's* styling may move.
-  ///
-  /// Wider than [copyWithExpression], because this is someone deliberately
-  /// changing how their companion looks rather than a mood passing over it —
-  /// but still not everything: the eye shape and the nose's position stay as
-  /// the species was drawn, so no amount of styling turns one animal into
-  /// another.
   AvatarFaceStyle restyle({
     double? gap,
     double? width,
@@ -616,10 +576,6 @@ class AvatarFaceStyle {
   }
 }
 
-/// A flat colour mark painted on one part: stripes, inner ears, a muzzle patch.
-///
-/// Position and size are percentages of the target part's silhouette, measured
-/// from its centre, so a marking follows the part however it is posed.
 class AvatarMarking {
   const AvatarMarking({
     required this.shape,
@@ -634,7 +590,6 @@ class AvatarMarking {
     this.onFace = true,
   });
 
-  /// `ellipse` or `rounded-triangle`.
   final String shape;
   final Color color;
   final String targetPartId;
@@ -643,11 +598,9 @@ class AvatarMarking {
   final double width;
   final double height;
 
-  /// Degrees.
   final double rotation;
   final double opacity;
 
-  /// True for marks on the head that should drift with the face as it turns.
   final bool onFace;
 
   AvatarMarking withColor(Color color) => AvatarMarking(
@@ -682,7 +635,7 @@ class AvatarMarking {
   }
 }
 
-/// A complete companion: its parts, its face, its camera and its light.
+/// Immutable authored avatar: parts, markings, face and view state, parsed from avatar_scenes.json.
 class AvatarScene {
   const AvatarScene({
     required this.preset,
@@ -708,8 +661,6 @@ class AvatarScene {
   final AvatarOutlineStyle outlineStyle;
   final AvatarShadowStyle shadowStyle;
 
-  /// The card colour the editor renders behind the avatar. Surfaced so the app
-  /// can show it, change it, or leave it off entirely.
   final Color? cameraBackground;
 
   final double gridDensity;
@@ -719,10 +670,8 @@ class AvatarScene {
   final bool showOutline;
   final bool showAvatarShadow;
 
-  /// Colour marks that tell species apart beyond their silhouette.
   final List<AvatarMarking> markings;
 
-  /// The part the face is drawn on, or the first part if none claims it.
   AvatarPart? get facePart {
     for (final part in parts) {
       if (part.hasFace) return part;
@@ -730,7 +679,6 @@ class AvatarScene {
     return parts.isEmpty ? null : parts.first;
   }
 
-  /// A copy wearing different part colours, for palette application.
   AvatarScene copyWithParts(
     List<AvatarPart> parts, {
     AvatarOutlineStyle? outlineStyle,

@@ -6,10 +6,7 @@ import 'package:breakmate/features/companion/avatar3d/avatar_geometry.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_math.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 
-/// Draws a built [AvatarGeometry].
-///
-/// The order is the editor's: drop shadow, then each part back-to-front as
-/// outline, body, shaded cells, then the face on top of the part that owns it.
+/// Paints AvatarGeometry: outlines first, then parts, markings and face; front-standing parts (ears etc.) draw after the face host.
 class AvatarScenePainter extends CustomPainter {
   AvatarScenePainter({
     required this.geometry,
@@ -25,26 +22,18 @@ class AvatarScenePainter extends CustomPainter {
   final AvatarGeometry geometry;
   final AvatarScene scene;
 
-  /// Painted behind the avatar. Null leaves the canvas untouched, which is what
-  /// the floating companion wants.
   final Color? background;
 
   final bool showOutline;
   final bool showShadow;
 
-  /// Fraction of the fitted size left as breathing room around the silhouette.
   final double fitPadding;
 
-  /// The silhouette to fit to, when the caller wants a steady size across
-  /// poses. Defaults to this frame's own.
   final Rect? fitBounds;
 
-  /// Rosy cheeks, 0..1.
   final double blush;
 
-  /// The share of the widget the head may fill. Species with big ears or manes
-  /// are limited by their silhouette; compact ones would otherwise fill the box
-  /// and look oversized next to them.
+  // Caps scale so the head never exceeds this fraction of the box, keeping big bodies from over-zooming.
   static const double _maxHeadFraction = 0.74;
 
   @override
@@ -56,8 +45,6 @@ class AvatarScenePainter extends CustomPainter {
 
     canvas.save();
 
-    // Fit the scene's own silhouette to the widget, so every species arrives
-    // the same size and centred no matter where it was authored in frame.
     final bounds = fitBounds ?? geometry.bounds;
     final extent = math.max(bounds.width, bounds.height) * (1 + fitPadding * 2);
     final box = math.min(size.width, size.height);
@@ -68,27 +55,17 @@ class AvatarScenePainter extends CustomPainter {
     }
 
     canvas.translate(size.width / 2, size.height / 2);
-    // The scene's own `scale` and `position` are the editor's framing inside
-    // its 420-unit view box. Fitting the silhouette already does that job, and
-    // applying both zooms the companion until only its face is left.
+
     canvas.scale(scale);
     if (scene.viewState.roll != 0) canvas.rotate(scene.viewState.roll);
     canvas.translate(-bounds.center.dx, -bounds.center.dy);
 
     if (showShadow && scene.showAvatarShadow) _paintShadow(canvas);
 
-    // Outlines first, every part's, then the fills over the top. The strokes
-    // are centred on each silhouette, so what survives the fills is only the
-    // creature's outer contour. Stroking each part just before filling it left
-    // a full ring around every cheek, muzzle and ear on the head — goggles
-    // around the eyes of the hamster, a box around the capybara's mouth. The
-    // editor does the same: one outline around the whole.
     for (final part in geometry.parts) {
       _paintOutline(canvas, part);
     }
 
-    // Parts that stand proud of the face and have to stay in front of the
-    // head's own markings: a beak is not covered by a belly patch.
     bool standsProud(PartGeometry part) =>
         _frontParts.hasMatch(part.part.id) &&
         part.part.id != geometry.facePartId;
@@ -103,11 +80,7 @@ class AvatarScenePainter extends CustomPainter {
         _paintMarkings(canvas, part);
       }
     }
-    // The head's own markings go over the cheeks and muzzle, which are separate
-    // parts drawn after the head: they hid the cream cheek and muzzle patches
-    // the illustrator put on the head to sit over them, and painting the face
-    // straight after the head let them cover the eyes on a chinchilla, hamster
-    // or seal.
+
     if (faceHost != null) _paintMarkings(canvas, faceHost);
     for (final part in geometry.parts) {
       if (!standsProud(part)) continue;
@@ -123,9 +96,6 @@ class AvatarScenePainter extends CustomPainter {
     r'^(beak|bill|snout|nostril|tooth|teeth|forelock)',
   );
 
-  /// The head's largest dimension in scene units, or 0 if there is no head.
-  /// A head's longest side barely changes as it turns, so this does not make
-  /// the pet breathe in and out.
   double _headExtent() {
     for (final part in geometry.parts) {
       if (part.part.id != geometry.facePartId) continue;
@@ -178,8 +148,6 @@ class AvatarScenePainter extends CustomPainter {
   void _paintPart(Canvas canvas, PartGeometry geometry) {
     final part = geometry.part;
 
-    // A solid base under the cells: the cells only cover the lit hemisphere,
-    // and without this the silhouette's edge shows canvas through the seams.
     canvas.drawPath(geometry.outline, Paint()..color = part.baseColor);
 
     for (final cell in geometry.cells) {
@@ -191,22 +159,16 @@ class AvatarScenePainter extends CustomPainter {
         cell.path,
         Paint()
           ..color = tint.withValues(alpha: opacity.clamp(0.0, 1.0))
-          // Anti-aliasing every cell edge leaves visible seams between
-          // neighbours; the silhouette is what carries the smooth edge.
           ..isAntiAlias = false,
       );
     }
   }
 
-  /// Colour marks on [host], clipped to its silhouette. Marks on the head drift
-  /// with the face so they stay put on the head as it turns.
   void _paintMarkings(Canvas canvas, PartGeometry host) {
     if (scene.markings.isEmpty) return;
     final box = host.outline.getBounds();
     if (box.isEmpty) return;
 
-    // The nose sits on the face's centre line, so anchoring to it keeps a
-    // muzzle under the nose however far the head has turned.
     final nose = geometry.face.nose;
     final eyes = geometry.face.eyes;
     var drift = 0.0;
@@ -260,7 +222,6 @@ class AvatarScenePainter extends CustomPainter {
     canvas.restore();
   }
 
-  /// Soft pink patches below and outside the eyes.
   void _paintBlush(Canvas canvas, FaceGeometry face) {
     final boxes = face.eyes.map((eye) => eye.path.getBounds()).toList();
     final mid =
@@ -302,8 +263,7 @@ class AvatarScenePainter extends CustomPainter {
     for (final eye in face.eyes) {
       canvas.drawPath(eye.path, ink);
     }
-    // A species with its own beak, bill, snout or muzzle already has a
-    // mouth. Drawing the face's one on top of it put a smile on the bill.
+
     if (!_hasOwnMouthParts) {
       if (face.nose != null) canvas.drawPath(face.nose!.path, ink);
       if (face.mouth != null) canvas.drawPath(face.mouth!.path, ink);

@@ -1,9 +1,9 @@
+/// One user-placed decoration in a custom environment; positions are ratios of the stage size.
 class CustomEnvironmentLayer {
   final String id;
   final String assetPath;
   final double xRatio;
-  final double
-  yRatio; // 0.0 is sitting on the ground, 1.0 is floating at the top of the sky
+  final double yRatio;
   final double scale;
   final double opacity;
   final bool flipX;

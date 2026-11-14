@@ -10,8 +10,7 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// "Break activity" on the front page: how today's breaks are going against
-/// the daily goal, what happened and when, and how long you have worked.
+/// Dashboard card summarizing today's completed/skipped breaks against the daily goal, plus the event timeline.
 class DailySummarySection extends StatelessWidget {
   const DailySummarySection({super.key});
 
@@ -37,6 +36,7 @@ class DailySummarySection extends StatelessWidget {
           ..sort((a, b) => a.time.compareTo(b.time));
 
         final goal = settings.currentSettings.dailyBreakGoalCount;
+        final restDay = settings.currentSettings.experience.isRestDay(now);
         final done = todayStats.breaksCompleted;
         final skipped = todayStats.breaksSkipped;
         final total = done + skipped;
@@ -76,19 +76,27 @@ class DailySummarySection extends StatelessWidget {
                       ],
                     ),
                   ),
-                  _GoalChip(done: done, goal: goal),
+                  restDay
+                      ? Text(
+                          'Rest day · $done breaks taken',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        )
+                      : _GoalChip(done: done, goal: goal),
                 ],
               ),
               const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: goal <= 0 ? 0 : (done / goal).clamp(0.0, 1.0),
-                  minHeight: 4,
-                  color: done >= goal ? AppTheme.success : AppTheme.textPrimary,
-                  backgroundColor: AppTheme.border,
+              if (!restDay)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: goal <= 0 ? 0 : (done / goal).clamp(0.0, 1.0),
+                    minHeight: 4,
+                    color: done >= goal
+                        ? AppTheme.success
+                        : AppTheme.textPrimary,
+                    backgroundColor: AppTheme.border,
+                  ),
                 ),
-              ),
               const SizedBox(height: 22),
               if (!hasData)
                 Center(
@@ -248,10 +256,6 @@ class _RecommendationChip extends StatelessWidget {
     );
   }
 
-  /// Context-switch fragmentation takes priority when it's high — it's a
-  /// live, actionable signal (see [ContextSwitchTracker]) — otherwise falls
-  /// back to the existing skip-rate / intense-day heuristics. Purely
-  /// informational: it never changes break timing on its own.
   String _recommendationFor(int switchCount) {
     if (switchCount >= 12) {
       return "$switchCount app switches in the last hour — a short break might help you refocus.";

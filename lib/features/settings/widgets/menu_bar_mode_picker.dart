@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math' as math;
 
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
@@ -5,7 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Maps a picker mode to the persisted (trayIconStyle, menuBarStyle) pair.
+/// Maps a picker mode to the stored (trayIconStyle, menuBarStyle) pair; inverse of [menuBarModeFromStyles].
 ({String iconStyle, String menuStyle}) menuBarModeToStyles(String mode) => (
   iconStyle: mode == 'companion' ? 'companion' : 'default',
   menuStyle: switch (mode) {
@@ -15,7 +16,6 @@ import 'package:breakmate/shared/theme/app_theme.dart';
   },
 );
 
-/// Inverse of [menuBarModeToStyles], tolerant of values older builds saved.
 String menuBarModeFromStyles(String trayIconStyle, String menuBarStyle) {
   if (trayIconStyle == 'companion' || trayIconStyle == 'cat') {
     return 'companion';
@@ -28,8 +28,7 @@ String menuBarModeFromStyles(String trayIconStyle, String menuBarStyle) {
   };
 }
 
-/// Tiles that show each menu bar display option animating live, so the
-/// choice is visible before it is picked.
+/// Tile picker for menu-bar display modes with an animated preview of each.
 class MenuBarModePicker extends StatefulWidget {
   const MenuBarModePicker({
     super.key,
@@ -38,7 +37,6 @@ class MenuBarModePicker extends StatefulWidget {
     required this.onSelected,
   });
 
-  /// Mode id -> label.
   final Map<String, String> modes;
   final String selected;
   final ValueChanged<String> onSelected;
@@ -52,7 +50,19 @@ class _MenuBarModePickerState extends State<MenuBarModePicker>
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 6),
-  )..repeat();
+  )..repeatUnlessReducedMotion();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.maybeDisableAnimationsOf(context) == true ||
+        prefersReducedMotion) {
+      _ctrl.stop();
+      _ctrl.value = 0.5;
+    } else if (!_ctrl.isAnimating) {
+      _ctrl.repeat();
+    }
+  }
 
   @override
   void dispose() {
@@ -62,6 +72,7 @@ class _MenuBarModePickerState extends State<MenuBarModePicker>
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       child: Wrap(
@@ -77,7 +88,14 @@ class _MenuBarModePickerState extends State<MenuBarModePicker>
                 animation: _ctrl,
                 builder: (_, _) => CustomPaint(
                   size: const Size(54, 36),
-                  painter: _PreviewPainter(e.key, _ctrl.value),
+                  painter: _PreviewPainter(
+                    e.key,
+                    _ctrl.value,
+                    accent: colors.primary,
+                    foreground: colors.onSurface,
+                    track: colors.outline,
+                    onAccent: colors.onPrimary,
+                  ),
                 ),
               ),
             ),
@@ -102,18 +120,21 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return TapTarget(
       onTap: onTap,
       selected: selected,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: motionDuration(context, const Duration(milliseconds: 200)),
         width: 120,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: selected ? 0.09 : 0.04),
+          color: selected
+              ? colors.secondaryContainer
+              : colors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppTheme.accentColor : Colors.transparent,
+            color: selected ? colors.primary : colors.outlineVariant,
             width: 1.5,
           ),
         ),
@@ -124,7 +145,7 @@ class _Tile extends StatelessWidget {
               height: 44,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E),
+                color: colors.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: child,
@@ -147,29 +168,30 @@ class _Tile extends StatelessWidget {
 }
 
 class _PreviewPainter extends CustomPainter {
-  _PreviewPainter(this.mode, this.t);
+  _PreviewPainter(
+    this.mode,
+    this.t, {
+    required this.accent,
+    required this.foreground,
+    required this.track,
+    required this.onAccent,
+  });
 
   final String mode;
 
-  /// 0..1 over the whole loop.
   final double t;
 
-  static const _white = Color(0xFFFFFFFF);
-
-  Color _accent(double p) => p < 0.5
-      ? Color.lerp(const Color(0xFF34C759), const Color(0xFFFFCC00), p / 0.5)!
-      : Color.lerp(
-          const Color(0xFFFFCC00),
-          const Color(0xFFFF453A),
-          (p - 0.5) / 0.5,
-        )!;
+  final Color accent;
+  final Color foreground;
+  final Color track;
+  final Color onAccent;
 
   @override
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
     final progress = Curves.easeInOut.transform(t);
-    final color = _accent(progress);
-    final breathe = (1 - math.cos(t * 6 * math.pi * 2)) / 2; // 6 pulses
+    final color = accent;
+    final breathe = (1 - math.cos(t * 6 * math.pi * 2)) / 2;
     final pulse = (t * 6) % 1.0;
 
     switch (mode) {
@@ -182,7 +204,7 @@ class _PreviewPainter extends CustomPainter {
           Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 4.5
-            ..color = const Color(0xFF8E8E93).withValues(alpha: 0.55),
+            ..color = track,
         );
         canvas.drawArc(
           rect,
@@ -222,8 +244,8 @@ class _PreviewPainter extends CustomPainter {
         final tp = TextPainter(
           text: TextSpan(
             text: '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}',
-            style: const TextStyle(
-              color: _white,
+            style: TextStyle(
+              color: foreground,
               fontSize: 13,
               fontWeight: FontWeight.w600,
               fontFeatures: [FontFeature.tabularFigures()],
@@ -239,8 +261,8 @@ class _PreviewPainter extends CustomPainter {
           const Radius.circular(7),
         );
         canvas.drawRRect(rr, Paint()..color = color);
-        canvas.drawCircle(c, 4, Paint()..color = _white);
-      default: // companion: a small bobbing, blinking face
+        canvas.drawCircle(c, 4, Paint()..color = onAccent);
+      default:
         final bob = math.sin(t * 6 * math.pi * 2) * 1.2;
         final f = c.translate(0, bob);
         final body = Paint()..color = const Color(0xFFFFB86B);
@@ -265,5 +287,11 @@ class _PreviewPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PreviewPainter old) => old.t != t || old.mode != mode;
+  bool shouldRepaint(_PreviewPainter old) =>
+      old.t != t ||
+      old.mode != mode ||
+      old.accent != accent ||
+      old.foreground != foreground ||
+      old.track != track ||
+      old.onAccent != onAccent;
 }

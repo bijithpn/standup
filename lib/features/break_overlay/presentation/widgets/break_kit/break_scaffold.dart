@@ -3,41 +3,27 @@ import 'package:flutter/services.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_skip_button.dart';
 
-/// Shared frame for every break template.
-///
-/// Paints the canvas and an optional [background] full-bleed, lays [child]
-/// out in a fixed [designSize] box scaled to fit (so thumbnails and tiny
-/// windows never overflow), binds Esc to skip, and places the skip button.
+/// Common frame for every template: background, palette scope, fixed-design-size scaling, Esc and Skip handling (hidden in strict mode).
 class BreakScaffold extends StatelessWidget {
   static const Size defaultDesignSize = Size(1280, 800);
 
   final Widget child;
 
-  /// Full-bleed layer(s) under the content. Wrapped in a [RepaintBoundary].
   final Widget? background;
 
-  /// Canvas color; defaults to the palette canvas. Pass
-  /// [Colors.transparent] for templates that float over the desktop.
   final Color? canvas;
 
-  /// Tint drawn over a transparent canvas or background.
   final Color? scrim;
 
-  /// Pins a palette for this template ("fixed" templates).
   final BreakPalette? palette;
 
   final VoidCallback? onSkip;
   final bool strictMode;
 
-  /// Whether the scaffold draws the skip button itself. Esc is bound either
-  /// way.
   final bool showSkip;
 
-  /// Reserved space at the top for chrome drawn over the template.
   final double safeTopInset;
 
-  /// Lay [child] out in [designSize] and scale to fit. Templates that work in
-  /// real screen coordinates (draggable widgets) pass false.
   final bool scaled;
   final Size designSize;
   final Color? accent;
@@ -106,8 +92,7 @@ class BreakScaffold extends StatelessWidget {
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): () => onSkip!(),
         },
-        // includeSemantics: false keeps this focus node from merging the whole
-        // page into a single accessibility node.
+
         child: Focus(
           autofocus: !preview,
           includeSemantics: false,
@@ -133,8 +118,7 @@ class BreakScaffold extends StatelessWidget {
   }
 }
 
-/// Stand-in for the user's desktop behind translucent templates, used only in
-/// gallery thumbnails.
+// Stand-in desktop shown behind transparent templates in settings previews.
 class _FauxDesktop extends StatelessWidget {
   const _FauxDesktop();
 

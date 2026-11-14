@@ -1,18 +1,14 @@
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-/// Privacy and security sanitizer for Sentry telemetry.
-/// Ensures no sensitive personal data, local user paths, active app names,
-/// or window titles leave the device in crash reports or breadcrumbs.
+/// Privacy filter for Sentry: honours the crash-reporting opt-out, strips user paths and drops window/app-name data from events and breadcrumbs.
 class SentryHygiene {
   static final RegExp _userPathRegex = RegExp(
     r'(/Users/[^/\s]+|/home/[^/\s]+|[A-Za-z]:\\Users\\[^\s\\]+)',
   );
 
-  /// Live opt-out check. When it returns false every event is dropped, so
-  /// turning crash reporting off takes effect without a restart.
+  // Returns false when the user disabled crash reporting; events are then dropped.
   static bool Function()? isEnabled;
 
-  /// Configures Sentry options with strict privacy boundaries.
   static void configure(SentryFlutterOptions options) {
     options.sendDefaultPii = false;
     options.attachScreenshot = false;
@@ -23,18 +19,14 @@ class SentryHygiene {
   static String _scrub(String value) =>
       value.replaceAll(_userPathRegex, '[REDACTED_USER_PATH]');
 
-  /// Sanitizes Sentry crash events before transmission.
   static SentryEvent? filterEvent(SentryEvent event, Hint hint) {
     if (isEnabled?.call() == false) return null;
 
-    // Redact local user directories from messages
     final message = event.message?.formatted;
     if (message != null && _userPathRegex.hasMatch(message)) {
       event.message = SentryMessage(_scrub(message));
     }
 
-    // Exception values and stack frames routinely embed file paths
-    // (FileSystemException, build paths in frames).
     for (final exception in event.exceptions ?? const <SentryException>[]) {
       final value = exception.value;
       if (value != null) exception.value = _scrub(value);
@@ -47,10 +39,8 @@ class SentryHygiene {
       }
     }
 
-    // The machine's host name is often the user's real name.
     event.serverName = null;
 
-    // Redact sensitive contexts or tags that could contain window titles or app names
     final tags = event.tags;
     if (tags != null) {
       for (final key in tags.keys.toList()) {
@@ -68,7 +58,6 @@ class SentryHygiene {
     return event;
   }
 
-  /// Sanitizes or drops breadcrumbs containing private workspace or window context.
   static Breadcrumb? filterBreadcrumb(Breadcrumb? breadcrumb, Hint hint) {
     if (breadcrumb == null) return null;
     final message = breadcrumb.message;
@@ -77,7 +66,7 @@ class SentryHygiene {
       if (lowerMsg.contains('window') ||
           lowerMsg.contains('active app') ||
           lowerMsg.contains('bundleid')) {
-        return null; // Drop sensitive active application/window tracking breadcrumbs
+        return null;
       }
       if (_userPathRegex.hasMatch(message)) {
         breadcrumb.message = _scrub(message);
