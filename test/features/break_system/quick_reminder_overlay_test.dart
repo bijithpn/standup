@@ -172,10 +172,12 @@ void main() {
       'standup',
     ]) {
       final pills = {
-        for (var s = 0; s < 100; s++) HealthReminderMessages.pill(type, Random(s)),
+        for (var s = 0; s < 100; s++)
+          HealthReminderMessages.pill(type, Random(s)),
       };
       final lines = {
-        for (var s = 0; s < 100; s++) HealthReminderMessages.text(type, Random(s)),
+        for (var s = 0; s < 100; s++)
+          HealthReminderMessages.text(type, Random(s)),
       };
       expect(pills.length, greaterThan(1), reason: '$type pill');
       expect(lines.length, greaterThan(1), reason: '$type text');

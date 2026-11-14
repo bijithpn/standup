@@ -90,12 +90,14 @@ void main() {
   );
 
   test(
-    'blocked at system level opens System Settings instead of asking',
+    'blocked at system level retries once silently, then opens System Settings',
     () async {
-      permissions.status = CalendarPermissionStatus.permanentlyDenied;
+      permissions
+        ..status = CalendarPermissionStatus.permanentlyDenied
+        ..grantOnRequest = false;
       final ok = await controller.connect();
       expect(ok, isFalse);
-      expect(permissions.requests, 0);
+      expect(permissions.requests, 1);
       expect(permissions.openSettingsCalls, 1);
     },
   );

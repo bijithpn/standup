@@ -27,6 +27,9 @@ void main() {
           ),
         ),
       );
+      await tester.ensureVisible(find.text('Custom reminders'));
+      await tester.tap(find.text('Custom reminders'));
+      await tester.pumpAndSettle();
       final fields = find.byType(TextField);
       await tester.ensureVisible(fields.first);
       for (final field in tester.widgetList<TextField>(fields)) {

@@ -36,12 +36,18 @@ void main() {
         reminderType: 'hydration',
         durationMs: 10000,
         dismissOnMouseMove: true,
+        textScale: 1.5,
+        highContrast: true,
+        reduceMotion: true,
       );
       expect(received!.method, 'triggerFlashReminder');
       expect(received!.arguments['title'], 'Drink some water');
       expect(received!.arguments['text'], 'Have a glass of water.');
       expect(received!.arguments['reminderType'], 'hydration');
       expect(received!.arguments['dismissOnMouseMove'], true);
+      expect(received!.arguments['textScale'], 1.5);
+      expect(received!.arguments['highContrast'], true);
+      expect(received!.arguments['reduceMotion'], true);
     },
   );
 }

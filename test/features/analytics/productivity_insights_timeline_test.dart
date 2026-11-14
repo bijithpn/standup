@@ -281,10 +281,15 @@ void main() {
           suggestion: 'Stand up for five minutes now.',
         ),
       );
-      expect(find.text('BREAKS'), findsOneWidget);
+      expect(find.textContaining('Breaks'), findsOneWidget);
       expect(find.text('No break yet today'), findsOneWidget);
-      expect(find.text('Stand up for five minutes now.'), findsOneWidget);
-      expect(find.byIcon(Icons.lightbulb_outline_rounded), findsOneWidget);
+      expect(
+        find.textContaining(
+          'Stand up for five minutes now.',
+          findRichText: true,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('has no suggestion box when there is none', (tester) async {

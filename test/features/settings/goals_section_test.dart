@@ -1,3 +1,4 @@
+import 'package:breakmate/features/settings/experience_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -137,6 +138,24 @@ void main() {
       await pump(tester);
       expect(find.textContaining('Turn it on in Privacy'), findsOneWidget);
     });
+
+    testWidgets(
+      'rest day hides daily pressure and keeps weekly progress visible',
+      (tester) async {
+        await settings.save(
+          settings.currentSettings.copyWith(
+            experience: const ExperiencePreferences(
+              restDays: [1, 2, 3, 4, 5, 6, 7],
+            ),
+          ),
+        );
+        await pump(tester);
+        expect(find.text('Daily focus time'), findsNothing);
+        expect(find.text('Daily breaks'), findsNothing);
+        expect(find.text('Weekly consistency'), findsOneWidget);
+        expect(find.textContaining('Today is a rest day'), findsOneWidget);
+      },
+    );
 
     testWidgets('tapping + saves the new target', (tester) async {
       await pump(tester);

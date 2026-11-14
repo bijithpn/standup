@@ -104,7 +104,9 @@ One **Health reminders** switch turns on five gentle nudges, scheduled around ho
 - **Pre-break warning** — a translucent countdown (20 s by default) with a visible timer and skip action, so you can finish your sentence first.
 - **Flash notifications** — subtle screen-edge pulses for low-distraction awareness.
 - **Strict mode** — prevents skipping; locks the break overlay above other windows.
-- **Snooze and skip** from the tray, dashboard, or overlay.
+- **Snooze and skip** from the tray, dashboard, or overlay. The dashboard offers 2-, 5-, and 15-minute snoozes, or snooze until the end of overlapping calendar meetings, with a visible resume time.
+- **Weekly working hours** — customize each working day, exclude lunch, and schedule overnight shifts. The dashboard explains schedule pauses and shows the next working time.
+- **Reminder intensity presets** — Gentle, Balanced, and Firm bundle warning duration, sound, and display coverage; all three allow skipping breaks.
 - **Global hotkey** — `⌘⌥B` (macOS) / `Ctrl+Alt+B` (Windows/Linux) starts a break immediately, or skips the active one.
 - **Adaptive scheduling** that learns from how often you skip or postpone breaks.
 
@@ -124,6 +126,40 @@ One **Health reminders** switch turns on five gentle nudges, scheduled around ho
 - **Idle detection** — pauses or resets the cycle when you step away; away time can count as a break.
 - **Contextual wellness** — suggestions tailored to the active app category (coding → posture, writing → wrist relief, browsing → eye rest, meetings → post-call reset).
 
+### Automatic pause and resume
+
+The work timer pauses when you are away and resumes when you genuinely return. `ActivityMonitor` is the single source of truth; native runners only report events.
+
+| Condition | Source | Pauses timer |
+| --- | --- | --- |
+| No input for the threshold (default 5 min) | macOS `CGEventSource`, Windows `GetLastInputInfo`, Linux Mutter `IdleMonitor` or XScreenSaver (X11) | yes (setting) |
+| Screen lock | macOS `com.apple.screenIsLocked`, Windows `WM_WTSSESSION_CHANGE`, Linux login1 / ScreenSaver signals | yes (setting) |
+| Sleep, hibernate, lid close | macOS `NSWorkspace`, Windows `WM_POWERBROADCAST`, Linux login1 `PrepareForSleep` | always |
+| Sign-out, fast user switch, RDP disconnect | macOS session resign/active, Windows WTS session events, Linux login1 `Active` | always |
+
+Rules:
+
+- Idle time up to the threshold counts as work and is then discarded, so it is never subtracted twice.
+- After sleep or lock the timer stays frozen until every reason has cleared **and** fresh input is seen (idle < 5 s). A wake notification alone never resumes it.
+- A manual pause is never resumed automatically. The tick loop never lifts an inactivity pause either; only the monitor does.
+- Missed lock/unlock/session events are reconciled by polling `getSessionState` every 5 s (1 s while waiting for input).
+- If no idle provider exists the setting is shown as unavailable, a warning is logged, and only sleep/lock events pause the timer. Unlock or wake then counts as the return signal.
+- Break in progress: idle does not pause a break. Sleep/lock extend it by the time away, per the existing break policy.
+- No keystrokes, mouse positions or window titles are read. No Accessibility permission, event tap or admin rights are needed.
+
+Settings (General > Idle & Inactivity): pause when idle, idle threshold (1-15 min), resume when active, pause when locked. Changes apply immediately.
+
+| Platform | Status |
+| --- | --- |
+| macOS | Implemented; compiles (dev flavor). Not yet verified by hand across sleep/lock/fast user switching. |
+| Windows 10/11 | Implemented, **not built or tested in this environment**. A UAC secure-desktop prompt briefly looks like a lock. |
+| Linux X11 | Implemented, **not built or tested**. Idle via Mutter (GNOME) or `libXss.so.1` if installed. |
+| Linux Wayland | GNOME: idle via Mutter. KDE and other compositors: no global idle API, reported unavailable; sleep and lock still work. |
+
+Troubleshooting: set the log level to info and look for `[ActivityMonitor]` lines (provider availability, `away +locked`, `ACTIVE -> IDLE`). On Linux install `libxss1` for X11 idle detection on non-GNOME desktops.
+
+Tests: `flutter test test/core/services/activity_monitor_test.dart test/core/services/timer_orchestrator_test.dart`.
+
 ### Desktop companion
 
 - Pick a companion from the bundled species and breeds, and give it a name.
@@ -139,8 +175,10 @@ One **Health reminders** switch turns on five gentle nudges, scheduled around ho
 - **Productivity & focus** — activity segments, focus time by day, daily focus score, trends, and streaks.
 - **App usage tracking** (opt-in) with category daily budgets and over-budget warnings.
 - **Break/focus correlation** insights and a **weekly digest** with one-click export.
-- **Personal goals** — daily focus targets, break-count targets, and sitting limits.
-- **Wellness library** — browse, favorite, hide, and rotate exercises by category.
+- **Personal goals** — daily focus targets, break-count targets, weekly consistency and rest days, with gentle recovery copy after missed days.
+- **Exercise preferences** — filter guided breaks by seated/standing position, equipment, movement and body areas to avoid. No matching exercise falls back to quiet rest.
+- **Weekly observation** — one dated observation in Statistics, with an optional timing proposal when enough data supports it.
+- **Optional interruption feedback** — “Bad timing” and “Too frequent” on Today show a proposed adjustment that changes settings only after Apply.
 
 ### Menu bar / system tray
 
@@ -150,7 +188,9 @@ One **Health reminders** switch turns on five gentle nudges, scheduled around ho
 ### Platform & reliability
 
 - Launch at startup, single-instance protection, automatic crash reporting (Sentry, release builds only), and in-app auto-updates via Sparkle on macOS.
-- Settings search, per-section reset, and inline dependency warnings.
+- Settings search, per-section reset, and inline dependency warnings. Everyday controls appear first; less frequent general, notification and focus controls expand on demand.
+- **Accessibility** — adjustable app text size (100–150%), high contrast, reduced motion, visible keyboard focus and keyboard access to settings tabs. Larger-text and high-contrast full breaks use a simple scrollable view.
+- A **permissions and detection health panel** in Smart Detection shows notification/calendar status, current meeting and smart-pause signals, and links to setup and system settings. Permission availability varies by platform.
 
 ---
 
@@ -201,7 +241,7 @@ irm https://github.com/bijithpn/standup/releases/latest/download/uninstall.ps1 |
 
 ## Usage
 
-1. Launch BreakMate; the onboarding flow lets you pick a break profile.
+1. Launch BreakMate; onboarding helps you choose a goal, break profile, reminder intensity, and companion. Try an optional 20-second practice break before finishing; the demo does not affect your statistics.
 2. The app lives in the menu bar / system tray. Click it for the countdown and quick actions.
 3. Open the dashboard to adjust **General, Breaks, Smart detection, Exercises, Notifications, Companion,** and **Statistics**.
 4. Press the global hotkey any time to take a break right now.

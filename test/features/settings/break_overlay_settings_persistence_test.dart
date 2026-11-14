@@ -1,3 +1,6 @@
+import 'package:breakmate/features/settings/experience_preferences.dart';
+import 'package:breakmate/features/settings/work_schedule.dart';
+import 'package:breakmate/features/settings/notification_intensity.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:objectbox/objectbox.dart';
@@ -34,6 +37,70 @@ void main() {
     registerFallbackValue(_FakeSnapshot());
     registerFallbackValue(_FakeCompanionPrefs());
   });
+
+  for (final readSnapshot in [false, true]) {
+    test(
+      'weekly shifts and intensity survive restart (snapshot: $readSnapshot)',
+      () async {
+        final storage = _storage(readSnapshot: readSnapshot);
+        final first = SettingsRepository(storage: storage);
+        await first.save(
+          NotificationIntensity.gentle.apply(
+            first.currentSettings.copyWith(
+              workingHoursEnabled: true,
+              workingDays: [5],
+              weeklySchedule: {
+                5: const WorkSchedule(
+                  start: '22:00',
+                  end: '06:00',
+                  lunchStart: '01:00',
+                  lunchEnd: '01:30',
+                ),
+              },
+            ),
+          ),
+        );
+        final restored = SettingsRepository(storage: storage);
+        await restored.load();
+        expect(restored.currentSettings.workingHoursEnabled, isTrue);
+        expect(restored.currentSettings.workingDays, [5]);
+        expect(restored.currentSettings.weeklySchedule[5]!.end, '06:00');
+        expect(restored.currentSettings.weeklySchedule[5]!.lunchEnd, '01:30');
+        expect(
+          NotificationIntensity.gentle.matches(restored.currentSettings),
+          isTrue,
+        );
+      },
+    );
+  }
+
+  for (final readSnapshot in [false, true]) {
+    test(
+      'experience preferences survive restart (snapshot: $readSnapshot)',
+      () async {
+        final storage = _storage(readSnapshot: readSnapshot);
+        final first = SettingsRepository(storage: storage);
+        await first.save(
+          first.currentSettings.copyWith(
+            experience: const ExperiencePreferences(
+              textScale: 1.5,
+              highContrast: true,
+              exercisePosition: 'seated',
+              avoidedAreas: ['neck'],
+              restDays: [7],
+              restDates: ['2026-11-16'],
+            ),
+          ),
+        );
+        final restored = SettingsRepository(storage: storage);
+        await restored.load();
+        expect(
+          restored.currentSettings.experience.toMap(),
+          first.currentSettings.experience.toMap(),
+        );
+      },
+    );
+  }
 
   test('theme mode, breathing pattern, chime and prompt persist', () async {
     final storage = _storage();

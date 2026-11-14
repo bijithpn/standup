@@ -40,10 +40,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Total Breaks'), findsOneWidget);
-    expect(find.text('Current Streak'), findsOneWidget);
-    expect(find.text('Best Streak'), findsOneWidget);
-    expect(find.textContaining('days with breaks this year'), findsOneWidget);
+    expect(find.text('Breaks offered'), findsOneWidget);
+    expect(find.text('Skip rate'), findsOneWidget);
+    expect(find.text('Breaks taken per day'), findsOneWidget);
+    expect(find.text('Break Activity'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -60,7 +60,7 @@ void main() {
       ),
     );
 
-    expect(find.text('0 days with breaks this year'), findsOneWidget);
+    expect(find.text('Break Activity'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

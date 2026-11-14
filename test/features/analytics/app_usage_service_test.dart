@@ -172,29 +172,33 @@ void main() {
       });
     });
 
-    test('persists across service instances via the shared storage key', () {
-      withClock(testClock, () {
-        final storage = StorageService();
-        final first = AppUsageService(storage: storage);
-        first.addUsageSeconds(
-          date: '2026-08-31',
-          appKey: 'x',
-          name: 'X',
-          category: AppCategory.general,
-          seconds: 15,
-        );
+    test(
+      'persists across service instances via the shared storage key',
+      () async {
+        await withClock(testClock, () async {
+          final storage = StorageService();
+          final first = AppUsageService(storage: storage);
+          first.addUsageSeconds(
+            date: '2026-08-31',
+            appKey: 'x',
+            name: 'X',
+            category: AppCategory.general,
+            seconds: 15,
+          );
 
-        final second = AppUsageService(storage: storage);
-        final apps = second.topApps(
-          UsagePeriod.today,
-          now: DateTime(2026, 8, 31),
-        );
-        expect(apps.first.seconds, 15);
-      });
-    });
+          await Future<void>.delayed(Duration.zero);
+          final second = AppUsageService(storage: storage);
+          final apps = second.topApps(
+            UsagePeriod.today,
+            now: DateTime(2026, 8, 31),
+          );
+          expect(apps.first.seconds, 15);
+        });
+      },
+    );
 
-    test('prunes dates older than 30 days on write', () {
-      withClock(testClock, () {
+    test('prunes dates older than 30 days on write', () async {
+      await withClock(testClock, () async {
         final storage = StorageService();
         final service = AppUsageService(storage: storage);
         final now = DateTime(2026, 8, 31);
@@ -218,6 +222,7 @@ void main() {
           seconds: 60,
         );
 
+        await Future<void>.delayed(Duration.zero);
         // Verify directly against the persisted blob, not via a period filter
         // that would already exclude the stale date on its own — this must
         // fail if _pruneOldDates is ever removed from the implementation.

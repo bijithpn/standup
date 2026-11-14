@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:breakmate/features/settings/experience_preferences.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -87,6 +89,21 @@ void main() {
       eventBus: eventBus,
     );
   });
+
+  test(
+    'a planned rest day preserves a focus streak without earning a day',
+    () async {
+      final today = DateTime(2026, 11, 16);
+      await storage.setString(
+        'experience_preferences',
+        jsonEncode(const ExperiencePreferences(restDays: [7]).toMap()),
+      );
+      seedDay(today, 0.5);
+      seedDay(DateTime(2026, 11, 15), 0.1);
+      seedDay(DateTime(2026, 11, 14), 0.5);
+      expect(streakService.currentStreakDays(now: today), 2);
+    },
+  );
 
   test('starts with no streak and no milestone', () {
     expect(streakService.currentStreakDays(), 0);
