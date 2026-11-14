@@ -3,7 +3,37 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                      <item>
+        <language>en</language>                                                                              <item>
+            <title>Version 1.12.1</title>
+            <pubDate>Sat, 14 Nov 2026 06:58:37 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.12.1</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>update changelog for version 1.12.1 and enhance README with smart detection details</li><li>add auto-pause and resume settings</li><li>add settings group and field widgets for better organization</li><li>enhance health reminder functionality and improve visual quality tests</li><li>implement health reminder messages and integrate with native enhancements</li><li>implement focus session loading and state notification improvements</li><li>add option to dismiss reminders on mouse movement and update related notifications</li><li>add toast notification functionality for macOS</li><li>enhance aperture rendering with new paint styles and improved geometry</li><li>enhance presentation detection with app bundle ID and improve polling logic</li></ul>
+                <h5>Other Changes</h5>
+                <ul><li>Refactor tests and enhance functionality across various features</li><li>Refactor Break Appearance Settings and Enhance User Experience</li><li>Refactor settings and theme components for improved clarity and consistency</li><li>Refactor break overlay templates with new color palettes and design updates</li><li>Refactor WindDownTemplate and ZenModeTemplate for improved readability and performance</li><li>Remove deprecated break templates and associated assets</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.12.0...v1.12.1">https://github.com/bijithpn/standup/compare/v1.12.0...v1.12.1</a></p>
+                <h5>🍎 Installing on macOS</h5>
+                <p>BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show <em>"Apple could not verify BreakMate…"</em>. Use either fix:</p>
+                <p><strong>Option 1: one-line install (recommended)</strong><br>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install.sh">https://github.com/bijithpn/standup/releases/latest/download/install.sh</a> | bash<br>```</p>
+                <p><strong>Option 2: you already downloaded the DMG</strong><br>```bash<br>xattr -cr /Applications/BreakMate.app<br>```<br>or open <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</p>
+                <p><strong>Homebrew</strong><br>```bash<br>brew tap bijithpn/standup <a href="https://github.com/bijithpn/standup">https://github.com/bijithpn/standup</a><br>brew install --cask breakmate<br>```</p>
+                <p><strong>Uninstall:</strong> <code>curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/uninstall.sh | bash</code> (add <code>-s -- --purge</code> to also delete settings). Linux: <code>uninstall_linux.sh</code>, Windows: <code>uninstall.ps1</code>.</p>
+                <h5>🐧 Linux / 🪟 Windows one-liners</h5>
+                <p>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh">https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh</a> | bash<br>```<br>```powershell<br>irm <a href="https://github.com/bijithpn/standup/releases/latest/download/install.ps1">https://github.com/bijithpn/standup/releases/latest/download/install.ps1</a> | iex<br>```</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.12.1/BreakMate-Installer.dmg"
+                       sparkle:version="49"
+                       sparkle:shortVersionString="1.12.1"
+                       sparkle:edSignature="5FYlD/pfFuOER+LsvsjWfobZuxWYwV9K2omtm6JpWme0OYCNvdMdxGwA8FjgTS7pC9QJ9D2lxy/VLSiLBfiaBQ=="
+                       length="36298432"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.12.0</title>
             <pubDate>Thu, 12 Nov 2026 11:23:11 +0000</pubDate>
             <description><![CDATA[
