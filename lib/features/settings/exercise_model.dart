@@ -1,3 +1,5 @@
+import 'experience_preferences.dart';
+import 'exercise_traits.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -14,6 +16,8 @@ class ExerciseModel {
   final bool enabled;
   final bool isFavorite;
   final bool isHidden;
+  final ExerciseTraits? traits;
+  ExerciseTraits get effectiveTraits => traits ?? ExerciseTraits.forId(id);
 
   const ExerciseModel({
     required this.id,
@@ -24,6 +28,7 @@ class ExerciseModel {
     this.enabled = true,
     this.isFavorite = false,
     this.isHidden = false,
+    this.traits,
   });
 
   bool get isActive => enabled && !isHidden;
@@ -35,8 +40,11 @@ class ExerciseModel {
     List<ExerciseModel> all,
     Random random, {
     String? avoidId,
+    ExperiencePreferences preferences = const ExperiencePreferences(),
   }) {
-    var pool = all.where((e) => e.isActive).toList();
+    var pool = all
+        .where((e) => e.isActive && e.effectiveTraits.matches(preferences))
+        .toList();
     if (pool.isEmpty) return null;
     if (pool.length > 1 && avoidId != null) {
       pool = pool.where((e) => e.id != avoidId).toList();
@@ -57,6 +65,7 @@ class ExerciseModel {
     bool? enabled,
     bool? isFavorite,
     bool? isHidden,
+    ExerciseTraits? traits,
   }) {
     return ExerciseModel(
       id: id ?? this.id,
@@ -67,6 +76,7 @@ class ExerciseModel {
       enabled: enabled ?? this.enabled,
       isFavorite: isFavorite ?? this.isFavorite,
       isHidden: isHidden ?? this.isHidden,
+      traits: traits ?? this.traits,
     );
   }
 
@@ -79,6 +89,7 @@ class ExerciseModel {
     'enabled': enabled,
     'isFavorite': isFavorite,
     'isHidden': isHidden,
+    if (traits != null) 'traits': traits!.toMap(),
   };
 
   factory ExerciseModel.fromMap(Map<String, dynamic> map) => ExerciseModel(
@@ -93,6 +104,9 @@ class ExerciseModel {
     enabled: map['enabled'] as bool? ?? true,
     isFavorite: map['isFavorite'] as bool? ?? false,
     isHidden: map['isHidden'] as bool? ?? false,
+    traits: map['traits'] is Map
+        ? ExerciseTraits.fromMap(map['traits'] as Map)
+        : null,
   );
 
   String toJson() => jsonEncode(toMap());

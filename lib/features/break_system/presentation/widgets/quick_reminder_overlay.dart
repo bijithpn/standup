@@ -130,26 +130,34 @@ class _MinimalReminderPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contrast = MediaQuery.highContrastOf(context);
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1;
     return Container(
       constraints: const BoxConstraints(maxWidth: 320),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.36),
+        color: Colors.black.withValues(alpha: contrast ? 1 : 0.36),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: contrast ? 1 : 0.12),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white.withValues(alpha: 0.86), size: 20),
+          Icon(
+            icon,
+            color: Colors.white.withValues(alpha: contrast ? 1 : 0.86),
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Flexible(
             child: Text(
               text,
-              maxLines: 1,
+              maxLines: largeText ? 3 : 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.88),
+                color: Colors.white.withValues(alpha: contrast ? 1 : 0.88),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Inter',

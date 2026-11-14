@@ -33,6 +33,12 @@ class _BreakEntranceState extends State<BreakEntrance>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (BreakMotion.reduced(context)) {
+      _controller?.stop();
+      _controller?.value = 1;
+      _started = true;
+      return;
+    }
     if (_started) return;
     _started = true;
     if (BreakPreviewScope.isPreview(context)) return;

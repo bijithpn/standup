@@ -298,12 +298,14 @@ class _BreakActivityCard extends StatelessWidget {
                   children: [
                     BreakStatisticsSection.legendDot(level.color),
                     const SizedBox(width: 6),
-                    Text(
-                      level.meaning,
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 11.5,
-                        fontFamily: 'Inter',
+                    Flexible(
+                      child: Text(
+                        level.meaning,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 11.5,
+                          fontFamily: 'Inter',
+                        ),
                       ),
                     ),
                   ],

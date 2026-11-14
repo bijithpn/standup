@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -31,7 +32,7 @@ class _StartupSplashContentState extends State<StartupSplashContent>
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1800),
-  )..repeat(reverse: true);
+  )..repeatUnlessReducedMotion(reverse: true);
 
   @override
   void dispose() {
@@ -102,6 +103,10 @@ class _StartupSplashCoverState extends State<StartupSplashCover>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (prefersReducedMotion) {
+        if (mounted) setState(() => _gone = true);
+        return;
+      }
       await Future<void>.delayed(const Duration(milliseconds: 200));
       if (!mounted) return;
       await _fade.reverse();

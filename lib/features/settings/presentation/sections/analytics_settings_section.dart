@@ -1,3 +1,5 @@
+import 'package:breakmate/features/settings/widgets/advanced_settings.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/weekly_actionable_insight_card.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
@@ -26,12 +28,16 @@ class AnalyticsSettingsSection extends StatefulWidget {
   final StatsModel stats;
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
+  final Future<void> Function(SettingsModel)? onApplySuggestion;
+  final SettingsModel Function()? currentSettings;
 
   const AnalyticsSettingsSection({
     super.key,
     required this.stats,
     required this.settings,
     required this.onSave,
+    this.onApplySuggestion,
+    this.currentSettings,
   });
 
   @override
@@ -62,6 +68,13 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
+        WeeklyActionableInsightCard(
+          days: _stats.weeklyData,
+          settings: widget.settings,
+          currentSettings: widget.currentSettings ?? () => widget.settings,
+          onApply:
+              widget.onApplySuggestion ?? (value) async => widget.onSave(value),
+        ),
         const SizedBox(height: 18),
         _buildPeriodBar(),
         const SizedBox(height: 20),
@@ -91,7 +104,11 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           'Focus',
           'Uninterrupted deep-work sessions $_periodLabel.',
         ),
-        _buildFocusTab(),
+        AdvancedSettings(
+          title: 'Focus details',
+          subtitle: 'Sessions, score and trends',
+          children: [_buildFocusTab()],
+        ),
         const SizedBox(height: 32),
 
         BreakStatisticsSection(stats: _stats, selectedFilter: _selectedFilter),
@@ -110,8 +127,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         : rate >= 60
         ? ('Good', AppTheme.accent)
         : rate >= 40
-        ? ('Could be better', AppTheme.warning)
-        : ('Skipping a lot', AppTheme.error);
+        ? ('Finding your rhythm', AppTheme.warning)
+        : ('Try a gentler rhythm', AppTheme.warning);
 
     final ring = Column(
       mainAxisSize: MainAxisSize.min,

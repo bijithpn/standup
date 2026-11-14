@@ -1,4 +1,6 @@
+import 'experience_preferences.dart';
 import 'dart:convert';
+import 'work_schedule.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
@@ -40,6 +42,26 @@ class SettingsRepository extends ChangeNotifier {
       }
     } catch (_) {}
     return const {};
+  }
+
+  Map<int, WorkSchedule> _loadWeeklySchedule() {
+    try {
+      return WorkSchedule.decode(
+        jsonDecode(_storage.getString('weekly_schedule')),
+      );
+    } catch (_) {
+      return {};
+    }
+  }
+
+  ExperiencePreferences _loadExperience() {
+    try {
+      return ExperiencePreferences.fromMap(
+        jsonDecode(_storage.getString('experience_preferences')),
+      );
+    } catch (_) {
+      return const ExperiencePreferences();
+    }
   }
 
   SettingsModel get currentSettings => _current;
@@ -221,6 +243,8 @@ class SettingsRepository extends ChangeNotifier {
         s.workingDaysJson,
         fallback: const [1, 2, 3, 4, 5],
       ),
+      experience: _loadExperience(),
+      weeklySchedule: _loadWeeklySchedule(),
       workStartTime: s.workStartTime,
       workEndTime: s.workEndTime,
       detectVideoCalls: s.detectVideoCalls,
@@ -382,6 +406,10 @@ class SettingsRepository extends ChangeNotifier {
   // Pre-snapshot installs stored each setting as its own KV key; used once, then migrated by [save].
   SettingsModel _loadFromLegacy() {
     return SettingsModel(
+      intensityLevel: _storage.getString(
+        'intensity_level',
+        defaultValue: 'standard',
+      ),
       shortBreakIntervalMinutes: _storage.getInt(
         AppConstants.keyShortBreakInterval,
         defaultValue: AppConstants.defaultShortBreakIntervalMinutes,
@@ -455,6 +483,8 @@ class SettingsRepository extends ChangeNotifier {
         _storage.getString('working_days'),
         fallback: const [1, 2, 3, 4, 5],
       ),
+      experience: _loadExperience(),
+      weeklySchedule: _loadWeeklySchedule(),
       workStartTime: _storage.getString(
         'work_start_time',
         defaultValue: '09:00',
@@ -821,6 +851,26 @@ class SettingsRepository extends ChangeNotifier {
     );
     await _storage.setBool('enable_animations', settings.enableAnimations);
     await _storage.setString('intensity_level', settings.intensityLevel);
+    await _storage.setString(
+      'experience_preferences',
+      jsonEncode(settings.experience.toMap()),
+    );
+    await _storage.setBool('show_on_all_displays', settings.showOnAllDisplays);
+    await _storage.setBool(
+      'working_hours_enabled',
+      settings.workingHoursEnabled,
+    );
+    await _storage.setString('working_days', jsonEncode(settings.workingDays));
+    await _storage.setString('work_start_time', settings.workStartTime);
+    await _storage.setString('work_end_time', settings.workEndTime);
+    await _storage.setString(
+      'weekly_schedule',
+      jsonEncode(
+        settings.weeklySchedule.map(
+          (day, shift) => MapEntry('$day', shift.toJson()),
+        ),
+      ),
+    );
 
     await _storage.setString(
       AppConstants.keyCompanionPetTheme,

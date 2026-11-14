@@ -1,3 +1,4 @@
+import 'theme_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:breakmate/features/themes/domain/app_theme_preset.dart';
@@ -8,6 +9,11 @@ class AppTheme {
 
   static AppThemePreset _activePreset = AppThemePreset.nordicSlate;
   static Color? _customAccent;
+  static bool highContrast = false;
+  static Color get _contrastText =>
+      _activePreset.isDark ? Colors.white : Colors.black;
+  static Color get _contrastSurface =>
+      _activePreset.isDark ? Colors.black : Colors.white;
 
   static AppThemePreset get activePreset => _activePreset;
   static Color? get customAccent => _customAccent;
@@ -22,11 +28,19 @@ class AppTheme {
     _customAccent = customAccent;
   }
 
-  static Color get primary => _activePreset.primary;
+  static Color get primary =>
+      highContrast ? _contrastSurface : _activePreset.primary;
   static Color get primaryLight => _activePreset.primaryLight;
   static Color get primaryDark => _activePreset.primaryDark;
 
   static Color get accent => _customAccent ?? _activePreset.accent;
+  static Color get onAccent =>
+      accent.computeLuminance() > 0.179 ? Colors.black : Colors.white;
+  static Color get selectedSurface => Color.alphaBlend(
+    accent.withValues(alpha: highContrast ? 0.20 : 0.12),
+    surfaceCard,
+  );
+  static Color get hoverOverlay => textPrimary.withValues(alpha: 0.05);
   static Color get accentColor => accent;
 
   static const Color gray50 = Color(0xFFFAFAFA);
@@ -41,18 +55,30 @@ class AppTheme {
   static const Color gray900 = Color(0xFF18181B);
   static const Color gray950 = Color(0xFF09090B);
 
-  static Color get surface => _activePreset.surface;
-  static Color get surfaceElevated => _activePreset.surfaceElevated;
-  static Color get surfaceCard => _activePreset.surfaceCard;
+  static Color get surface =>
+      highContrast ? _contrastSurface : _activePreset.surface;
+  static Color get surfaceElevated =>
+      highContrast ? _contrastSurface : _activePreset.surfaceElevated;
+  static Color get surfaceCard =>
+      highContrast ? _contrastSurface : _activePreset.surfaceCard;
 
-  static Color get border =>
-      Color.lerp(_activePreset.border, _activePreset.textPrimary, 0.12)!;
-  static Color get borderSubtle =>
-      Color.lerp(_activePreset.borderSubtle, _activePreset.textPrimary, 0.07)!;
+  static Color get border => highContrast
+      ? _contrastText
+      : Color.lerp(_activePreset.border, _activePreset.textPrimary, 0.12)!;
+  static Color get borderSubtle => highContrast
+      ? _contrastText
+      : Color.lerp(
+          _activePreset.borderSubtle,
+          _activePreset.textPrimary,
+          0.07,
+        )!;
 
-  static Color get textPrimary => _activePreset.textPrimary;
-  static Color get textSecondary => _activePreset.textSecondary;
-  static Color get textMuted => _activePreset.textMuted;
+  static Color get textPrimary =>
+      highContrast ? _contrastText : _activePreset.textPrimary;
+  static Color get textSecondary =>
+      highContrast ? _contrastText : _activePreset.textSecondary;
+  static Color get textMuted =>
+      highContrast ? _contrastText : _activePreset.textMuted;
 
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
@@ -139,17 +165,120 @@ class AppTheme {
       primaryColor: primary,
       scaffoldBackgroundColor: surface,
       cardColor: surfaceCard,
-      colorScheme: ColorScheme(
+      canvasColor: surfaceCard,
+      colorScheme: themeColorScheme(
         brightness: _activePreset.isDark ? Brightness.dark : Brightness.light,
-        primary: accent,
-        onPrimary: Colors.white,
-        secondary: accent,
-        onSecondary: Colors.white,
-        error: error,
-        onError: Colors.white,
-        surface: surfaceCard,
-        onSurface: textPrimary,
-        onSurfaceVariant: textSecondary,
+        accent: accent,
+        surface: surface,
+        card: surfaceCard,
+        elevated: surfaceElevated,
+        text: textPrimary,
+        secondaryText: textSecondary,
+        border: border,
+        separator: borderSubtle,
+      ),
+      hoverColor: hoverOverlay,
+      focusColor: accent.withValues(alpha: 0.14),
+      iconTheme: IconThemeData(color: textSecondary),
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceElevated,
+        selectedColor: selectedSurface,
+        disabledColor: surface,
+        checkmarkColor: accent,
+        labelStyle: TextStyle(
+          fontFamily: 'Inter',
+          color: WidgetStateColor.resolveWith(
+            (states) => states.contains(WidgetState.disabled)
+                ? textMuted
+                : states.contains(WidgetState.selected)
+                ? textPrimary
+                : textSecondary,
+          ),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        secondaryLabelStyle: TextStyle(
+          fontFamily: 'Inter',
+          color: textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        side: WidgetStateBorderSide.resolveWith(
+          (states) => BorderSide(
+            color: states.contains(WidgetState.selected) ? accent : border,
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusSm),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: accent,
+          foregroundColor: onAccent,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: textPrimary,
+          side: BorderSide(color: border),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: accent),
+      ),
+      listTileTheme: ListTileThemeData(
+        textColor: textPrimary,
+        iconColor: textSecondary,
+        selectedColor: accent,
+        selectedTileColor: selectedSurface,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surfaceCard,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusLg),
+          side: BorderSide(color: border),
+        ),
+        titleTextStyle: TextStyle(
+          color: textPrimary,
+          fontFamily: 'Inter',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        contentTextStyle: TextStyle(
+          color: textSecondary,
+          fontFamily: 'Inter',
+          fontSize: 14,
+          height: 1.5,
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: surfaceElevated,
+        surfaceTintColor: Colors.transparent,
+        textStyle: TextStyle(
+          color: textPrimary,
+          fontFamily: 'Inter',
+          fontSize: 13,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          side: BorderSide(color: border),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surfaceElevated,
+        hintStyle: TextStyle(color: textMuted),
+        labelStyle: TextStyle(color: textSecondary),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusSm),
+          borderSide: BorderSide(color: border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusSm),
+          borderSide: BorderSide(color: accent, width: 2),
+        ),
       ),
       textTheme: TextTheme(
         displayLarge: TextStyle(

@@ -34,7 +34,8 @@ class OverlayWindowService extends ChangeNotifier {
   }) async {
     final settings = sl<SettingsRepository>().currentSettings;
     overlayData = {
-      'reduceMotion': settings.reduceMotion,
+      'reduceMotion': settings.reduceMotion || !settings.enableAnimations,
+      'experience': settings.experience.toMap(),
       'largeText': settings.largeOverlayText,
       ...?overlayData,
     };

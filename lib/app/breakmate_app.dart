@@ -1,3 +1,5 @@
+import 'package:breakmate/shared/utils/accessibility_preferences.dart';
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
@@ -98,8 +100,14 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         ChangeNotifierProvider.value(value: sl<ContextSwitchTracker>()),
         ChangeNotifierProvider.value(value: sl<FocusStreakService>()),
       ],
-      child: Consumer<ThemeController>(
-        builder: (context, themeController, child) {
+      child: Consumer2<ThemeController, SettingsRepository>(
+        builder: (context, themeController, repository, child) {
+          final preferences = repository.currentSettings;
+          AppTheme.highContrast =
+              preferences.experience.highContrast ||
+              MediaQuery.maybeOf(context)?.highContrast == true;
+          AppMotion.reduceMotion =
+              preferences.reduceMotion || !preferences.enableAnimations;
           return MacosApp(
             navigatorKey: ErrorToastService.navigatorKey,
             title: 'BreakMate',
@@ -111,16 +119,17 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                   .watch<SettingsRepository>()
                   .currentSettings;
               final media = MediaQuery.of(context);
+              final accessible = accessibleMediaData(media, settings);
+              AppTheme.highContrast = accessible.highContrast;
               return MediaQuery(
-                data: media.copyWith(
-                  disableAnimations:
-                      media.disableAnimations || settings.reduceMotion,
-                  textScaler: settings.largeOverlayText
-                      ? const TextScaler.linear(1.15)
-                      : null,
-                ),
-                child: ScaffoldMessenger(
-                  child: widget ?? const SizedBox.shrink(),
+                data: accessible,
+                child: Theme(
+                  data: AppTheme.materialTheme,
+                  child: FocusTraversalGroup(
+                    child: ScaffoldMessenger(
+                      child: widget ?? const SizedBox.shrink(),
+                    ),
+                  ),
                 ),
               );
             },

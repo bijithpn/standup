@@ -1,3 +1,6 @@
+import 'package:breakmate/features/settings/notification_intensity.dart';
+import 'first_break_demo.dart';
+import 'package:breakmate/features/settings/widgets/notification_intensity_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -18,6 +21,8 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _saving = false;
+  String _goal = 'rhythm';
 
   // Choices accumulate here and are persisted once in [_finishOnboarding], which also flips hasCompletedOnboarding.
   late SettingsModel _pendingSettings;
@@ -25,7 +30,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   void initState() {
     super.initState();
-    _pendingSettings = _withProfile(sl<SettingsRepository>().currentSettings);
+    _pendingSettings = NotificationIntensity.balanced.apply(
+      _withProfile(sl<SettingsRepository>().currentSettings),
+    );
   }
 
   @override
@@ -35,7 +42,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _nextPage() {
-    if (_currentPage < 3) {
+    if (_saving) return;
+    if (_currentPage < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOutCubic,
@@ -46,8 +54,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _finishOnboarding() async {
-    final repo = sl<SettingsRepository>();
-    await repo.save(_pendingSettings.copyWith(hasCompletedOnboarding: true));
+    setState(() => _saving = true);
+    try {
+      await sl<SettingsRepository>().save(
+        _pendingSettings.copyWith(hasCompletedOnboarding: true),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save setup. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -67,6 +89,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 _buildBreakProfileStep(),
                 _buildStrictnessStep(),
                 _buildCompanionStep(),
+                _buildDemoStep(),
               ],
             ),
             Positioned(
@@ -101,11 +124,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
           else
             const SizedBox(width: 60),
 
-          Row(children: List.generate(4, (index) => _buildDot(index))),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) => _buildDot(index)),
+                ),
+              ),
+            ),
+          ),
 
           _PrimaryButton(
             onTap: _nextPage,
-            label: _currentPage == 3
+            label: _saving
+                ? 'Saving…'
+                : _currentPage == 4
                 ? AppStrings.getStarted
                 : AppStrings.continueButton,
           ),
@@ -136,33 +170,36 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-                letterSpacing: -1,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 100),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -1,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.textSecondary,
-                height: 1.5,
+              const SizedBox(height: 12),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.textSecondary,
+                  height: 1.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 48),
-            child,
-            const SizedBox(height: 100),
-          ],
+              const SizedBox(height: 48),
+              child,
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -195,8 +232,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
   String _work = 'coding';
   int _hours = 6;
 
+  BreakProfile get _recommendedProfile {
+    final id = switch (_goal) {
+      'eyes' => 'health',
+      'movement' => 'developer',
+      'focus' => 'deep_work',
+      _ => null,
+    };
+    return id == null
+        ? BreakProfile.recommend(work: _work, hours: _hours)
+        : BreakProfile.presets.firstWhere((p) => p.id == id);
+  }
+
   SettingsModel _withProfile(SettingsModel s) {
-    final p = BreakProfile.recommend(work: _work, hours: _hours);
+    final p = _recommendedProfile;
     return s.copyWith(
       selectedProfileId: p.id,
       shortBreakIntervalMinutes: p.shortIntervalMinutes,
@@ -229,12 +278,31 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildBreakProfileStep() {
-    final p = BreakProfile.recommend(work: _work, hours: _hours);
+    final p = _recommendedProfile;
     return _buildStepContainer(
       title: AppStrings.chooseRhythm,
       subtitle: AppStrings.rhythmSubtitle,
       child: Column(
         children: [
+          Text(
+            'What would you like help with?',
+            style: TextStyle(color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          _chips(
+            const {
+              'rhythm': 'A regular rhythm',
+              'eyes': 'Eye rest',
+              'movement': 'Moving more',
+              'focus': 'Longer focus',
+            },
+            _goal,
+            (value) {
+              _goal = value;
+              _pickProfile();
+            },
+          ),
+          const SizedBox(height: 24),
           Text(
             'What do you mostly do?',
             style: TextStyle(color: AppTheme.textSecondary),
@@ -264,24 +332,43 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildStrictnessStep() {
     return _buildStepContainer(
-      title: AppStrings.setBoundaries,
-      subtitle: AppStrings.boundariesSubtitle,
-      child: Column(
-        children: [
-          _ProfileOption(
-            title: 'Gentle Mode',
-            description: 'Breaks can be skipped or postponed easily.',
-            isSelected: !_pendingSettings.strictMode,
-            onTap: () => setState(
-              () => _pendingSettings = _pendingSettings.copyWith(
-                strictMode: false,
-              ),
-            ),
-          ),
-        ],
+      title: 'How should we remind you?',
+      subtitle:
+          'Choose warning, sound and display behavior. Change it anytime in Notifications.',
+      child: NotificationIntensityPicker(
+        settings: _pendingSettings,
+        onChanged: (settings) => setState(() => _pendingSettings = settings),
       ),
     );
   }
+
+  Widget _buildDemoStep() => _buildStepContainer(
+    title: 'Try your first break',
+    subtitle:
+        'Practice a 20-second eye rest, or get started now. Your first scheduled break follows your chosen rhythm.',
+    child: Column(
+      children: [
+        Text(
+          'Break every ${_pendingSettings.shortBreakIntervalMinutes} minutes · ${_pendingSettings.shortBreakDurationSeconds} seconds',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        FilledButton.icon(
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => const FirstBreakDemo(),
+          ),
+          icon: const Icon(Icons.visibility_outlined),
+          label: const Text('Try a 20-second demo'),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Optional. The demo does not count toward your daily goals.',
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  );
 
   Widget _buildCompanionStep() {
     return _buildStepContainer(

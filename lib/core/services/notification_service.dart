@@ -53,7 +53,7 @@ class NotificationService {
 
   // Denied permission turns notifications off in settings and emits NotificationPermissionDeniedEvent for the UI.
   Future<void> _checkAndRequestPermission() async {
-    final granted = await requestPermission();
+    final granted = await requestNotificationPermission();
     if (!granted) {
       _notificationsEnabled = false;
 
@@ -71,7 +71,22 @@ class NotificationService {
     }
   }
 
-  Future<bool> requestPermission() async {
+  /// Read-only status. Null means this platform cannot report the permission.
+  Future<bool?> permissionAllowed() async {
+    if (!Platform.isMacOS) return null;
+    try {
+      return (await _plugin
+              .resolvePlatformSpecificImplementation<
+                MacOSFlutterLocalNotificationsPlugin
+              >()
+              ?.checkPermissions())
+          ?.isEnabled;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> requestNotificationPermission() async {
     // Windows toasts need no runtime permission.
     if (Platform.isWindows) return true;
     try {

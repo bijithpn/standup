@@ -35,10 +35,11 @@ class _MinimalButtonState extends State<MinimalButton>
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final bool isDisabled = widget.onPressed == null;
 
     Color defaultBg = widget.isSecondary
-        ? Colors.white.withValues(alpha: 0.05)
+        ? colors.surfaceContainerHigh
         : (widget.backgroundColor ?? AppTheme.primary);
 
     Color activeColor = isDisabled
@@ -112,17 +113,18 @@ class _MinimalButtonState extends State<MinimalButton>
               border: _isFocused
                   ? Border.all(color: AppTheme.accentColor, width: 2)
                   : widget.isSecondary
-                  ? Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      width: 1,
-                    )
+                  ? Border.all(color: AppTheme.border, width: 1)
                   : null,
             ),
             child: DefaultTextStyle(
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: widget.isSecondary ? AppTheme.textPrimary : Colors.white,
+                color: widget.isSecondary
+                    ? colors.onSurface
+                    : ((defaultBg.computeLuminance() > 0.179)
+                          ? Colors.black
+                          : Colors.white),
                 fontFamily: 'Inter',
               ),
               child: widget.child,
@@ -264,7 +266,9 @@ class _MinimalSliderState extends State<MinimalSlider> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -322,7 +326,7 @@ class _MinimalSliderState extends State<MinimalSlider> {
 }
 
 /// Tap wrapper adding pointer cursor, focus and semantics to any child.
-class TapTarget extends StatelessWidget {
+class TapTarget extends StatefulWidget {
   final VoidCallback? onTap;
   final Widget child;
   final bool? selected;
@@ -339,15 +343,22 @@ class TapTarget extends StatelessWidget {
   });
 
   @override
+  State<TapTarget> createState() => _TapTargetState();
+}
+
+class _TapTargetState extends State<TapTarget> {
+  bool _focused = false;
+  @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
+    final enabled = widget.onTap != null;
     return Semantics(
       button: true,
       enabled: enabled,
-      selected: selected,
-      label: semanticLabel,
+      selected: widget.selected,
+      label: widget.semanticLabel,
       child: FocusableActionDetector(
         enabled: enabled,
+        onShowFocusHighlight: (value) => setState(() => _focused = value),
         mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
         shortcuts: const {
           SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
@@ -356,12 +367,27 @@ class TapTarget extends StatelessWidget {
         actions: {
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {
-              onTap?.call();
+              widget.onTap?.call();
               return null;
             },
           ),
         },
-        child: GestureDetector(behavior: behavior, onTap: onTap, child: child),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: _focused
+                ? Border.all(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    width: 2,
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: GestureDetector(
+            behavior: widget.behavior,
+            onTap: widget.onTap,
+            child: widget.child,
+          ),
+        ),
       ),
     );
   }

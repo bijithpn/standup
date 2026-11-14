@@ -1,3 +1,7 @@
+import 'settings_group.dart';
+import 'rest_day_settings.dart';
+import 'package:breakmate/features/analytics/weekly_goal_progress.dart';
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,62 +37,86 @@ class GoalsSection extends StatelessWidget {
       builder: (context, repo, statsService, _) {
         final s = repo.currentSettings;
         final stats = statsService.stats;
-        final activeDays = activeDaysThisWeek(stats.weeklyData, clock.now());
+        final week = WeeklyGoalProgress.calculate(
+          stats.weeklyData,
+          clock.now(),
+          s.weeklyConsistencyTargetDays,
+          s.experience,
+        );
+        final activeDays = week.activeDays;
 
         return ValueListenableBuilder<Duration>(
           valueListenable: sl<TimerEngine>().totalWorkTodayNotifier,
           builder: (context, worked, _) {
-            final focusP = worked.inMinutes / (s.dailyWorkGoalHours * 60);
-            final breakP = stats.breaksCompleted / s.dailyBreakGoalCount;
-            final weekP = activeDays / s.weeklyConsistencyTargetDays;
-            final all = [focusP, breakP, weekP];
+            final focusP =
+                worked.inMinutes / (s.dailyWorkGoalHours.clamp(1, 12) * 60);
+            final breakP =
+                stats.breaksCompleted / s.dailyBreakGoalCount.clamp(1, 30);
+            final weekP = week.progress;
+            final all = [
+              if (!week.restingToday) ...[focusP, breakP],
+              weekP,
+            ];
             final metCount = all.where((p) => p >= 1).length;
             final overall =
-                all.map((p) => p.clamp(0.0, 1.0)).reduce((a, b) => a + b) / 3;
+                all.map((p) => p.clamp(0.0, 1.0)).reduce((a, b) => a + b) /
+                all.length;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Summary(overall: overall, metCount: metCount),
-                _GoalRow(
-                  index: 1,
-                  title: 'Daily focus time',
-                  effect:
-                      'Counts the time your work timer has run today. '
-                      'Resets each morning.',
-                  current: _hm(worked),
-                  target: '${s.dailyWorkGoalHours}h',
-                  progress: focusP,
-                  value: s.dailyWorkGoalHours.toDouble(),
-                  min: 1,
-                  max: 12,
-                  onChanged: (v) =>
-                      repo.save(s.copyWith(dailyWorkGoalHours: v.round())),
+                _Summary(
+                  overall: overall,
+                  metCount: metCount,
+                  totalGoals: all.length,
                 ),
-                _GoalRow(
-                  index: 2,
-                  title: 'Daily breaks',
-                  effect:
-                      'Counts breaks you complete (skipped ones don\'t). '
-                      'Resets each morning.',
-                  current: '${stats.breaksCompleted}',
-                  target: '${s.dailyBreakGoalCount}',
-                  progress: breakP,
-                  value: s.dailyBreakGoalCount.toDouble(),
-                  min: 1,
-                  max: 30,
-                  onChanged: (v) =>
-                      repo.save(s.copyWith(dailyBreakGoalCount: v.round())),
+                SettingsNote(
+                  week.restingToday
+                      ? 'Today is a rest day. Your weekly progress is still here; there is nothing to make up.'
+                      : 'A missed day does not erase the breaks you have taken. One comfortable break is a good place to begin again.',
                 ),
+                RestDaySettings(settings: s, onSave: repo.save),
+                if (!week.restingToday) ...[
+                  _GoalRow(
+                    index: 1,
+                    title: 'Daily focus time',
+                    effect:
+                        'Counts the time your work timer has run today. '
+                        'Resets each morning.',
+                    current: _hm(worked),
+                    target: '${s.dailyWorkGoalHours}h',
+                    progress: focusP,
+                    value: s.dailyWorkGoalHours.toDouble(),
+                    min: 1,
+                    max: 12,
+                    onChanged: (v) =>
+                        repo.save(s.copyWith(dailyWorkGoalHours: v.round())),
+                  ),
+                  _GoalRow(
+                    index: 2,
+                    title: 'Daily breaks',
+                    effect:
+                        'Counts breaks you complete (skipped ones don\'t). '
+                        'Resets each morning.',
+                    current: '${stats.breaksCompleted}',
+                    target: '${s.dailyBreakGoalCount}',
+                    progress: breakP,
+                    value: s.dailyBreakGoalCount.toDouble(),
+                    min: 1,
+                    max: 30,
+                    onChanged: (v) =>
+                        repo.save(s.copyWith(dailyBreakGoalCount: v.round())),
+                  ),
+                ],
                 _GoalRow(
                   index: 3,
                   title: 'Weekly consistency',
                   effect:
                       'A day counts when you complete at least one break. '
-                      'Looks at the last 7 days.',
+                      'Looks at the last 7 days. Planned target: ${s.weeklyConsistencyTargetDays} days; rest days reduce this when needed.',
                   current: '$activeDays',
                   target:
-                      '${s.weeklyConsistencyTargetDays} day${s.weeklyConsistencyTargetDays == 1 ? '' : 's'}',
+                      '${week.targetDays} day${week.targetDays == 1 ? '' : 's'}',
                   progress: weekP,
                   value: s.weeklyConsistencyTargetDays.toDouble(),
                   min: 1,
@@ -138,8 +166,13 @@ Widget _rule() =>
 class _Summary extends StatelessWidget {
   final double overall;
   final int metCount;
+  final int totalGoals;
 
-  const _Summary({required this.overall, required this.metCount});
+  const _Summary({
+    required this.overall,
+    required this.metCount,
+    required this.totalGoals,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +207,7 @@ class _Summary extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'of 3 goals reached',
+                'of $totalGoals goals reached',
                 style: TextStyle(fontSize: 15, color: AppTheme.textSecondary),
               ),
             ],
@@ -182,7 +215,10 @@ class _Summary extends StatelessWidget {
           const SizedBox(height: 18),
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: overall.clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 600),
+            duration: motionDuration(
+              context,
+              const Duration(milliseconds: 600),
+            ),
             curve: Curves.easeOutCubic,
             builder: (context, v, _) => _Hairline(value: v, height: 3),
           ),
@@ -327,7 +363,10 @@ class _GoalRow extends StatelessWidget {
               const SizedBox(height: 14),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
-                duration: const Duration(milliseconds: 500),
+                duration: motionDuration(
+                  context,
+                  const Duration(milliseconds: 500),
+                ),
                 curve: Curves.easeOutCubic,
                 builder: (context, v, _) => _Hairline(value: v, met: met),
               ),

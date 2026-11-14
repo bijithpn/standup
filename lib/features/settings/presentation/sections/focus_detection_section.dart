@@ -1,3 +1,5 @@
+import 'package:breakmate/features/settings/widgets/settings_group.dart';
+import 'package:breakmate/features/settings/widgets/detection_health_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
@@ -21,6 +23,8 @@ class FocusDetectionSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        DetectionHealthPanel(settings: settings),
+        const SizedBox(height: 8),
         sectionHeader('Smart Detection'),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 24),
@@ -30,32 +34,32 @@ class FocusDetectionSection extends StatelessWidget {
           ),
         ),
 
-        buildCard([
-          toggleRow(
-            'Video Calls Detection',
-            'Show a quiet reminder instead of the full break during Zoom, Meet, Teams, etc.',
-            settings.detectVideoCalls,
-            (v) => onSave(settings.copyWith(detectVideoCalls: v)),
-          ),
-          divider(),
+        SettingsGroup(
+          children: [
+            toggleRow(
+              'Video Calls Detection',
+              'Show a quiet reminder instead of the full break during Zoom, Meet, Teams, etc.',
+              settings.detectVideoCalls,
+              (v) => onSave(settings.copyWith(detectVideoCalls: v)),
+            ),
 
-          actionRow(
-            label: 'Meetings from your calendar',
-            subtitle: settings.detectMeetings && settings.calendarEnabled
-                ? 'On — breaks stay quiet during calendar events.'
-                : 'Off — set up in Calendar Sync.',
-            buttonText: 'Open Calendar Sync',
-            onPressed: () =>
-                sl<AppNavigationService>().openSection('Calendar Sync'),
-          ),
-          divider(),
-          toggleRow(
-            'Presentation Pause',
-            'Pause breaks while a fullscreen slideshow or presentation is showing',
-            settings.presentationPauseEnabled,
-            (v) => onSave(settings.copyWith(presentationPauseEnabled: v)),
-          ),
-        ]),
+            actionRow(
+              label: 'Meetings from your calendar',
+              subtitle: settings.detectMeetings && settings.calendarEnabled
+                  ? 'On — breaks stay quiet during calendar events.'
+                  : 'Off — set up in Calendar Sync.',
+              buttonText: 'Open Calendar Sync',
+              onPressed: () =>
+                  sl<AppNavigationService>().openSection('Calendar Sync'),
+            ),
+            toggleRow(
+              'Presentation Pause',
+              'Pause breaks while a fullscreen slideshow or presentation is showing',
+              settings.presentationPauseEnabled,
+              (v) => onSave(settings.copyWith(presentationPauseEnabled: v)),
+            ),
+          ],
+        ),
       ],
     );
   }

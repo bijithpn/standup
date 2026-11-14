@@ -168,6 +168,8 @@ class TimerEngine extends ChangeNotifier {
 
   TimerStateData get stateData => _stateData;
   TimerContextManager get contextManager => _contextManager;
+  bool get isManuallyPaused => _stateData.isManuallyPaused;
+
   bool get systemSleepPaused => _stateData.systemSleepPaused;
 
   void syncNotifiersFromState() {
@@ -623,6 +625,9 @@ class TimerEngine extends ChangeNotifier {
     return false;
   }
 
+  /// When the user last stepped away for 20s or more; lets a companion cue know it was acted on.
+  DateTime? lastRestAt;
+
   /// Fed idle samples: lets health reminders count real rests and recovers from a stuck sleep flag when input resumes.
   void reportIdleSeconds(double idleSeconds) {
     final since = _stateData.lastTickTime;
@@ -633,6 +638,7 @@ class TimerEngine extends ChangeNotifier {
       _logger.warning('Input detected while sleep flag stuck: recovering');
       handleSystemWake();
     }
+    if (idleSeconds >= 20) lastRestAt = clock.now();
     final relieved = _healthScheduler.onIdleSample(idleSeconds, clock.now());
     relieved.forEach(_resetElapsed);
   }
@@ -885,11 +891,16 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  void resumeTimers() {
+  void resumeTimers({bool isManual = true}) {
     if (state == TimerState.breakActive) return;
+    if (!isManual && !_contextManager.shouldRunWorkTimer()) {
+      _stateData.isManuallyPaused = false;
+      pauseTimers();
+      return;
+    }
     _stateData.state = TimerState.running;
     _stateData.isManuallyPaused = false;
-    _stateData.manualOverride = true;
+    _stateData.manualOverride = isManual;
     _stateData.isPreBreak = false;
     _stateData.lastTickTime = clock.now();
     _stateData.breakEndTime = null;

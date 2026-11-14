@@ -36,6 +36,7 @@ class DailySummarySection extends StatelessWidget {
           ..sort((a, b) => a.time.compareTo(b.time));
 
         final goal = settings.currentSettings.dailyBreakGoalCount;
+        final restDay = settings.currentSettings.experience.isRestDay(now);
         final done = todayStats.breaksCompleted;
         final skipped = todayStats.breaksSkipped;
         final total = done + skipped;
@@ -75,19 +76,27 @@ class DailySummarySection extends StatelessWidget {
                       ],
                     ),
                   ),
-                  _GoalChip(done: done, goal: goal),
+                  restDay
+                      ? Text(
+                          'Rest day · $done breaks taken',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        )
+                      : _GoalChip(done: done, goal: goal),
                 ],
               ),
               const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: goal <= 0 ? 0 : (done / goal).clamp(0.0, 1.0),
-                  minHeight: 4,
-                  color: done >= goal ? AppTheme.success : AppTheme.textPrimary,
-                  backgroundColor: AppTheme.border,
+              if (!restDay)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: goal <= 0 ? 0 : (done / goal).clamp(0.0, 1.0),
+                    minHeight: 4,
+                    color: done >= goal
+                        ? AppTheme.success
+                        : AppTheme.textPrimary,
+                    backgroundColor: AppTheme.border,
+                  ),
                 ),
-              ),
               const SizedBox(height: 22),
               if (!hasData)
                 Center(

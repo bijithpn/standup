@@ -25,6 +25,7 @@ class AppConstants {
   static const int idleThresholdMinutes = 3;
 
   static const Duration healthReminderDismissDuration = Duration(seconds: 6);
+  static const Duration companionCueGrace = Duration(seconds: 45);
 
   static const int maxRetries = 3;
   static const int initialRetryDelayMs = 500;

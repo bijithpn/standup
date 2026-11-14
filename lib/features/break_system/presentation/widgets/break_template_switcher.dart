@@ -1,3 +1,4 @@
+import 'accessible_break_view.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -57,6 +58,19 @@ class BreakTemplateSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (settings.experience.highContrast ||
+        MediaQuery.highContrastOf(context) ||
+        MediaQuery.textScalerOf(context).scale(1) > 1 ||
+        settings.experience.textScale > 1 ||
+        settings.experience.hasExerciseRestrictions) {
+      return AccessibleBreakView(
+        breakInfo: breakInfo,
+        settings: settings,
+        remaining: remaining,
+        instructions: exerciseInstructions,
+        exerciseTitle: exerciseTitle,
+      );
+    }
     if (breakInfo.type == BreakType.windDown) {
       return const WindDownTemplate();
     }

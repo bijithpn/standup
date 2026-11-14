@@ -1,3 +1,4 @@
+import 'package:breakmate/features/feedback/interruption_feedback_card.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
@@ -40,15 +41,17 @@ class DashboardPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 10),
-                          const DashboardHeader(),
+                          DashboardHeader(),
                           const SizedBox(height: 40),
                           TimerSection(
                             calendarEvents: dashboardCtrl.calendarEvents,
                           ),
                           const SizedBox(height: 32),
-                          const DailySummarySection(),
+                          DailySummarySection(),
                           const SizedBox(height: 32),
-                          const ActionGrid(),
+                          ActionGrid(),
+                          const SizedBox(height: 24),
+                          InterruptionFeedbackCard(repository: settingsRepo),
                           if (calendarEnabled) ...[
                             const SizedBox(height: 40),
                             CalendarSection(
@@ -92,13 +95,17 @@ class DashboardPage extends StatelessWidget {
 
           if (isSmall) {
             return Scaffold(
-              backgroundColor: AppTheme.surface,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerLowest,
               body: SafeArea(child: buildContent(null)),
             );
           }
 
           return MacosScaffold(
-            backgroundColor: AppTheme.surface,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerLowest,
             toolBar: ToolBar(
               title: Text(
                 AppStrings.today,

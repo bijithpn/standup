@@ -1,3 +1,4 @@
+import 'package:breakmate/features/settings/experience_preferences.dart';
 import 'dart:async' show Timer;
 import 'package:clock/clock.dart';
 import 'dart:convert';
@@ -257,6 +258,30 @@ class StatsService extends ChangeNotifier {
 
     if (lastActive == yesterday) {
     } else if (lastActive != today) {
+      final last = DateTime.tryParse(lastActive);
+      final current = DateTime.tryParse(today);
+      ExperiencePreferences preferences;
+      try {
+        preferences = ExperiencePreferences.fromMap(
+          jsonDecode(_storage.getString('experience_preferences')),
+        );
+      } catch (_) {
+        preferences = const ExperiencePreferences();
+      }
+      if (last != null && current != null && last.isBefore(current)) {
+        var onlyRestDays = true;
+        for (
+          var day = DateTime(last.year, last.month, last.day + 1);
+          day.isBefore(current);
+          day = DateTime(day.year, day.month, day.day + 1)
+        ) {
+          if (!preferences.isRestDay(day)) {
+            onlyRestDays = false;
+            break;
+          }
+        }
+        if (onlyRestDays) return;
+      }
       _storage.setInt(AppConstants.keyCurrentStreak, 0);
     }
   }

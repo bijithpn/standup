@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Global key handler for the overlay: any non-modifier key skips (when allowed); Cmd/Ctrl+Shift+B quits the app even in strict mode.
+/// Global key handler for the overlay: Escape skips (when allowed); Tab and activation keys stay available to controls; Cmd/Ctrl+Shift+B quits the app even in strict mode.
 class BreakOverlayKeyboardHandler extends StatefulWidget {
   final bool canDismiss;
   final VoidCallback onSkip;
@@ -52,28 +52,11 @@ class _BreakOverlayKeyboardHandlerState
 
     if (widget.canDismiss &&
         event is KeyDownEvent &&
-        !_isModifierKey(event.logicalKey)) {
+        event.logicalKey == LogicalKeyboardKey.escape) {
       widget.onSkip();
       return true;
     }
     return false;
-  }
-
-  static bool _isModifierKey(LogicalKeyboardKey key) {
-    return key == LogicalKeyboardKey.shift ||
-        key == LogicalKeyboardKey.shiftLeft ||
-        key == LogicalKeyboardKey.shiftRight ||
-        key == LogicalKeyboardKey.control ||
-        key == LogicalKeyboardKey.controlLeft ||
-        key == LogicalKeyboardKey.controlRight ||
-        key == LogicalKeyboardKey.alt ||
-        key == LogicalKeyboardKey.altLeft ||
-        key == LogicalKeyboardKey.altRight ||
-        key == LogicalKeyboardKey.meta ||
-        key == LogicalKeyboardKey.metaLeft ||
-        key == LogicalKeyboardKey.metaRight ||
-        key == LogicalKeyboardKey.capsLock ||
-        key == LogicalKeyboardKey.fn;
   }
 
   @override

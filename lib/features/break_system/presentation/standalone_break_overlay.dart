@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/features/settings/experience_preferences.dart';
+import 'package:breakmate/shared/utils/accessibility_preferences.dart';
 import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math';
 import 'package:breakmate/core/ipc/ipc_maps.dart';
@@ -46,6 +50,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   );
 
   late OverlayWindowConfig _config;
+  ExperiencePreferences _experience = const ExperiencePreferences();
   late String _currentTemplate;
   late BreakTheme _currentTheme;
   late AnimationController _kenBurnsController;
@@ -76,6 +81,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       defaultMessage: widget.message,
       defaultDurationSeconds: widget.initialDurationSeconds,
     );
+    try {
+      _experience = ExperiencePreferences.fromMap(
+        jsonDecode(SimplePrefs.instance.getString('experience_preferences')),
+      );
+    } catch (_) {}
+    AppMotion.reduceMotion = _config.reduceMotion || !_config.enableAnimations;
     _initialized = true;
 
     _currentTemplate = AppConstants.wellnessSlideshow.isNotEmpty
@@ -116,6 +127,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _applyOverlayData(Map args) {
     if (!mounted) return;
 
+    if (args.containsKey('experience')) {
+      _experience = ExperiencePreferences.fromMap(args['experience']);
+    }
     _hasReceivedOverlayData = true;
     _overlayDataGeneration++;
     final myGeneration = _overlayDataGeneration;
@@ -146,6 +160,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     setState(() {
       _config = config;
+      AppMotion.reduceMotion = config.reduceMotion || !config.enableAnimations;
       durationSeconds = config.durationSeconds;
 
       final end = targetEndTime;
@@ -166,7 +181,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         _currentTemplate = config.classicImage!;
       }
       _syncClassicEffects(
-        config.breakTemplate == 'classic' && config.enableAnimations,
+        config.breakTemplate == 'classic' &&
+            config.enableAnimations &&
+            !prefersReducedMotion,
       );
 
       if (config.reminderType != null &&
@@ -179,9 +196,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
       final isQuick = _config.overlayType == 'quickReminder';
       final isPreBreak = _config.overlayType == 'preBreakWarning';
-      _fadeController.duration = Duration(
-        milliseconds: (isQuick || isPreBreak) ? 400 : 600,
-      );
+      _fadeController.duration = prefersReducedMotion
+          ? Duration.zero
+          : Duration(milliseconds: (isQuick || isPreBreak) ? 400 : 600);
 
       if (isQuick) {
         final capturedType = _config.overlayType;
@@ -204,6 +221,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncClassicEffects(
+      _config.breakTemplate == 'classic' &&
+          _config.enableAnimations &&
+          !prefersReducedMotion,
+    );
+    if (prefersReducedMotion) _fadeController.duration = Duration.zero;
     if (_config.breakTemplate == 'classic' && _currentTemplate.isNotEmpty) {
       precacheImage(AssetImage(_currentTemplate), context);
     }
@@ -301,7 +324,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     }
 
     _cachedBreakModel ??= _config.toBreakModel(durationSeconds);
-    _cachedSettingsModel ??= _config.toSettingsModel();
+    _cachedSettingsModel ??= _config.toSettingsModel().copyWith(
+      experience: _experience,
+    );
 
     final isDimmedOverlay =
         _config.overlayType == 'preBreakWarning' ||
@@ -314,9 +339,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     final media = MediaQuery.of(context);
     return MediaQuery(
-      data: media.copyWith(
-        disableAnimations: media.disableAnimations || _config.reduceMotion,
-        textScaler: _config.largeText ? const TextScaler.linear(1.35) : null,
+      data: accessibleMediaData(
+        media,
+        _cachedSettingsModel!,
+        legacyLargeScale: 1.35,
       ),
       child: PopScope(
         canPop: false,
@@ -339,18 +365,24 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                     valueListenable: completing,
                     builder: (_, done, child) =>
                         BreakCompletionScope(completing: done, child: child!),
-                    child: BreakOverlayContent(
-                      config: _config,
-                      fadeAnimation: _fadeController,
-                      remainingSecondsNotifier: remainingSecondsNotifier,
-                      onSkip: _skipBreak,
-                      canDismiss: _canDismiss,
-                      breakInfo: _cachedBreakModel!,
-                      settings: _cachedSettingsModel!,
-                      currentTemplate: _currentTemplate,
-                      kenBurnsController: _kenBurnsController,
-                      lookedAway: lookedAway,
-                      onLookedAway: () => setState(() => lookedAway = true),
+                    child: TickerMode(
+                      enabled:
+                          !(media.disableAnimations ||
+                              _config.reduceMotion ||
+                              !_config.enableAnimations),
+                      child: BreakOverlayContent(
+                        config: _config,
+                        fadeAnimation: _fadeController,
+                        remainingSecondsNotifier: remainingSecondsNotifier,
+                        onSkip: _skipBreak,
+                        canDismiss: _canDismiss,
+                        breakInfo: _cachedBreakModel!,
+                        settings: _cachedSettingsModel!,
+                        currentTemplate: _currentTemplate,
+                        kenBurnsController: _kenBurnsController,
+                        lookedAway: lookedAway,
+                        onLookedAway: () => setState(() => lookedAway = true),
+                      ),
                     ),
                   ),
                 ),

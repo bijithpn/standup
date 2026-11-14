@@ -41,6 +41,9 @@ class NativeEnhancementsService {
     double opacity = 0.35,
     String colorHex = '#000000',
     bool dismissOnMouseMove = false,
+    double textScale = 1,
+    bool highContrast = false,
+    bool reduceMotion = false,
   }) async {
     if (!_supported) return;
     try {
@@ -52,6 +55,9 @@ class NativeEnhancementsService {
         'opacity': opacity,
         'colorHex': colorHex,
         'dismissOnMouseMove': dismissOnMouseMove,
+        'textScale': textScale.clamp(1.0, 1.5),
+        'highContrast': highContrast,
+        'reduceMotion': reduceMotion,
       });
     } catch (e) {
       _logger.error('Failed to trigger flash reminder: $e');

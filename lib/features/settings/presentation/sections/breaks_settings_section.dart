@@ -1,3 +1,4 @@
+import 'package:breakmate/features/settings/widgets/exercise_preferences_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/breaks/break_appearance_settings.dart';
 import 'package:breakmate/features/settings/presentation/sections/breaks/break_intensity_settings.dart';
 import 'package:breakmate/features/settings/presentation/sections/breaks/break_profile_selector.dart';
@@ -40,7 +41,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             const SizedBox(height: 12),
 
             segmentedControl(
-              ['Profiles', 'Intervals', 'Options', 'Themes'],
+              ['Profiles', 'Intervals', 'Options', 'Themes', 'Exercises'],
               _breaksSubTab,
               (i) => setState(() => _breaksSubTab = i),
               isSmall: isSmallScreen,
@@ -60,6 +61,11 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
               ),
             if (_breaksSubTab == 2)
               BreakIntensitySettings(
+                settings: widget.settings,
+                onSave: widget.onSave,
+              ),
+            if (_breaksSubTab == 4)
+              ExercisePreferencesSection(
                 settings: widget.settings,
                 onSave: widget.onSave,
               ),

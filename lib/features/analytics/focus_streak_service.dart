@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:breakmate/features/settings/experience_preferences.dart';
 import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -73,9 +75,18 @@ class FocusStreakService extends ChangeNotifier {
   int currentStreakDays({DateTime? now}) {
     final today = now ?? clock.now();
     var streak = 0;
+    ExperiencePreferences preferences;
+    try {
+      preferences = ExperiencePreferences.fromMap(
+        jsonDecode(_storage.getString('experience_preferences')),
+      );
+    } catch (_) {
+      preferences = const ExperiencePreferences();
+    }
 
     for (var i = 0; i < _maxScanDays; i++) {
-      final date = today.subtract(Duration(days: i));
+      final date = DateTime(today.year, today.month, today.day - i);
+      if (preferences.isRestDay(date)) continue;
       final totalActiveSeconds = _usageService
           .categoryTotals(UsagePeriod.today, now: date)
           .values

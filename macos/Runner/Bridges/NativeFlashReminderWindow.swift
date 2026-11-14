@@ -7,8 +7,11 @@ public class NativeFlashReminderWindow: NSObject {
     private var mouseMovementTimer: Timer?
     private var isDismissing = false
     
-    public func triggerFlash(text: String, title: String = "A moment for you", reminderType: String = "", durationMs: Int = 250, opacity: CGFloat = 0.35, colorHex: String = "#000000", dismissOnMouseMove: Bool = false) {
+    public func triggerFlash(text: String, title: String = "A moment for you", reminderType: String = "", durationMs: Int = 250, opacity: CGFloat = 0.35, colorHex: String = "#000000", dismissOnMouseMove: Bool = false, textScale: CGFloat = 1, highContrast: Bool = false, reduceMotion: Bool = false) {
         dismissAll()
+        let scale = textScale.isFinite ? min(1.5, max(1, textScale)) : 1
+        let contrast = highContrast || NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        let minimalMotion = reduceMotion || NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         generation += 1
         let current = generation
         isDismissing = false
@@ -34,7 +37,8 @@ public class NativeFlashReminderWindow: NSObject {
             let card = HealthReminderCardView(
                 title: title, message: text, reminderType: reminderType,
                 dismissOnMouseMove: dismissOnMouseMove,
-                width: min(520, screen.visibleFrame.width - 48))
+                width: min(520 * scale, screen.visibleFrame.width - 48),
+                textScale: scale, highContrast: contrast)
             let size = NSSize(width: card.frame.width + 24, height: card.frame.height + 24)
             let container = NSView(frame: NSRect(origin: .zero, size: size))
             card.setFrameOrigin(NSPoint(x: 12, y: 12))
@@ -51,7 +55,7 @@ public class NativeFlashReminderWindow: NSObject {
         }
         
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.24
+            context.duration = minimalMotion ? 0 : 0.24
             for window in self.flashWindows {
                 window.animator().alphaValue = 1.0
             }
@@ -63,7 +67,7 @@ public class NativeFlashReminderWindow: NSObject {
                 self.mouseMovementTimer?.invalidate()
                 self.mouseMovementTimer = nil
                 NSAnimationContext.runAnimationGroup({ context in
-                    context.duration = 0.2
+                    context.duration = minimalMotion ? 0 : 0.2
                     for window in self.flashWindows {
                         window.animator().alphaValue = 0.0
                     }
@@ -108,8 +112,8 @@ public class NativeFlashReminderWindow: NSObject {
 /// Centered, readable reminder with one message and restrained styling.
 final class HealthReminderCardView: NSView {
     init(title: String, message: String, reminderType: String,
-         dismissOnMouseMove: Bool, width: CGFloat) {
-        let font = NSFont.systemFont(ofSize: 20, weight: .medium)
+         dismissOnMouseMove: Bool, width: CGFloat, textScale: CGFloat = 1, highContrast: Bool = false) {
+        let font = NSFont.systemFont(ofSize: 20 * textScale, weight: .medium)
         let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
         let content = text.isEmpty ? title : text
         // Unknown/custom reminders have no arbitrary health icon. If an SF
@@ -126,16 +130,16 @@ final class HealthReminderCardView: NSView {
         }
         let image = symbol.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
         let padding: CGFloat = 22
-        let iconSize: CGFloat = 22
+        let iconSize: CGFloat = 22 * textScale
         let gap: CGFloat = image == nil ? 0 : iconSize + 12
         let textX = padding + gap
         let horizontalInset = textX + padding
         let paragraph = NSMutableParagraphStyle()
-        paragraph.lineSpacing = 2
+        paragraph.lineSpacing = 2 * textScale
         paragraph.lineBreakMode = .byWordWrapping
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor(srgbRed: 0.83, green: 0.85, blue: 0.84, alpha: 1),
+            .foregroundColor: highContrast ? NSColor.white : NSColor(srgbRed: 0.83, green: 0.85, blue: 0.84, alpha: 1),
             .paragraphStyle: paragraph
         ]
         let naturalWidth = ceil((content as NSString).size(withAttributes: attributes).width) + 4
@@ -145,14 +149,14 @@ final class HealthReminderCardView: NSView {
             with: NSSize(width: textWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin, .usesFontLeading],
             attributes: attributes).height
-        let textHeight = min(86, max(26, ceil(measured) + 2))
+        let textHeight = min(86 * textScale, max(26 * textScale, ceil(measured) + 2))
         let height = max(iconSize, textHeight) + 40
         super.init(frame: NSRect(x: 0, y: 0, width: cardWidth, height: height))
         wantsLayer = true
-        layer?.backgroundColor = NSColor(srgbRed: 0.14, green: 0.145, blue: 0.15, alpha: 1).cgColor
+        layer?.backgroundColor = highContrast ? NSColor.black.cgColor : NSColor(srgbRed: 0.14, green: 0.145, blue: 0.15, alpha: 1).cgColor
         layer?.cornerRadius = 16
-        layer?.borderWidth = 0.5
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.10).cgColor
+        layer?.borderWidth = highContrast ? 1.5 : 0.5
+        layer?.borderColor = NSColor.white.withAlphaComponent(highContrast ? 1 : 0.10).cgColor
         layer?.shadowColor = NSColor.black.cgColor
         layer?.shadowOpacity = 0.12
         layer?.shadowRadius = 5
@@ -165,8 +169,8 @@ final class HealthReminderCardView: NSView {
                 x: padding, y: (height - iconSize) / 2,
                 width: iconSize, height: iconSize))
             icon.image = image
-            icon.contentTintColor = NSColor(srgbRed: 0.64, green: 0.67, blue: 0.66, alpha: 1)
-            icon.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 20, weight: .regular)
+            icon.contentTintColor = highContrast ? NSColor.white : NSColor(srgbRed: 0.64, green: 0.67, blue: 0.66, alpha: 1)
+            icon.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 20 * textScale, weight: .regular)
             addSubview(icon)
         }
 

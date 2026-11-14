@@ -1,6 +1,7 @@
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'package:breakmate/features/settings/backup_service.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
@@ -94,6 +95,7 @@ class ServiceBootstrapper {
     // Timers start only after tray and companion exist so they can react to state events.
     sl<TimerOrchestrator>().initialize();
     sl<DailyResetService>().start();
+    unawaited(BackupService(sl<StorageService>()).runIfDue());
     sl<BreakController>().initialize();
 
     // Delay restoring a focus session until startup settles.

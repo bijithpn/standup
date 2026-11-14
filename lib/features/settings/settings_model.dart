@@ -1,7 +1,10 @@
+import 'experience_preferences.dart';
 import 'package:breakmate/features/settings/exercise_model.dart';
+import 'work_schedule.dart';
 
 /// Immutable snapshot of every user setting; changed via [copyWith] and persisted by [SettingsRepository].
 class SettingsModel {
+  final ExperiencePreferences experience;
   final bool autoStart;
   final String clockFaceStyle;
   final String selectedProfileId;
@@ -62,6 +65,7 @@ class SettingsModel {
 
   final int resetTimerAfterMinutes;
 
+  final Map<int, WorkSchedule> weeklySchedule;
   final bool workingHoursEnabled;
   final List<int> workingDays;
   final String workStartTime;
@@ -157,6 +161,7 @@ class SettingsModel {
   final Map<String, int> categoryDailyBudgetMinutes;
 
   const SettingsModel({
+    this.experience = const ExperiencePreferences(),
     this.autoStart = true,
     this.clockFaceStyle = 'breakloop',
     this.selectedProfileId = 'default',
@@ -196,6 +201,7 @@ class SettingsModel {
     this.lookedAwayPromptEnabled = false,
     this.customImagePath,
     this.resetTimerAfterMinutes = 15,
+    this.weeklySchedule = const {},
     this.workingHoursEnabled = false,
     this.workingDays = const [1, 2, 3, 4, 5],
     this.workStartTime = '09:00',
@@ -268,6 +274,7 @@ class SettingsModel {
   });
 
   SettingsModel copyWith({
+    ExperiencePreferences? experience,
     bool? autoStart,
     String? clockFaceStyle,
     String? selectedProfileId,
@@ -312,6 +319,7 @@ class SettingsModel {
     bool? lookedAwayPromptEnabled,
     String? customImagePath,
     int? resetTimerAfterMinutes,
+    Map<int, WorkSchedule>? weeklySchedule,
     bool? workingHoursEnabled,
     List<int>? workingDays,
     String? workStartTime,
@@ -378,6 +386,7 @@ class SettingsModel {
     Map<String, int>? templateAccentOverrides,
   }) {
     return SettingsModel(
+      experience: experience ?? this.experience,
       autoStart: autoStart ?? this.autoStart,
       clockFaceStyle: clockFaceStyle ?? this.clockFaceStyle,
       selectedProfileId: selectedProfileId ?? this.selectedProfileId,
@@ -442,6 +451,7 @@ class SettingsModel {
           : this.customImagePath,
       resetTimerAfterMinutes:
           resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
+      weeklySchedule: weeklySchedule ?? this.weeklySchedule,
       workingHoursEnabled: workingHoursEnabled ?? this.workingHoursEnabled,
       workingDays: workingDays ?? this.workingDays,
       workStartTime: workStartTime ?? this.workStartTime,
@@ -538,6 +548,7 @@ class SettingsModel {
   }
 
   Map<String, dynamic> toMap() => {
+    'experience': experience.toMap(),
     'autoStart': autoStart,
     'clockFaceStyle': clockFaceStyle,
     'selectedProfileId': selectedProfileId,
@@ -582,6 +593,9 @@ class SettingsModel {
     'lookedAwayPromptEnabled': lookedAwayPromptEnabled,
     'customImagePath': customImagePath,
     'resetTimerAfterMinutes': resetTimerAfterMinutes,
+    'weeklySchedule': weeklySchedule.map(
+      (day, shift) => MapEntry('$day', shift.toJson()),
+    ),
     'workingHoursEnabled': workingHoursEnabled,
     'workingDays': workingDays,
     'workStartTime': workStartTime,
@@ -654,6 +668,7 @@ class SettingsModel {
     }
 
     return SettingsModel(
+      experience: ExperiencePreferences.fromMap(map['experience']),
       autoStart: map['autoStart'] as bool? ?? true,
       clockFaceStyle: map['clockFaceStyle'] as String? ?? 'breakloop',
       selectedProfileId: map['selectedProfileId'] as String? ?? 'default',
@@ -706,6 +721,7 @@ class SettingsModel {
       lookedAwayPromptEnabled: map['lookedAwayPromptEnabled'] as bool? ?? false,
       customImagePath: map['customImagePath'] as String?,
       resetTimerAfterMinutes: map['resetTimerAfterMinutes'] as int? ?? 15,
+      weeklySchedule: WorkSchedule.decode(map['weeklySchedule']),
       workingHoursEnabled: map['workingHoursEnabled'] as bool? ?? false,
       workingDays:
           (map['workingDays'] as List<dynamic>?)

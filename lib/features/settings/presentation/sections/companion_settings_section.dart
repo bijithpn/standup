@@ -16,6 +16,7 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
 /// Settings > Companion: pet gallery, size, name, gaze sensitivity and streak, all applied through [CompanionOverlayController].
 class CompanionSettingsSection extends StatefulWidget {
@@ -215,6 +216,30 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     widget.controller.companionEnabled,
                     (v) => widget.controller.toggleCompanion(v),
                   ),
+                  if (widget.controller.companionEnabled) ...[
+                    divider(),
+                    toggleRow(
+                      'Escalate if ignored',
+                      'Your companion gives the first cue. If you do not step '
+                          'away within 45 seconds, the full reminder appears.',
+                      sl<SettingsRepository>()
+                          .currentSettings
+                          .experience
+                          .companionEscalates,
+                      (v) {
+                        final repo = sl<SettingsRepository>();
+                        final cur = repo.currentSettings;
+                        repo.save(
+                          cur.copyWith(
+                            experience: cur.experience.copyWith(
+                              companionEscalates: v,
+                            ),
+                          ),
+                        );
+                        setState(() {});
+                      },
+                    ),
+                  ],
                 ]),
 
                 if (widget.controller.companionEnabled) ...[

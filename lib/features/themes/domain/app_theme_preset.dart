@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/theme/theme_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 
@@ -401,23 +402,17 @@ class AppThemePreset {
       primaryColor: primary,
       scaffoldBackgroundColor: surface,
       cardColor: surfaceCard,
-      colorScheme: isDark
-          ? ColorScheme.dark(
-              primary: accent,
-              surface: surfaceCard,
-              error: const Color(0xFFEF4444),
-              onPrimary: Colors.white,
-              onSurface: textPrimary,
-              onSurfaceVariant: textSecondary,
-            )
-          : ColorScheme.light(
-              primary: accent,
-              surface: surfaceCard,
-              error: const Color(0xFFEF4444),
-              onPrimary: Colors.white,
-              onSurface: textPrimary,
-              onSurfaceVariant: textSecondary,
-            ),
+      colorScheme: themeColorScheme(
+        brightness: isDark ? Brightness.dark : Brightness.light,
+        accent: accent,
+        surface: surface,
+        card: surfaceCard,
+        elevated: surfaceElevated,
+        text: textPrimary,
+        secondaryText: textSecondary,
+        border: border,
+        separator: borderSubtle,
+      ),
       dividerTheme: DividerThemeData(color: borderSubtle, thickness: 1),
     );
   }

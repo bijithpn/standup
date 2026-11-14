@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:breakmate/features/settings/work_schedule.dart';
 
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
@@ -48,25 +49,41 @@ class TimerContextManager {
     if (!settings.workingHoursEnabled) return true;
 
     final now = clock.now();
-    final weekday = now.weekday;
+    // Check yesterday as well: an overnight shift belongs to its start day.
+    for (final date in [now, DateTime(now.year, now.month, now.day - 1)]) {
+      if (!settings.workingDays.contains(date.weekday)) continue;
+      final shift =
+          settings.weeklySchedule[date.weekday] ??
+          WorkSchedule(
+            start: settings.workStartTime,
+            end: settings.workEndTime,
+          );
+      if (!shift.isValid || shift.contains(date, now)) return true;
+    }
+    return false;
+  }
 
-    final workingDays = settings.workingDays;
-    if (!workingDays.contains(weekday)) return false;
-
-    final startParts = settings.workStartTime.split(':');
-    final endParts = settings.workEndTime.split(':');
-    if (startParts.length != 2 || endParts.length != 2) return true;
-
-    final startH = int.tryParse(startParts[0]) ?? 9;
-    final startM = int.tryParse(startParts[1]) ?? 0;
-    final endH = int.tryParse(endParts[0]) ?? 18;
-    final endM = int.tryParse(endParts[1]) ?? 0;
-
-    final startMinutes = startH * 60 + startM;
-    final endMinutes = endH * 60 + endM;
-    final nowMinutes = now.hour * 60 + now.minute;
-
-    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+  /// The next enabled shift or end of lunch, including yesterday's overnight shift.
+  DateTime? nextWorkingTime() {
+    final settings = _settingsRepository.currentSettings;
+    final now = clock.now();
+    if (!settings.workingHoursEnabled) return now;
+    DateTime? next;
+    for (var offset = -1; offset <= 7; offset++) {
+      final date = DateTime(now.year, now.month, now.day + offset);
+      if (!settings.workingDays.contains(date.weekday)) continue;
+      final shift =
+          settings.weeklySchedule[date.weekday] ??
+          WorkSchedule(
+            start: settings.workStartTime,
+            end: settings.workEndTime,
+          );
+      final candidate = shift.nextActiveTime(date, now);
+      if (candidate != null && (next == null || candidate.isBefore(next))) {
+        next = candidate;
+      }
+    }
+    return next;
   }
 
   /// Pauses the work timer (presenting or watching video); meetings are handled separately via [isMeetingActive].

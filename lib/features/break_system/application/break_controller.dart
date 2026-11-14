@@ -1,3 +1,5 @@
+import 'package:clock/clock.dart';
+import 'package:breakmate/core/services/snooze_timer.dart';
 import 'dart:math';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -44,6 +46,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   AudioPlayer? _audioPlayer;
   bool _isPlayingMusic = false;
   Timer? _fadeTimer;
+  final SnoozeTimer _snoozeTimer = SnoozeTimer();
+  DateTime? get snoozeResumeAt => _snoozeTimer.resumeAt;
   double _currentVolume = 0.0;
 
   String _currentTemplate = '';
@@ -75,11 +79,16 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   // Settings edits re-apply timers/services and refresh an already-open break overlay.
   void _onSettingsChanged() {
     _applySettings();
+    if (isBreakActive &&
+        _settingsRepo.currentSettings.experience.hasExerciseRestrictions) {
+      _pickRandomExercise();
+    }
     _updateActiveOverlay();
     notifyListeners();
   }
 
   void _onTimerChanged() {
+    if (!isPaused) _snoozeTimer.cancel();
     notifyListeners();
   }
 
@@ -147,7 +156,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
 
-      if (_currentTemplate == 'activities') {
+      if (_currentTemplate == 'activities' ||
+          settings.experience.hasExerciseRestrictions) {
         _pickRandomExercise();
       }
 
@@ -174,6 +184,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
           'showWellnessNotes': settings.showExercisesInBreak,
+          'experience': settings.experience.toMap(),
           'durationSeconds':
               _timerEngine.activeBreak?.durationSeconds ??
               _timerEngine.countdownSeconds,
@@ -248,6 +259,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       stretches,
       Random(),
       avoidId: _currentExerciseId,
+      preferences: _settingsRepo.currentSettings.experience,
     );
     _timerEngine.triggerBreakNow(
       durationSeconds: _microExercise?.durationSeconds,
@@ -263,6 +275,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Pauses break timers and (optionally) enables DND until [minutes] elapse; persisted so it survives a restart.
   void startFocusSession(int minutes) {
+    _snoozeTimer.cancel();
     endFocusSession(completed: false);
     final now = DateTime.now();
     _beginFocus(now, now.add(Duration(minutes: minutes)));
@@ -342,15 +355,27 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _pickRandomExercise() {
-    final micro = _microExercise;
+    final micro =
+        _microExercise?.effectiveTraits.matches(
+              _settingsRepo.currentSettings.experience,
+            ) ==
+            true
+        ? _microExercise
+        : null;
     final exercise =
         micro ??
         ExerciseModel.pickForBreak(
           _settingsRepo.getExercises(),
           Random(),
           avoidId: _currentExerciseId,
+          preferences: _settingsRepo.currentSettings.experience,
         );
-    if (exercise == null) return;
+    if (exercise == null) {
+      _currentExerciseId = null;
+      _currentExerciseTitle = null;
+      _currentExerciseInstructions = null;
+      return;
+    }
     _currentExerciseId = exercise.id;
     _currentExerciseTitle = exercise.title;
     _currentExerciseInstructions = exercise.instructions;
@@ -418,21 +443,23 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       timerState: _timerEngine.state,
       contextManager: _timerEngine.contextManager,
       settings: _settingsRepo.currentSettings,
+      snoozeResumeAt: snoozeResumeAt,
+      isManualPause: _timerEngine.isManuallyPaused,
     );
     TimerExplanationOverlayService.show(explanation);
   }
 
   /// Manually pauses timers for [minutes] and auto-resumes unless the user resumed earlier.
   void snooze({int? minutes}) {
+    if (isBreakActive || isFocusSessionActive) return;
     final snoozeMins =
-        minutes ?? _settingsRepo.currentSettings.lastSnoozeDurationMinutes;
-    _timerEngine.pauseTimers(isManual: true);
-
-    Timer(Duration(minutes: snoozeMins), () {
-      if (isPaused) {
-        _timerEngine.resumeTimers();
-      }
+        (minutes ?? _settingsRepo.currentSettings.lastSnoozeDurationMinutes)
+            .clamp(1, 1440);
+    _snoozeTimer.start(Duration(minutes: snoozeMins), () {
+      if (isPaused) _timerEngine.resumeTimers(isManual: false);
+      notifyListeners();
     });
+    _timerEngine.pauseTimers(isManual: true);
 
     _settingsRepo.save(
       _settingsRepo.currentSettings.copyWith(
@@ -443,8 +470,17 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void snoozeUntil(DateTime endTime) {
-    final minutes = endTime.difference(DateTime.now()).inMinutes.clamp(1, 240);
-    snooze(minutes: minutes);
+    final remaining = endTime.difference(clock.now());
+    if (remaining <= Duration.zero || isBreakActive || isFocusSessionActive) {
+      return;
+    }
+    // Keep the exact meeting end; rounding down could interrupt its final minute.
+    _snoozeTimer.start(remaining, () {
+      if (isPaused) _timerEngine.resumeTimers(isManual: false);
+      notifyListeners();
+    });
+    _timerEngine.pauseTimers(isManual: true);
+    notifyListeners();
   }
 
   bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
@@ -460,10 +496,31 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           : 'Break active. Skip is available from the overlay.';
     }
     if (_timerEngine.state == TimerState.paused) {
-      if (settings.quietModeEnabled) {
-        return _quietModeLabel(settings.quietModePreset);
+      if (snoozeResumeAt != null) {
+        return 'Snoozed. Your focus countdown resumes at the time shown below.';
       }
-      return 'Paused manually.';
+      if (isFocusSessionActive) {
+        return 'Paused: focus session active. Resumes when your session ends.';
+      }
+      if (_timerEngine.isManuallyPaused) {
+        return 'Paused manually. Resume when you are ready.';
+      }
+      final context = _timerEngine.contextManager;
+      if (!context.isWithinWorkingHours()) {
+        return 'Paused: outside working hours or during lunch. Resumes automatically when your schedule allows.';
+      }
+      if (context.isSmartPauseActive()) {
+        return context.isPresentationActive()
+            ? 'Paused: presentation detected. Resumes when it ends.'
+            : 'Paused: video playback detected. Resumes when it ends.';
+      }
+      return 'Paused. Resume when you are ready.';
+    }
+    if (_timerEngine.contextManager.isMeetingActive()) {
+      return 'Meeting detected: the timer continues and breaks use quiet reminders.';
+    }
+    if (settings.quietModeEnabled) {
+      return _quietModeLabel(settings.quietModePreset);
     }
     if (settings.calendarEnabled) {
       return 'Calendar-aware planning is watching for meeting conflicts.';
@@ -541,6 +598,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         'enableAnimations': settings.enableAnimations,
         'intensityLevel': settings.intensityLevel,
         'showWellnessNotes': settings.showExercisesInBreak,
+        'experience': settings.experience.toMap(),
         'exerciseTitle': 'Preview Mode',
         'exerciseInstructions':
             'This is a preview of your selected break template. It will not be recorded in your history.',
@@ -618,6 +676,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void togglePause() {
+    _snoozeTimer.cancel();
     if (isPaused) {
       _timerEngine.resumeTimers();
     } else {
@@ -654,6 +713,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
           'showWellnessNotes': settings.showExercisesInBreak,
+          'experience': settings.experience.toMap(),
           'durationSeconds':
               _timerEngine.activeBreak?.durationSeconds ??
               _timerEngine.countdownSeconds,
@@ -752,6 +812,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _timerEngine.removeListener(_onTimerChanged);
     _settingsRepo.removeListener(_onSettingsChanged);
     _focusTimer?.cancel();
+    _snoozeTimer.cancel();
     _audioPlayer?.dispose();
     super.dispose();
   }

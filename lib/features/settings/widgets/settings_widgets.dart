@@ -96,6 +96,8 @@ Widget toggleRow(
             child: CupertinoSwitch(
               value: value,
               activeTrackColor: AppTheme.accentColor,
+              inactiveTrackColor: AppTheme.border,
+              thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
               onChanged: onChanged,
             ),
           ),
@@ -359,6 +361,8 @@ Widget buildListRow(
               value: value,
               onChanged: onChanged,
               activeTrackColor: AppTheme.accentColor,
+              inactiveTrackColor: AppTheme.border,
+              thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
             ),
           ),
         ?trailing,
@@ -545,11 +549,12 @@ Widget segmentedControl(
           return Semantics(
             button: true,
             selected: isSelected,
+            onTap: () => onSelected(entry.key),
             label: entry.value,
             excludeSemantics: true,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
-              child: GestureDetector(
+              child: TapTarget(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => onSelected(entry.key),
                 child: Container(

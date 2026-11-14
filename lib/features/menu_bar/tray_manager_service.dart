@@ -841,7 +841,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
     if (_timerEngine != null) {
       if (_isMeetingActive) {
-        statusLabel = 'In a Meeting (Paused)';
+        statusLabel = isPaused
+            ? 'Meeting detected · timer paused'
+            : 'Meeting detected · quiet reminders';
       } else if (isBreakActive) {
         statusLabel = 'On Break';
       } else if (isPaused) {
@@ -892,6 +894,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           MenuItem(key: 'focus_25', label: 'Focus 25 min'),
           MenuItem(key: 'focus_50', label: 'Focus 50 min'),
         ],
+        MenuItem(key: 'snooze_2', label: 'Snooze 2 min'),
+        MenuItem(key: 'snooze_5', label: 'Snooze 5 min'),
         MenuItem(key: 'snooze_15', label: 'Snooze 15 min'),
         MenuItem(key: 'snooze_60', label: 'Snooze 1 hour'),
         MenuItem(key: 'snooze_today', label: 'Snooze rest of today'),
@@ -962,6 +966,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           'Break ends in ${_mmss(Duration(seconds: engine.countdownSeconds))}',
         ];
       case TimerState.paused:
+        final resumeAt = _breakController?.snoozeResumeAt;
+        if (resumeAt != null) {
+          return [
+            'Snooze ends at ${_clock(resumeAt)}',
+            'Next break around ${_clock(resumeAt.add(until))} if working',
+          ];
+        }
         final why = engine.stateData.isManuallyPaused
             ? 'paused by you'
             : ctx.isSmartPauseActive()

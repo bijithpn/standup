@@ -1,3 +1,5 @@
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:clock/clock.dart';
 import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
@@ -50,6 +52,7 @@ class TimerOrchestrator {
   Timer? _pauseAutoResumeTimer;
   Timer? _autoSaveTimer;
   Timer? _healthReminderContextTimer;
+  Timer? _companionCueTimer;
 
   String? _lastTrayTitle;
   String? _lastTrayTooltip;
@@ -279,9 +282,25 @@ class TimerOrchestrator {
       IpcBridge.instance.dispatch(
         CompanionInteractionIpcEvent(interactionType: interactionType),
       );
+      if (settings.experience.companionEscalates) {
+        final cueAt = clock.now();
+        _companionCueTimer?.cancel();
+        _companionCueTimer = Timer(AppConstants.companionCueGrace, () {
+          final rested = timerEngine.lastRestAt?.isAfter(cueAt) ?? false;
+          if (rested ||
+              timerEngine.contextManager.shouldSuppressHealthReminders) {
+            return;
+          }
+          _showReminderOverlay(event, settingsRepository.currentSettings);
+        });
+      }
       return;
     }
 
+    _showReminderOverlay(event, settings);
+  }
+
+  void _showReminderOverlay(HealthReminderEvent event, SettingsModel settings) {
     // macOS uses the native flash reminder only; other platforms also show the quick overlay window.
     final macos = Platform.isMacOS;
     NativeEnhancementsService.instance.triggerFlashReminder(
@@ -293,6 +312,9 @@ class TimerOrchestrator {
           : 250,
       opacity: macos ? 0.2 : 0.35,
       dismissOnMouseMove: settings.dismissReminderOnMouseMove,
+      textScale: settings.experience.textScale,
+      highContrast: settings.experience.highContrast,
+      reduceMotion: settings.reduceMotion || !settings.enableAnimations,
     );
     _healthReminderContextTimer?.cancel();
     final shownAt = DateTime.now();
@@ -589,6 +611,7 @@ class TimerOrchestrator {
     _pauseAutoResumeTimer?.cancel();
     _autoSaveTimer?.cancel();
     _healthReminderContextTimer?.cancel();
+    _companionCueTimer?.cancel();
     timerEngine.removeListener(_onTimerEngineChanged);
   }
 }

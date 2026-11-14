@@ -1,3 +1,6 @@
+import 'settings_group.dart';
+import 'advanced_settings.dart';
+import 'notification_intensity_picker.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'dart:io';
 import 'dart:math';
@@ -34,92 +37,107 @@ class NotificationsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        sectionHeader('Reminder Intensity'),
+        NotificationIntensityPicker(settings: settings, onChanged: onSave),
+        const SizedBox(height: 8),
         sectionHeader('Notifications'),
-        buildCard([
-          _buildSoundEnabled(),
-          divider(),
-          _buildNotificationsEnabled(),
-        ]),
-        const SizedBox(height: 24),
+        SettingsGroup(
+          children: [_buildSoundEnabled(), _buildNotificationsEnabled()],
+        ),
+        const SizedBox(height: 8),
         sectionHeader('Health Reminders'),
-        buildCard([
-          toggleRow(
-            'Health reminders',
-            'Gentle nudges for your eyes, posture, water, stretching and '
-                'standing up — shown one at a time, at varied moments.',
-            settings.healthRemindersEnabled,
-            (v) => onSave(settings.copyWith(healthRemindersEnabled: v)),
-          ),
-          if (settings.healthRemindersEnabled) ...[
-            divider(),
-            _buildReminderPreviewRow(onPreview: _previewRandom),
-            if (Platform.isMacOS) ...[
-              divider(),
-              toggleRow(
-                'Dismiss on mouse movement',
-                settings.dismissReminderOnMouseMove
-                    ? 'On: moving the mouse dismisses new reminders after a brief pause.'
-                    : 'Off: reminders stay visible for their full duration.',
-                settings.dismissReminderOnMouseMove,
-                (v) => onSave(settings.copyWith(dismissReminderOnMouseMove: v)),
+        SettingsGroup(
+          children: [
+            toggleRow(
+              'Health reminders',
+              'Gentle nudges for your eyes, posture, water, stretching and '
+                  'standing up — shown one at a time, at varied moments.',
+              settings.healthRemindersEnabled,
+              (v) => onSave(settings.copyWith(healthRemindersEnabled: v)),
+            ),
+            if (settings.healthRemindersEnabled) ...[
+              _buildReminderPreviewRow(onPreview: _previewRandom),
+              AdvancedSettings(
+                title: 'More health reminder options',
+                children: [
+                  if (Platform.isMacOS) ...[
+                    divider(),
+                    toggleRow(
+                      'Dismiss on mouse movement',
+                      settings.dismissReminderOnMouseMove
+                          ? 'On: moving the mouse dismisses new reminders after a brief pause.'
+                          : 'Off: reminders stay visible for their full duration.',
+                      settings.dismissReminderOnMouseMove,
+                      (v) => onSave(
+                        settings.copyWith(dismissReminderOnMouseMove: v),
+                      ),
+                    ),
+                  ],
+                  if (kDebugMode && Platform.isMacOS) ...[
+                    divider(),
+                    _buildReminderPreviewRow(
+                      label: 'Preview posture reminder (debug)',
+                      onPreview: () => _showPreview('posture'),
+                    ),
+                    divider(),
+                    _buildReminderPreviewRow(
+                      label: 'Preview water reminder (debug)',
+                      onPreview: () => _showPreview('hydration'),
+                    ),
+                    divider(),
+                    _buildReminderPreviewRow(
+                      label: 'Preview notification toast (debug)',
+                      onPreview: () =>
+                          NativeEnhancementsService.instance.showToast(
+                            title: 'Time for a break',
+                            body: 'Eye Rest',
+                            sound: settings.soundEnabled,
+                          ),
+                    ),
+                  ],
+                  divider(),
+                  toggleRow(
+                    'Blink & screen-distance reminders',
+                    'An extra, more frequent nudge to blink fully and keep the '
+                        'screen an arm\'s length away.',
+                    settings.blinkRemindersEnabled,
+                    (v) => onSave(settings.copyWith(blinkRemindersEnabled: v)),
+                  ),
+                ],
               ),
             ],
-            if (kDebugMode && Platform.isMacOS) ...[
-              divider(),
-              _buildReminderPreviewRow(
-                label: 'Preview posture reminder (debug)',
-                onPreview: () => _showPreview('posture'),
-              ),
-              divider(),
-              _buildReminderPreviewRow(
-                label: 'Preview water reminder (debug)',
-                onPreview: () => _showPreview('hydration'),
-              ),
-              divider(),
-              _buildReminderPreviewRow(
-                label: 'Preview notification toast (debug)',
-                onPreview: () => NativeEnhancementsService.instance.showToast(
-                  title: 'Time for a break',
-                  body: 'Eye Rest',
-                  sound: settings.soundEnabled,
+            AdvancedSettings(
+              title: 'Focus and evening options',
+              children: [
+                if (settings.avoidBreakHour >= 0) ...[
+                  divider(),
+                  toggleRow(
+                    'Avoid breaks around ${formatHourLabel(settings.avoidBreakHour)}',
+                    'Breaks due in that hour wait until the next one. Turn off to '
+                        'restore normal timing.',
+                    true,
+                    (_) => onSave(settings.copyWith(avoidBreakHour: -1)),
+                  ),
+                ],
+                divider(),
+                toggleRow(
+                  'Do Not Disturb in focus sessions',
+                  'macOS only. Create two Shortcuts named "BreakMate Focus On" and '
+                      '"BreakMate Focus Off" that set your Focus mode.',
+                  settings.focusDndEnabled,
+                  (v) => onSave(settings.copyWith(focusDndEnabled: v)),
                 ),
-              ),
-            ],
-            divider(),
-            toggleRow(
-              'Blink & screen-distance reminders',
-              'An extra, more frequent nudge to blink fully and keep the '
-                  'screen an arm\'s length away.',
-              settings.blinkRemindersEnabled,
-              (v) => onSave(settings.copyWith(blinkRemindersEnabled: v)),
+                divider(),
+                toggleRow(
+                  'Evening eye care',
+                  'At 8 pm, turn on Night Shift (macOS) and nudge you to lower brightness.',
+                  settings.eveningEyeCare,
+                  (v) => onSave(settings.copyWith(eveningEyeCare: v)),
+                ),
+              ],
             ),
           ],
-          if (settings.avoidBreakHour >= 0) ...[
-            divider(),
-            toggleRow(
-              'Avoid breaks around ${formatHourLabel(settings.avoidBreakHour)}',
-              'Breaks due in that hour wait until the next one. Turn off to '
-                  'restore normal timing.',
-              true,
-              (_) => onSave(settings.copyWith(avoidBreakHour: -1)),
-            ),
-          ],
-          divider(),
-          toggleRow(
-            'Do Not Disturb in focus sessions',
-            'macOS only. Create two Shortcuts named "BreakMate Focus On" and '
-                '"BreakMate Focus Off" that set your Focus mode.',
-            settings.focusDndEnabled,
-            (v) => onSave(settings.copyWith(focusDndEnabled: v)),
-          ),
-          divider(),
-          toggleRow(
-            'Evening eye care',
-            'At 8 pm, turn on Night Shift (macOS) and nudge you to lower brightness.',
-            settings.eveningEyeCare,
-            (v) => onSave(settings.copyWith(eveningEyeCare: v)),
-          ),
-        ]),
+        ),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
@@ -135,51 +153,56 @@ class NotificationsSection extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 24),
-        sectionHeader(
-          'Custom Reminders',
-          subtitle:
-              'Your own recurring nudges, shown with the health reminders.',
-        ),
-        buildCard([
-          for (final r in settings.customReminders) ...[
-            ListTile(
-              dense: true,
-              title: Text(
-                r.title,
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                'Every ${r.minutes} min',
-                style: TextStyle(color: AppTheme.textSecondary),
-              ),
-              trailing: IconButton(
-                tooltip: 'Remove',
-                icon: Icon(
-                  CupertinoIcons.delete,
-                  size: 16,
-                  color: AppTheme.textSecondary,
-                ),
-                onPressed: () => onSave(
-                  settings.copyWith(
-                    customReminders: [...settings.customReminders]..remove(r),
+        const SizedBox(height: 8),
+        AdvancedSettings(
+          title: 'Custom reminders',
+          subtitle: 'Add and manage your own recurring nudges',
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final r in settings.customReminders) ...[
+                  ListTile(
+                    dense: true,
+                    title: Text(
+                      r.title,
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Every ${r.minutes} min',
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    trailing: IconButton(
+                      tooltip: 'Remove',
+                      icon: Icon(
+                        CupertinoIcons.delete,
+                        size: 16,
+                        color: AppTheme.textSecondary,
+                      ),
+                      onPressed: () => onSave(
+                        settings.copyWith(
+                          customReminders: [...settings.customReminders]
+                            ..remove(r),
+                        ),
+                      ),
+                    ),
+                  ),
+                  divider(),
+                ],
+                _CustomReminderForm(
+                  onAdd: (r) => onSave(
+                    settings.copyWith(
+                      customReminders: [...settings.customReminders, r],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-            divider(),
           ],
-          _CustomReminderForm(
-            onAdd: (r) => onSave(
-              settings.copyWith(
-                customReminders: [...settings.customReminders, r],
-              ),
-            ),
-          ),
-        ]),
+        ),
       ],
     );
   }
@@ -221,6 +244,9 @@ class NotificationsSection extends StatelessWidget {
         durationMs: AppConstants.healthReminderDismissDuration.inMilliseconds,
         opacity: 0.2,
         dismissOnMouseMove: settings.dismissReminderOnMouseMove,
+        textScale: settings.experience.textScale,
+        highContrast: settings.experience.highContrast,
+        reduceMotion: settings.reduceMotion || !settings.enableAnimations,
       );
       return;
     }
@@ -260,7 +286,7 @@ class NotificationsSection extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
             ),
           ),
           const SizedBox(width: 12),
@@ -274,22 +300,23 @@ class NotificationsSection extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: AppTheme.surfaceElevated,
+                  border: Border.all(color: AppTheme.border),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       CupertinoIcons.play_fill,
                       size: 14,
-                      color: Colors.white,
+                      color: AppTheme.textPrimary,
                     ),
                     SizedBox(width: 6),
                     Text(
                       'Preview',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Inter',

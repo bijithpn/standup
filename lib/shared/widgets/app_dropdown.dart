@@ -28,9 +28,7 @@ class AppDropdown<T> extends StatelessWidget {
     return Material(
       type: MaterialType.transparency,
       child: Theme(
-        data: Theme.of(
-          context,
-        ).copyWith(hoverColor: Colors.white.withValues(alpha: 0.05)),
+        data: Theme.of(context).copyWith(hoverColor: AppTheme.hoverOverlay),
         child: PopupMenuButton<T>(
           initialValue: value,
           tooltip: label ?? 'Select option',
@@ -41,12 +39,10 @@ class AppDropdown<T> extends StatelessWidget {
           elevation: 12,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            side: BorderSide(
-              color: Colors.white.withValues(alpha: 0.05),
-              width: 0.8,
-            ),
+            side: BorderSide(color: AppTheme.border, width: 0.8),
           ),
-          color: const Color(0xFF161616),
+          color: AppTheme.surfaceElevated,
+          surfaceTintColor: Colors.transparent,
           itemBuilder: (context) => items.map((item) {
             final isSelected = item.value == value;
             return PopupMenuItem<T>(
@@ -97,12 +93,9 @@ class AppDropdown<T> extends StatelessWidget {
             width: width,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.02),
+              color: AppTheme.surfaceElevated,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.05),
-                width: 0.8,
-              ),
+              border: Border.all(color: AppTheme.border, width: 0.8),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

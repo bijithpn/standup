@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:breakmate/core/services/timer_context_manager.dart';
 import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -20,6 +21,8 @@ TimerExplanation buildTimerExplanation({
   required TimerState timerState,
   required TimerContextManager contextManager,
   required SettingsModel settings,
+  DateTime? snoozeResumeAt,
+  bool? isManualPause,
 }) {
   final smartPauseActive = contextManager.isSmartPauseActive();
   final withinWorkingHours = contextManager.isWithinWorkingHours();
@@ -55,6 +58,11 @@ TimerExplanation buildTimerExplanation({
 
   final stateSummary = switch (timerState) {
     TimerState.breakActive => 'A break is active right now.',
+    TimerState.paused when snoozeResumeAt != null =>
+      'Snoozed until ${DateFormat.jm().format(snoozeResumeAt)}. Your focus countdown resumes when your schedule and detection allow.',
+    TimerState.paused when isManualPause == true => 'Timer is manually paused.',
+    TimerState.paused when !withinWorkingHours =>
+      'Timer is paused outside working hours or during lunch.',
     TimerState.paused when smartPauseActive =>
       'Timer is paused by a smart-detection rule.',
     TimerState.paused => 'Timer is manually paused.',
