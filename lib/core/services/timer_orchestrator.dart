@@ -444,6 +444,10 @@ class TimerOrchestrator {
         if (!settingsRepository.currentSettings.autoResumeOnActivity &&
             timerEngine.state == TimerState.running) {
           timerEngine.pauseTimers(isManual: true);
+        } else if (timerEngine.state == TimerState.running) {
+          notificationService.showReminder(
+            message: 'Welcome back! Your timer has started again.',
+          );
         }
       },
     );
@@ -457,6 +461,9 @@ class TimerOrchestrator {
         _pauseAutoResumeTimer?.cancel();
         if (settingsRepository.currentSettings.autoResumeOnActivity) {
           timerEngine.resumeTimers(isManual: false);
+          notificationService.showReminder(
+            message: 'Welcome back! Your timer has started again.',
+          );
         }
       } else if (!isActive && state == TimerState.running) {
         timerEngine.discardIdleTime(

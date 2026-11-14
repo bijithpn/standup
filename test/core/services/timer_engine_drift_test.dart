@@ -145,7 +145,7 @@ void main() {
 
   group('TimerEngine OS Drift / Sleep Delta tests', () {
     test(
-      'TimerEngine handles long system clock sleep drift by resetting to idle',
+      'TimerEngine handles long system clock sleep drift by restarting a fresh session',
       () {
         fakeAsync((async) {
           final engine = TimerEngine(
@@ -167,7 +167,7 @@ void main() {
             Clock.fixed(clock.now().add(const Duration(minutes: 30))),
             () {
               engine.handleSystemWake();
-              expect(engine.state, equals(TimerState.idle));
+              expect(engine.state, equals(TimerState.running));
               expect(engine.workElapsed, equals(Duration.zero));
             },
           );

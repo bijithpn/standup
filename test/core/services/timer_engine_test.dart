@@ -262,7 +262,7 @@ void main() {
       });
     });
 
-    test('System Sleep Drift: resets if away duration > interval', () {
+    test('System Sleep Drift: restarts fresh if away duration > interval', () {
       fakeAsync((async) {
         final engine = TimerEngine(
           settingsRepository: fakeSettingsRepository,
@@ -283,7 +283,7 @@ void main() {
         engine.handleSystemWake();
 
         expect(engine.stateData.systemSleepPaused, isFalse);
-        expect(engine.state, equals(TimerState.idle));
+        expect(engine.state, equals(TimerState.running));
         expect(engine.workElapsed, equals(Duration.zero));
       });
     });
