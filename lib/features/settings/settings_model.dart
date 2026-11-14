@@ -126,6 +126,9 @@ class SettingsModel {
   final Map<String, int> templateAccentOverrides;
 
   final bool pettingEnabled;
+  final bool autoPauseOnIdle;
+  final bool autoResumeOnActivity;
+  final bool pauseOnLock;
 
   final bool companionGazeEnabled;
 
@@ -248,6 +251,9 @@ class SettingsModel {
     this.companionTreatType = 'sushi',
     this.templateAccentOverrides = const {},
     this.pettingEnabled = true,
+    this.autoPauseOnIdle = true,
+    this.autoResumeOnActivity = true,
+    this.pauseOnLock = true,
     this.companionGazeEnabled = true,
     this.companionGazeSensitivity = 0.5,
     this.companionIdleAnimation = true,
@@ -352,6 +358,9 @@ class SettingsModel {
     double? companionWindowX,
     double? companionWindowY,
     bool? pettingEnabled,
+    bool? autoPauseOnIdle,
+    bool? autoResumeOnActivity,
+    bool? pauseOnLock,
     bool? companionGazeEnabled,
     double? companionGazeSensitivity,
     bool? companionIdleAnimation,
@@ -491,6 +500,9 @@ class SettingsModel {
       companionWindowX: companionWindowX ?? this.companionWindowX,
       companionWindowY: companionWindowY ?? this.companionWindowY,
       pettingEnabled: pettingEnabled ?? this.pettingEnabled,
+      autoPauseOnIdle: autoPauseOnIdle ?? this.autoPauseOnIdle,
+      autoResumeOnActivity: autoResumeOnActivity ?? this.autoResumeOnActivity,
+      pauseOnLock: pauseOnLock ?? this.pauseOnLock,
       companionGazeEnabled: companionGazeEnabled ?? this.companionGazeEnabled,
       companionGazeSensitivity:
           companionGazeSensitivity ?? this.companionGazeSensitivity,
@@ -624,6 +636,9 @@ class SettingsModel {
     'companionAvatarDefinition': companionAvatarDefinition,
     'companionKeepOnScreen': companionKeepOnScreen,
     'pettingEnabled': pettingEnabled,
+    'autoPauseOnIdle': autoPauseOnIdle,
+    'autoResumeOnActivity': autoResumeOnActivity,
+    'pauseOnLock': pauseOnLock,
     'companionGazeEnabled': companionGazeEnabled,
     'companionGazeSensitivity': companionGazeSensitivity,
     'companionIdleAnimation': companionIdleAnimation,
@@ -765,6 +780,9 @@ class SettingsModel {
       companionAvatarDefinition: map['companionAvatarDefinition'] as String?,
       companionKeepOnScreen: map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
+      autoPauseOnIdle: map['autoPauseOnIdle'] as bool? ?? true,
+      autoResumeOnActivity: map['autoResumeOnActivity'] as bool? ?? true,
+      pauseOnLock: map['pauseOnLock'] as bool? ?? true,
       companionGazeEnabled: map['companionGazeEnabled'] as bool? ?? true,
       companionGazeSensitivity:
           (map['companionGazeSensitivity'] as num?)?.toDouble() ?? 0.5,

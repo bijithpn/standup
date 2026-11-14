@@ -171,6 +171,7 @@ class TimerEngine extends ChangeNotifier {
   bool get isManuallyPaused => _stateData.isManuallyPaused;
 
   bool get systemSleepPaused => _stateData.systemSleepPaused;
+  bool get pausedForInactivity => _stateData.pausedForInactivity;
 
   void syncNotifiersFromState() {
     if (state == TimerState.running ||
@@ -369,6 +370,7 @@ class TimerEngine extends ChangeNotifier {
 
       if (state == TimerState.paused) {
         if (!_stateData.isManuallyPaused &&
+            !_stateData.pausedForInactivity &&
             _contextManager.shouldRunWorkTimer()) {
           _logger.info(
             'Auto-resuming work timer: smart pause condition cleared',
@@ -628,16 +630,8 @@ class TimerEngine extends ChangeNotifier {
   /// When the user last stepped away for 20s or more; lets a companion cue know it was acted on.
   DateTime? lastRestAt;
 
-  /// Fed idle samples: lets health reminders count real rests and recovers from a stuck sleep flag when input resumes.
+  /// Fed idle samples: lets health reminders count real rests.
   void reportIdleSeconds(double idleSeconds) {
-    final since = _stateData.lastTickTime;
-    if (_stateData.systemSleepPaused &&
-        idleSeconds < 3 &&
-        since != null &&
-        clock.now().difference(since) > const Duration(seconds: 15)) {
-      _logger.warning('Input detected while sleep flag stuck: recovering');
-      handleSystemWake();
-    }
     if (idleSeconds >= 20) lastRestAt = clock.now();
     final relieved = _healthScheduler.onIdleSample(idleSeconds, clock.now());
     relieved.forEach(_resetElapsed);
@@ -891,8 +885,16 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pause owned by the activity monitor: the tick loop never lifts it, only [resumeTimers] does.
+  void pauseForInactivity() {
+    if (state != TimerState.running) return;
+    pauseTimers();
+    _stateData.pausedForInactivity = true;
+  }
+
   void resumeTimers({bool isManual = true}) {
     if (state == TimerState.breakActive) return;
+    _stateData.pausedForInactivity = false;
     if (!isManual && !_contextManager.shouldRunWorkTimer()) {
       _stateData.isManuallyPaused = false;
       pauseTimers();
@@ -920,6 +922,7 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void resetTimers() {
+    _stateData.pausedForInactivity = false;
     _stateData.workElapsed = Duration.zero;
     _resetAllReminderCounters();
     _stateData.state = TimerState.idle;
@@ -1117,7 +1120,7 @@ class TimerEngine extends ChangeNotifier {
       onNeedsRestart?.call();
     } else if (state == TimerState.running || state == TimerState.paused) {
       _stateData.lastTickTime = clock.now();
-      resumeTimers();
+      resumeTimers(isManual: false);
     }
 
     syncNotifiersFromState();

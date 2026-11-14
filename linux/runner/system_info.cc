@@ -1,5 +1,6 @@
 #include "system_info.h"
 
+#include <dlfcn.h>
 #include <glob.h>
 #include <gio/gio.h>
 #include <unistd.h>
@@ -236,16 +237,87 @@ std::vector<WindowRect> GetVisibleWindows() {
   return out;
 }
 
+namespace {
+
+// libXss is loaded lazily so it stays an optional runtime dependency.
+struct XssInfo {
+  unsigned long window;
+  int state, kind;
+  unsigned long til_or_since, idle, event_mask;
+};
+
+double X11IdleSeconds() {
+#ifdef GDK_WINDOWING_X11
+  const char* session = g_getenv("XDG_SESSION_TYPE");
+  if (session != nullptr && std::string(session) == "wayland") return -1.0;  // XWayland sees no global input
+  Display* dpy = XDisplay();
+  if (dpy == nullptr) return -1.0;
+  static void* lib = dlopen("libXss.so.1", RTLD_LAZY);
+  if (lib == nullptr) return -1.0;
+  using QueryFn = int (*)(Display*, unsigned long, XssInfo*);
+  static QueryFn query = reinterpret_cast<QueryFn>(dlsym(lib, "XScreenSaverQueryInfo"));
+  if (query == nullptr) return -1.0;
+  XssInfo info{};
+  if (!query(dpy, DefaultRootWindow(dpy), &info)) return -1.0;
+  return static_cast<double>(info.idle) / 1000.0;
+#else
+  return -1.0;
+#endif
+}
+
+// Returns -1 when the interface is unavailable, else 0/1.
+int BoolProperty(GBusType bus, const char* name, const char* path, const char* iface,
+                 const char* prop) {
+  GVariant* reply = CallSync(bus, name, path, "org.freedesktop.DBus.Properties", "Get",
+                             g_variant_new("(ss)", iface, prop));
+  if (reply == nullptr) return -1;
+  GVariant* inner = nullptr;
+  g_variant_get(reply, "(v)", &inner);
+  int v = (inner != nullptr && g_variant_is_of_type(inner, G_VARIANT_TYPE_BOOLEAN))
+              ? (g_variant_get_boolean(inner) ? 1 : 0)
+              : -1;
+  if (inner != nullptr) g_variant_unref(inner);
+  g_variant_unref(reply);
+  return v;
+}
+
+int ScreenSaverActive(const char* name, const char* path) {
+  GVariant* reply = CallSync(G_BUS_TYPE_SESSION, name, path, name, "GetActive", nullptr);
+  if (reply == nullptr) return -1;
+  gboolean active = FALSE;
+  g_variant_get(reply, "(b)", &active);
+  g_variant_unref(reply);
+  return active ? 1 : 0;
+}
+
+}  // namespace
+
 double GetIdleSeconds() {
-  // Mutter exposes the session idle time over D-Bus on both X11 and Wayland.
+  // Mutter exposes the session idle time over D-Bus on both X11 and Wayland (GNOME).
   GVariant* reply = CallSync(G_BUS_TYPE_SESSION, "org.gnome.Mutter.IdleMonitor",
                              "/org/gnome/Mutter/IdleMonitor/Core",
                              "org.gnome.Mutter.IdleMonitor", "GetIdletime", nullptr);
-  if (reply == nullptr) return 0.0;
-  guint64 ms = 0;
-  g_variant_get(reply, "(t)", &ms);
-  g_variant_unref(reply);
-  return static_cast<double>(ms) / 1000.0;
+  if (reply != nullptr) {
+    guint64 ms = 0;
+    g_variant_get(reply, "(t)", &ms);
+    g_variant_unref(reply);
+    return static_cast<double>(ms) / 1000.0;
+  }
+  return X11IdleSeconds();
+}
+
+SessionState GetSessionState() {
+  SessionState st;
+  // "auto" resolves to the caller's own session, so no session id lookup is needed.
+  const char* session = "/org/freedesktop/login1/session/auto";
+  const char* login1 = "org.freedesktop.login1";
+  const char* iface = "org.freedesktop.login1.Session";
+  int hint = BoolProperty(G_BUS_TYPE_SYSTEM, login1, session, iface, "LockedHint");
+  int gnome = ScreenSaverActive("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver");
+  int fdo = ScreenSaverActive("org.freedesktop.ScreenSaver", "/org/freedesktop/ScreenSaver");
+  if (hint >= 0 || gnome >= 0 || fdo >= 0) st.locked = (hint == 1 || gnome == 1 || fdo == 1) ? 1 : 0;
+  st.active = BoolProperty(G_BUS_TYPE_SYSTEM, login1, session, iface, "Active");
+  return st;
 }
 
 bool GetCursorPosition(double* x, double* y) {

@@ -700,19 +700,25 @@ void mainCommon(FlavorConfig config) async {
             await sl<OverlayWindowService>().hideOverlay();
           } else if (call.method == 'quitApp') {
             sl<MenuBarController>().handleAction('quit');
-          } else if (call.method == 'systemSleep') {
+          } else if (const {
+            'systemSleep',
+            'systemWake',
+            'sessionLocked',
+            'sessionUnlocked',
+            'sessionInactive',
+            'sessionActive',
+          }.contains(call.method)) {
             final ms = call.arguments;
-            sl<TimerEngine>().handleSystemSleep(
-              at: ms is int ? DateTime.fromMillisecondsSinceEpoch(ms) : null,
+            // After a long absence the engine asks the user whether to restart.
+            sl<TimerEngine>().onNeedsRestart ??= _promptRestartTimer;
+            sl<ActivityMonitor>().handleNative(
+              call.method,
+              atMs: ms is int ? ms : null,
             );
-          } else if (call.method == 'systemWake') {
-            final engine = sl<TimerEngine>();
-            // After wake, ask the user whether to restart the timer.
-            engine.onNeedsRestart ??= _promptRestartTimer;
-            engine.handleSystemWake();
-
-            sl<BreakController>().refreshSettings();
-            sl<DailyResetService>().onSystemWake();
+            if (call.method == 'systemWake') {
+              sl<BreakController>().refreshSettings();
+              sl<DailyResetService>().onSystemWake();
+            }
           } else if (call.method == 'onPipBackgroundStyleChanged') {
             final style = call.arguments?['style'] as String?;
             if (style != null &&

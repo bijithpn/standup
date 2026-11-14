@@ -2,25 +2,20 @@ import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/features/settings/settings_repository.dart';
-import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/meeting_url_matcher.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
-// Isolate entry: polls idle time (5s) and front app/meeting URL (10s). Platform channels are not available here, so calls are proxied to the main isolate.
+// Isolate entry: polls front app/meeting URL (10s). Platform channels are not available here, so calls are proxied to the main isolate.
 void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   final SendPort sendPort = initialData['sendPort'] as SendPort;
-  int idleThresholdMinutes = initialData['idleThresholdMinutes'] as int? ?? 3;
 
   final ReceivePort commandPort = ReceivePort();
   sendPort.send(commandPort.sendPort);
 
-  bool isIdle = false;
   bool isVideoCallActive = false;
 
-  Timer? idleTimer;
   Timer? smartTimer;
 
   int nextRequestId = 0;
@@ -61,11 +56,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
         }
       } else {
         final command = message['command'] as String?;
-        if (command == 'setIdleThreshold') {
-          idleThresholdMinutes =
-              message['minutes'] as int? ?? idleThresholdMinutes;
-        } else if (command == 'stop') {
-          idleTimer?.cancel();
+        if (command == 'stop') {
           smartTimer?.cancel();
           for (final c in pendingRequests.values) {
             c.completeError('Isolate stopped');
@@ -75,27 +66,6 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
         }
       }
     }
-  });
-
-  idleTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-    try {
-      final double? idleSeconds =
-          (await invokeMethodProxy('getIdleTime')) as double?;
-      if (idleSeconds != null) {
-        sendPort.send({'type': 'idleSample', 'idleSeconds': idleSeconds});
-        final thresholdSeconds = idleThresholdMinutes * 60;
-        final newIsIdle = idleSeconds >= thresholdSeconds;
-
-        if (newIsIdle != isIdle) {
-          isIdle = newIsIdle;
-          sendPort.send({
-            'type': 'idleChanged',
-            'isIdle': isIdle,
-            'idleSeconds': idleSeconds,
-          });
-        }
-      }
-    } catch (_) {}
   });
 
   smartTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
@@ -144,7 +114,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   });
 }
 
-/// Runs idle and meeting detection in a separate isolate and forwards results to ActivityMonitor and SmartDetectionService.
+/// Runs meeting detection in a separate isolate and forwards results to SmartDetectionService (idle detection lives in ActivityMonitor).
 class BackgroundPollingService {
   static final BackgroundPollingService instance = BackgroundPollingService._();
   BackgroundPollingService._();
@@ -167,8 +137,6 @@ class BackgroundPollingService {
     try {
       _isolate = await Isolate.spawn(_backgroundPollingEntry, {
         'sendPort': _receivePort!.sendPort,
-        'idleThresholdMinutes':
-            sl<SettingsRepository>().currentSettings.pauseTimerAfterMinutes,
       });
 
       _receivePort!.listen((message) {
@@ -176,22 +144,7 @@ class BackgroundPollingService {
           _sendPort = message;
         } else if (message is Map<String, dynamic>) {
           final type = message['type'] as String?;
-          if (type == 'idleSample') {
-            final idleSeconds = (message['idleSeconds'] as num).toDouble();
-            try {
-              sl<ActivityMonitor>().sampleIdle(idleSeconds);
-            } catch (e, st) {
-              ErrorHandler().handleError(e, st);
-            }
-          } else if (type == 'idleChanged') {
-            final isIdle = message['isIdle'] as bool;
-            final idleSeconds = (message['idleSeconds'] as num).toDouble();
-            try {
-              sl<ActivityMonitor>().updateIdleStatus(isIdle, idleSeconds);
-            } catch (e, st) {
-              ErrorHandler().handleError(e, st);
-            }
-          } else if (type == 'smartDetectionChanged') {
+          if (type == 'smartDetectionChanged') {
             final isVideoCallActive = message['isVideoCallActive'] as bool;
             final frontApp = message['frontApp'] as String?;
             try {
@@ -240,11 +193,6 @@ class BackgroundPollingService {
         'error': e.toString(),
       });
     }
-  }
-
-  void updateIdleThreshold(int minutes) {
-    if (!_isRunning) return;
-    _sendPort?.send({'command': 'setIdleThreshold', 'minutes': minutes});
   }
 
   void stop() {

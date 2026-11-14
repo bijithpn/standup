@@ -43,7 +43,16 @@ ActiveWindow GetActiveWindow();
 std::vector<WindowRect> GetVisibleWindows();
 
 // Seconds since the last keyboard/mouse input; 0 when it cannot be determined.
+// Seconds since the last input, or a negative value when no idle provider works
+// (GNOME Mutter, or XScreenSaver on a real X11 session; KDE/Wayland is unsupported).
 double GetIdleSeconds();
+
+// -1 = unknown, 0 = no, 1 = yes.
+struct SessionState {
+  int locked = -1;
+  int active = -1;
+};
+SessionState GetSessionState();
 
 bool GetCursorPosition(double* x, double* y);
 std::vector<DisplayRect> GetDisplays();

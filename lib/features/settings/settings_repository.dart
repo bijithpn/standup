@@ -283,6 +283,15 @@ class SettingsRepository extends ChangeNotifier {
       companionFollowMouse: cp?.companionFollowMouse ?? false,
       unlockedPets: _decodeStringList(cp?.unlockedPetsJson ?? '[]'),
       pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      autoPauseOnIdle: _storage.getBool(
+        'auto_pause_on_idle',
+        defaultValue: true,
+      ),
+      autoResumeOnActivity: _storage.getBool(
+        'auto_resume_on_activity',
+        defaultValue: true,
+      ),
+      pauseOnLock: _storage.getBool('pause_on_lock', defaultValue: true),
       companionGazeEnabled: _storage.getBool(
         'companion_gaze_enabled',
         defaultValue: true,
@@ -554,6 +563,15 @@ class SettingsRepository extends ChangeNotifier {
         defaultValue: false,
       ),
       pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      autoPauseOnIdle: _storage.getBool(
+        'auto_pause_on_idle',
+        defaultValue: true,
+      ),
+      autoResumeOnActivity: _storage.getBool(
+        'auto_resume_on_activity',
+        defaultValue: true,
+      ),
+      pauseOnLock: _storage.getBool('pause_on_lock', defaultValue: true),
       companionGazeEnabled: _storage.getBool(
         'companion_gaze_enabled',
         defaultValue: true,
@@ -878,6 +896,12 @@ class SettingsRepository extends ChangeNotifier {
     );
     await _storage.setDouble('companion_scale', settings.companionScale);
     await _storage.setBool('petting_enabled', settings.pettingEnabled);
+    await _storage.setBool('auto_pause_on_idle', settings.autoPauseOnIdle);
+    await _storage.setBool(
+      'auto_resume_on_activity',
+      settings.autoResumeOnActivity,
+    );
+    await _storage.setBool('pause_on_lock', settings.pauseOnLock);
     await _storage.setBool(
       'companion_gaze_enabled',
       settings.companionGazeEnabled,

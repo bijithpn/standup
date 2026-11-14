@@ -1,3 +1,5 @@
+#include <windows.h>
+#include <wtsapi32.h>
 #include "flutter_window.h"
 
 #include <optional>
@@ -250,6 +252,7 @@ bool FlutterWindow::OnCreate() {
   } else {
     // Main application window: full channel + event setup
     main_window_ = this;
+    WTSRegisterSessionNotification(GetHandle(), NOTIFY_FOR_THIS_SESSION);
     SetupBridge();
     SetupEventChannels();
     SetupWindowBridge();
@@ -527,7 +530,18 @@ void FlutterWindow::SetupBridge() {
         }
 
         if (method_name == "getIdleTime") {
-          result->Success(flutter::EncodableValue(bridge_utils::GetIdleTime()));
+          const double idle = bridge_utils::GetIdleTime();
+          if (idle < 0) {
+            result->Error("IDLE_UNAVAILABLE", "GetLastInputInfo failed");
+          } else {
+            result->Success(flutter::EncodableValue(idle));
+          }
+        }
+        else if (method_name == "getSessionState") {
+          flutter::EncodableMap state;
+          state[flutter::EncodableValue("locked")] =
+              flutter::EncodableValue(bridge_utils::IsSessionLocked());
+          result->Success(flutter::EncodableValue(state));
         }
         else if (method_name == "getCursorPosition") {
           POINT pt;
@@ -892,6 +906,7 @@ void FlutterWindow::SetupBridge() {
 
 void FlutterWindow::OnDestroy() {
   KillTimer(GetHandle(), 1);
+  if (main_window_ == this) WTSUnRegisterSessionNotification(GetHandle());
 
   // Decrement keyboard hook reference count for overlay windows and unhook if needed
   if (keyboard_hook_ && is_overlay_) {
@@ -1197,9 +1212,26 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       if (this == main_window_ && bridge_channel_) {
         if (wparam == PBT_APMSUSPEND) {
           bridge_channel_->InvokeMethod("systemSleep", nullptr);
-        } else if (wparam == PBT_APMRESUMEAUTOMATIC) {
+        } else if (wparam == PBT_APMRESUMEAUTOMATIC || wparam == PBT_APMRESUMESUSPEND) {
           bridge_channel_->InvokeMethod("systemWake", nullptr);
         }
+      }
+      break;
+    // Lock, unlock, fast user switching and RDP connect/disconnect.
+    case WM_WTSSESSION_CHANGE:
+      if (this == main_window_ && bridge_channel_) {
+        const char* event = nullptr;
+        switch (wparam) {
+          case WTS_SESSION_LOCK: event = "sessionLocked"; break;
+          case WTS_SESSION_UNLOCK: event = "sessionUnlocked"; break;
+          case WTS_CONSOLE_DISCONNECT:
+          case WTS_REMOTE_DISCONNECT:
+          case WTS_SESSION_LOGOFF: event = "sessionInactive"; break;
+          case WTS_CONSOLE_CONNECT:
+          case WTS_REMOTE_CONNECT:
+          case WTS_SESSION_LOGON: event = "sessionActive"; break;
+        }
+        if (event) bridge_channel_->InvokeMethod(event, nullptr);
       }
       break;
     case WM_DISPLAYCHANGE:

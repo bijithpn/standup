@@ -433,30 +433,36 @@ class TimerOrchestrator {
     }
   }
 
-  // Idle: discard idle time and pause; return: resume unless manually paused. A long idle also resets the break cycle.
+  // Idle: discard idle time and pause; return: resume unless manually paused or another pause (e.g. meeting) applies. A long idle also resets the break cycle.
   void _setupActivityMonitor() {
-    activityMonitor.setIdleThreshold(timerEngine.pauseTimerAfterMinutes);
     activityMonitor.setIdleSampleCallback(timerEngine.reportIdleSeconds);
+    activityMonitor.setAwayCallbacks(
+      onAway: (at) => timerEngine.handleSystemSleep(at: at),
+      onBack: () {
+        timerEngine.handleSystemWake();
+        // With auto-resume off the user must restart the timer themselves.
+        if (!settingsRepository.currentSettings.autoResumeOnActivity &&
+            timerEngine.state == TimerState.running) {
+          timerEngine.pauseTimers(isManual: true);
+        }
+      },
+    );
     activityMonitor.setActivityCallback((isActive) {
       final state = timerEngine.state;
 
-      if (isActive && timerEngine.systemSleepPaused) {
-        _logger.warning(
-          'Activity detected while systemSleepPaused was stuck true — '
-          'forcing timer wake recovery.',
-        );
-        timerEngine.handleSystemWake();
-      }
-
       if (isActive &&
           state == TimerState.paused &&
+          timerEngine.pausedForInactivity &&
           !timerEngine.stateData.isManuallyPaused) {
-        timerEngine.resumeTimers();
+        _pauseAutoResumeTimer?.cancel();
+        if (settingsRepository.currentSettings.autoResumeOnActivity) {
+          timerEngine.resumeTimers(isManual: false);
+        }
       } else if (!isActive && state == TimerState.running) {
         timerEngine.discardIdleTime(
           Duration(seconds: activityMonitor.lastIdleSeconds.round()),
         );
-        timerEngine.pauseTimers();
+        timerEngine.pauseForInactivity();
         _pauseAutoResumeTimer?.cancel();
         _pauseAutoResumeTimer = Timer(
           Duration(minutes: timerEngine.resetTimerAfterMinutes),
