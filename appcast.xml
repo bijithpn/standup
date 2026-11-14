@@ -3,7 +3,39 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                              <item>
+        <language>en</language>                                                                                      <item>
+            <title>Version 1.12.2</title>
+            <pubDate>Sat, 14 Nov 2026 09:53:59 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.12.2</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>update version to 1.12.2 and enhance changelog with paused state details</li><li>update tray title to show pause state and improve icon badge handling</li><li>implement auto-resume functionality and update notifications for resumed timers</li></ul>
+                <h5>🐛 Bug Fixes</h5>
+                <ul><li>update CI trigger conditions for dev branch to only run on version bumps</li></ul>
+                <h5>⚡ Improvements</h5>
+                <ul><li>rename ScreenSaverActive to IsScreenSaverActive for clarity</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.12.1...v1.12.2">https://github.com/bijithpn/standup/compare/v1.12.1...v1.12.2</a></p>
+                <h5>🍎 Installing on macOS</h5>
+                <p>BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show <em>"Apple could not verify BreakMate…"</em>. Use either fix:</p>
+                <p><strong>Option 1: one-line install (recommended)</strong><br>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install.sh">https://github.com/bijithpn/standup/releases/latest/download/install.sh</a> | bash<br>```</p>
+                <p><strong>Option 2: you already downloaded the DMG</strong><br>```bash<br>xattr -cr /Applications/BreakMate.app<br>```<br>or open <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</p>
+                <p><strong>Homebrew</strong><br>```bash<br>brew tap bijithpn/standup <a href="https://github.com/bijithpn/standup">https://github.com/bijithpn/standup</a><br>brew install --cask breakmate<br>```</p>
+                <p><strong>Uninstall:</strong> <code>curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/uninstall.sh | bash</code> (add <code>-s -- --purge</code> to also delete settings). Linux: <code>uninstall_linux.sh</code>, Windows: <code>uninstall.ps1</code>.</p>
+                <h5>🐧 Linux / 🪟 Windows one-liners</h5>
+                <p>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh">https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh</a> | bash<br>```<br>```powershell<br>irm <a href="https://github.com/bijithpn/standup/releases/latest/download/install.ps1">https://github.com/bijithpn/standup/releases/latest/download/install.ps1</a> | iex<br>```</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.12.2/BreakMate-Installer.dmg"
+                       sparkle:version="50"
+                       sparkle:shortVersionString="1.12.2"
+                       sparkle:edSignature="WUqO/EiYxpEd4ow6Ogw33TxDlY90lhpXrZDwIsnjpWFpw9aktkU6fI5CQsnFYYAaGcrqP9gg0PBKn8WxcXpHDg=="
+                       length="36304900"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.12.1</title>
             <pubDate>Sat, 14 Nov 2026 06:58:37 +0000</pubDate>
             <description><![CDATA[
