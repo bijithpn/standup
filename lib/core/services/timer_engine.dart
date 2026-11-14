@@ -1117,7 +1117,11 @@ class TimerEngine extends ChangeNotifier {
         'Away for ${durationAway.inMinutes}m. Resetting focus session.',
       );
       resetTimers();
-      onNeedsRestart?.call();
+      if (_settingsRepository.currentSettings.autoResumeOnActivity) {
+        startTimers();
+      } else {
+        onNeedsRestart?.call();
+      }
     } else if (state == TimerState.running || state == TimerState.paused) {
       _stateData.lastTickTime = clock.now();
       resumeTimers(isManual: false);

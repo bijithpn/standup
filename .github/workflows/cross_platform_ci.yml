@@ -2,14 +2,13 @@ name: CI · Verify
 run-name: "CI · ${{ github.event.pull_request.title || github.event.head_commit.message || github.ref_name }}"
 
 on:
-  # main is verified by the release pipeline, so CI only runs on dev pushes and PRs.
+  # main is verified by the release pipeline; dev pushes only run CI on a version bump.
   push:
     branches:
       - dev
-    paths-ignore:
-      - '*.md'
-      - 'docs/**'
-      - 'appcast.xml'
+    paths:
+      - 'CHANGELOG.md'
+      - 'pubspec.yaml'
   pull_request:
     branches:
       - main

@@ -312,12 +312,15 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           final avatar = _avatarFrames?[activeState];
           if (avatar != null && avatar.isNotEmpty) {
             final idx = _currentFrameIndex % avatar.length;
-            final key = '${activeState.name}:$idx';
+            final badge = _paused && _menuStyle != 'countdown';
+            final key = '${activeState.name}:$idx:$badge';
             if (key != _lastAvatarKey) {
               _lastAvatarKey = key;
-              await _setTrayIconBytes(avatar[idx]);
+              await _setTrayIconBytes(
+                badge ? await _badged(avatar[idx]) : avatar[idx],
+              );
               if (_currentTitle.isNotEmpty && Platform.isMacOS) {
-                await trayManager.setTitle(_currentTitle);
+                await trayManager.setTitle(' $_currentTitle');
               }
             }
             return;
@@ -374,7 +377,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
         if (_currentTitle.isNotEmpty) {
           if (Platform.isMacOS) {
-            await trayManager.setTitle(_currentTitle);
+            await trayManager.setTitle(' $_currentTitle');
           }
         }
       } else if (!isPathValid && _defaultIconPath != null) {
@@ -562,7 +565,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   // Green -> yellow -> red as the break approaches; blue while on break.
+  bool get _paused => _timerEngine?.state == TimerState.paused;
+
   Color _accent(double progress) {
+    if (_paused) return const Color(0xFF8E8E93);
     if (_onBreak) return const Color(0xFF4DA3FF);
     if (progress < 0.5) {
       return Color.lerp(
@@ -582,7 +588,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   Future<void> _applyDrawnIcon() async {
     final q = (_shownProgress * 120).round();
     final pulseStep = (_pulse * 24).floor();
-    final key = '$_menuStyle:$q:$pulseStep:$_onBreak';
+    final key = '$_menuStyle:$q:$pulseStep:$_onBreak:$_paused';
     if (key == _lastDrawnKey) return;
     _lastDrawnKey = key;
     try {
@@ -593,11 +599,45 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       if (_drawnCache.length > 600) _drawnCache.clear();
       await _setTrayIconBytes(bytes);
       if (_currentTitle.isNotEmpty && Platform.isMacOS) {
-        await trayManager.setTitle(_currentTitle);
+        await trayManager.setTitle(' $_currentTitle');
       }
     } catch (e) {
       _logger.error('Failed to draw tray icon: $e');
     }
+  }
+
+  void _paintPauseBadge(Canvas canvas, double size) {
+    final c = Offset(size * 0.75, size * 0.75);
+    final r = size * 0.25;
+    canvas.drawCircle(c, r, Paint()..color = const Color(0xFFFF9F0A));
+    for (final dx in [-r * 0.29, r * 0.29]) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: c.translate(dx, 0),
+            width: r * 0.3,
+            height: r * 0.9,
+          ),
+          Radius.circular(r * 0.1),
+        ),
+        Paint()..color = const Color(0xFFFFFFFF),
+      );
+    }
+  }
+
+  Future<Uint8List> _badged(Uint8List bytes) async {
+    final img = (await (await ui.instantiateImageCodec(
+      bytes,
+    )).getNextFrame()).image;
+    final size = math.max(img.width, img.height).toDouble();
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.drawImage(img, Offset.zero, Paint());
+    _paintPauseBadge(canvas, size);
+    final out = await recorder.endRecording().toImage(img.width, img.height);
+    return (await out.toByteData(
+      format: ui.ImageByteFormat.png,
+    ))!.buffer.asUint8List();
   }
 
   ui.Image? _baseIcon;
@@ -746,6 +786,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           ),
       );
     }
+
+    if (_paused) _paintPauseBadge(canvas, size);
 
     final image = await recorder.endRecording().toImage(
       size.toInt(),
@@ -1043,11 +1085,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   // Title (countdown) is shown only in 'countdown' style; Windows has no tray title so it goes into the tooltip.
   Future<void> setTrayTitle(String title) async {
-    if (_menuStyle != 'countdown') title = '';
     _currentTitle = title;
     try {
       if (Platform.isMacOS) {
-        await trayManager.setTitle(title);
+        await trayManager.setTitle(title.isEmpty ? '' : ' $title');
       } else if (Platform.isWindows && title.isNotEmpty) {
         final tooltip = title.isNotEmpty && _currentTooltip.isNotEmpty
             ? '$title — $_currentTooltip'

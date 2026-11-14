@@ -39,6 +39,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   String? _previewThemeId;
   double? _previewScale;
   double? _previewSensitivity;
+  double? _previewOpacity;
 
   String get _displayedThemeId =>
       _previewThemeId ?? widget.controller.companionPetTheme;
@@ -77,6 +78,17 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
   double get _displayedSensitivity =>
       _previewSensitivity ?? widget.controller.gazeSensitivity;
+
+  double get _displayedOpacity =>
+      _previewOpacity ?? widget.controller.pipOpacity;
+
+  Future<void> _commitOpacity(double value) async {
+    try {
+      await widget.controller.changePipOpacity(value);
+    } finally {
+      if (mounted) setState(() => _previewOpacity = null);
+    }
+  }
 
   String _sensitivityLabel(double value) {
     if (value < 0.34) return 'Relaxed';
@@ -243,7 +255,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 ]),
 
                 if (widget.controller.companionEnabled) ...[
-                  _buildPetGallery(),
+                  RepaintBoundary(child: _buildPetGallery()),
                   const SizedBox(height: 32),
 
                   if (!FlavorConfig.instance.isDev) ...[
@@ -270,6 +282,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                   ]),
 
+                  const SizedBox(height: 32),
                   sectionHeader('Floating Window'),
                   buildCard([
                     dropdownRow(
@@ -292,9 +305,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                     divider(),
                     sliderRow(
-                      'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
-                      widget.controller.pipOpacity,
-                      (v) => widget.controller.changePipOpacity(v),
+                      'Window Opacity (${(_displayedOpacity * 100).round()}%)${_displayedOpacity == 1.0 ? " (Opaque)" : ""}',
+                      _displayedOpacity,
+                      (v) => setState(() => _previewOpacity = v),
+                      onChangeEnd: (v) => unawaited(_commitOpacity(v)),
                       min: 0.1,
                       max: 1.0,
                     ),
@@ -481,22 +495,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        widget.controller.companionPetName.trim().isEmpty
-                            ? 'Companion'
-                            : widget.controller.companionPetName,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.textPrimary,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
                   Text(
                     'Customize and preview your companion settings.',
                     style: TextStyle(

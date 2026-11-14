@@ -281,7 +281,7 @@ int BoolProperty(GBusType bus, const char* name, const char* path, const char* i
   return v;
 }
 
-int ScreenSaverActive(const char* name, const char* path) {
+int IsScreenSaverActive(const char* name, const char* path) {
   GVariant* reply = CallSync(G_BUS_TYPE_SESSION, name, path, name, "GetActive", nullptr);
   if (reply == nullptr) return -1;
   gboolean active = FALSE;
@@ -313,8 +313,8 @@ SessionState GetSessionState() {
   const char* login1 = "org.freedesktop.login1";
   const char* iface = "org.freedesktop.login1.Session";
   int hint = BoolProperty(G_BUS_TYPE_SYSTEM, login1, session, iface, "LockedHint");
-  int gnome = ScreenSaverActive("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver");
-  int fdo = ScreenSaverActive("org.freedesktop.ScreenSaver", "/org/freedesktop/ScreenSaver");
+  int gnome = IsScreenSaverActive("org.gnome.ScreenSaver", "/org/gnome/ScreenSaver");
+  int fdo = IsScreenSaverActive("org.freedesktop.ScreenSaver", "/org/freedesktop/ScreenSaver");
   if (hint >= 0 || gnome >= 0 || fdo >= 0) st.locked = (hint == 1 || gnome == 1 || fdo == 1) ? 1 : 0;
   st.active = BoolProperty(G_BUS_TYPE_SYSTEM, login1, session, iface, "Active");
   return st;

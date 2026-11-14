@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.12.2` | 1.12.2 | 50 | 2026-11-14 | Clear paused state in every menu bar style and a static countdown preview (unreleased) |
 | `v1.12.1` | 1.12.1 | 49 | 2026-11-14 | Reliable idle, lock and sleep pause/resume across macOS, Windows and Linux, and a clearer Smart Detection screen (unreleased) |
 | `v1.12.0` | 1.12.0 | 48 | 2026-11-12 | Custom reminders, focus sessions, quick stretch, per-reminder sounds, accessibility options and idle-time timer fix |
 | `v1.11.1` | 1.11.1 | 44 | 2026-11-12 | Multi-display break overlay fixes, undismissable-overlay recovery and debug key-state hang fix (unreleased) |
@@ -31,6 +32,23 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.12.2] - 2026-11-14 (unreleased)
+
+Tags: `v1.12.2` (not yet tagged)
+
+Build: `50`
+
+Release title: Paused State in the Menu Bar
+
+### Added
+
+- Menu bar paused state: progress ring, focus dot and icon badge turn grey with an orange pause badge; the companion icon gets the same badge; the countdown style shows a static pause symbol instead of a ticking time (remaining time stays in the tooltip).
+
+### Changed
+
+- Extra space between the menu bar icon and the countdown text.
+- The Countdown timer tile in Menu Bar Display settings shows a fixed 1:00 instead of animating.
 
 ## [1.12.1] - 2026-11-14 (unreleased)
 

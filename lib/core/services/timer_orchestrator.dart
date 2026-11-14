@@ -396,7 +396,7 @@ class TimerOrchestrator {
 
     final mins = remaining.inMinutes;
     final secs = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-    final title =
+    var title =
         settings.menuBarStyle == 'countdown' ||
             settings.trayIconStyle == 'countdown'
         ? '$mins:$secs'
@@ -423,6 +423,7 @@ class TimerOrchestrator {
       onBreak: state == TimerState.breakActive,
     );
 
+    if (state == TimerState.paused && title.isNotEmpty) title = '⏸';
     if (title != _lastTrayTitle) {
       _lastTrayTitle = title;
       trayManagerService.setTrayTitle(title);
@@ -444,6 +445,10 @@ class TimerOrchestrator {
         if (!settingsRepository.currentSettings.autoResumeOnActivity &&
             timerEngine.state == TimerState.running) {
           timerEngine.pauseTimers(isManual: true);
+        } else if (timerEngine.state == TimerState.running) {
+          notificationService.showReminder(
+            message: 'Welcome back! Your timer has started again.',
+          );
         }
       },
     );
@@ -457,6 +462,9 @@ class TimerOrchestrator {
         _pauseAutoResumeTimer?.cancel();
         if (settingsRepository.currentSettings.autoResumeOnActivity) {
           timerEngine.resumeTimers(isManual: false);
+          notificationService.showReminder(
+            message: 'Welcome back! Your timer has started again.',
+          );
         }
       } else if (!isActive && state == TimerState.running) {
         timerEngine.discardIdleTime(
