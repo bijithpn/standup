@@ -173,9 +173,7 @@ class ActivityMonitor {
       final locked = s?['locked'] as bool?;
       final active = s?['active'] as bool?;
       if (locked != null && _settings.pauseOnLock) {
-        locked
-            ? _add(AwayReason.locked)
-            : _remove(AwayReason.locked);
+        locked ? _add(AwayReason.locked) : _remove(AwayReason.locked);
       }
       if (active != null) {
         active
@@ -201,7 +199,9 @@ class ActivityMonitor {
         _sinceAway.elapsed > _staleSleepGuard &&
         idle != null &&
         idle < 2) {
-      _logger.warning('[ActivityMonitor] stale sleep flag with input; clearing');
+      _logger.warning(
+        '[ActivityMonitor] stale sleep flag with input; clearing',
+      );
       _remove(AwayReason.sleeping);
     }
     if (_away.isNotEmpty) return;

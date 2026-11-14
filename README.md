@@ -120,6 +120,7 @@ One **Health reminders** switch turns on five gentle nudges, scheduled around ho
 
 ### Smart detection
 
+- **Live status** — Settings > Smart Detection shows whether each detector is Off, Watching or active, and permission buttons report what they did.
 - **Meetings** — auto-pauses during calls (Zoom, Teams, Meet, etc.) via native detection and browser URL matching; resumes when the call ends.
 - **Calendar-aware scheduling** — reads your calendar (macOS EventKit bridge) and finds the next free gap long enough for a break instead of colliding with meetings.
 - **Presentation pause** — defers breaks when a fullscreen slideshow or screen share covers the display; during meetings/presentations only a subtle low-opacity reminder is shown, never the full overlay.

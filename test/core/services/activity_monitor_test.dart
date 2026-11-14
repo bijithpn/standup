@@ -20,7 +20,8 @@ void main() {
   double? idle;
   bool? locked;
 
-  void useSettings(SettingsModel s) => when(() => repo.currentSettings).thenReturn(s);
+  void useSettings(SettingsModel s) =>
+      when(() => repo.currentSettings).thenReturn(s);
 
   setUp(() {
     repo = MockSettingsRepository();
@@ -31,15 +32,15 @@ void main() {
     log = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
-      if (call.method == 'getIdleTime') {
-        if (idle == null) throw PlatformException(code: 'IDLE_UNAVAILABLE');
-        return idle;
-      }
-      if (call.method == 'getSessionState') {
-        return locked == null ? <String, dynamic>{} : {'locked': locked};
-      }
-      return null;
-    });
+          if (call.method == 'getIdleTime') {
+            if (idle == null) throw PlatformException(code: 'IDLE_UNAVAILABLE');
+            return idle;
+          }
+          if (call.method == 'getSessionState') {
+            return locked == null ? <String, dynamic>{} : {'locked': locked};
+          }
+          return null;
+        });
     monitor = ActivityMonitor()
       ..setActivityCallback((active) => log.add(active ? 'active' : 'idle'))
       ..setAwayCallbacks(
@@ -54,13 +55,14 @@ void main() {
   });
 
   void run(void Function(FakeAsync async) body) => fakeAsync((async) {
-        monitor.start();
-        async.elapse(const Duration(milliseconds: 10));
-        body(async);
-        monitor.stop();
-      });
+    monitor.start();
+    async.elapse(const Duration(milliseconds: 10));
+    body(async);
+    monitor.stop();
+  });
 
-  void tick(FakeAsync a, [int seconds = 6]) => a.elapse(Duration(seconds: seconds));
+  void tick(FakeAsync a, [int seconds = 6]) =>
+      a.elapse(Duration(seconds: seconds));
 
   test('idle past the threshold pauses once, input resumes once', () {
     run((a) {

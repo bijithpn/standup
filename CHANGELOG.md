@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.12.1` | 1.12.1 | 49 | 2026-11-14 | Reliable idle, lock and sleep pause/resume across macOS, Windows and Linux, and a clearer Smart Detection screen (unreleased) |
 | `v1.12.0` | 1.12.0 | 48 | 2026-11-12 | Custom reminders, focus sessions, quick stretch, per-reminder sounds, accessibility options and idle-time timer fix |
 | `v1.11.1` | 1.11.1 | 44 | 2026-11-12 | Multi-display break overlay fixes, undismissable-overlay recovery and debug key-state hang fix (unreleased) |
 | `v1.11.0` | 1.11.0 | 43 | 2026-10-26 | Gallery Focus slideshow, avatar customizer, companion overlay settings, break appearance sections and break-timer sleep/lock fixes (unreleased) |
@@ -30,6 +31,37 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.12.1] - 2026-11-14 (unreleased)
+
+Tags: `v1.12.1` (not yet tagged)
+
+Build: `49`
+
+Release title: Reliable Auto Pause & Smart Detection Screen
+
+### Added
+
+- Settings > General > Idle & Inactivity: Pause when idle, Resume when active and Pause when locked switches, and a 15 minute idle threshold. Changes apply immediately.
+- Separate native events for screen lock, unlock and session switches (sign-out, fast user switching, RDP) on macOS, Windows and Linux, plus a session-state query used to recover missed events.
+- Linux idle detection through XScreenSaver (X11, when `libXss` is installed) alongside GNOME Mutter; other desktops report idle detection as unavailable instead of assuming you are active.
+- Smart Detection screen: each detector shows Off, Watching or an active state, and permissions show Allowed, Blocked or Off with a button that confirms what it did.
+- Tests for the activity monitor: idle, lock, sleep, wake, missed events, threshold changes and rapid transitions.
+
+### Fixed
+
+- An idle pause was lifted by the next timer tick, so the timer resumed while you were still away. Only the activity monitor can now end an inactivity pause.
+- Waking from sleep while still locked, or typing on the lock screen, no longer resumes the timer. It resumes after unlock and fresh input.
+- A manual pause is never resumed automatically, and resuming no longer overrides a meeting or presentation pause.
+- A failed idle read on Windows and Linux no longer counts as activity.
+- Windows now handles session lock, unlock and disconnect, and both resume-from-suspend notifications.
+- App usage tracking treats a locked or sleeping machine as idle.
+- Permission buttons on Smart Detection no longer throw "no descendant Scaffolds" when clicked.
+
+### Changed
+
+- Idle polling moved from a background isolate to the main isolate (the isolate now only polls meetings), removing a needless channel round trip.
+- Windows and Linux changes are implemented but not yet built or tested on those systems.
 
 ## [1.12.0] - 2026-11-12
 

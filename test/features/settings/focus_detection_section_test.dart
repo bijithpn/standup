@@ -96,7 +96,10 @@ void main() {
     await tester.tap(find.text('Check again'));
     await tester.pumpAndSettle(const Duration(seconds: 6));
     expect(tester.takeException(), isNull);
-    expect(find.text('Permissions checked'), findsNothing); // auto-cleared after 5s
+    expect(
+      find.text('Permissions checked'),
+      findsNothing,
+    ); // auto-cleared after 5s
   });
 }
 
