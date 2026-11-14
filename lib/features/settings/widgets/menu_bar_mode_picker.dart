@@ -240,10 +240,9 @@ class _PreviewPainter extends CustomPainter {
         );
         canvas.drawCircle(c, core, Paint()..color = color);
       case 'countdown':
-        final secs = (25 * 60 * (1 - t)).round();
         final tp = TextPainter(
           text: TextSpan(
-            text: '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}',
+            text: '1:00',
             style: TextStyle(
               color: foreground,
               fontSize: 13,
