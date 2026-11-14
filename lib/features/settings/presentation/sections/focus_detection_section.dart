@@ -175,117 +175,117 @@ class _GroupLabel extends StatelessWidget {
   );
 }
 
-class _StatusCard extends StatelessWidget {
-  final SettingsModel settings;
-  final _Live live;
-  const _StatusCard({required this.settings, required this.live});
+// class _StatusCard extends StatelessWidget {
+//   final SettingsModel settings;
+//   final _Live live;
+//   const _StatusCard({required this.settings, required this.live});
 
-  @override
-  Widget build(BuildContext context) {
-    final anyEnabled =
-        settings.detectVideoCalls ||
-        (settings.detectMeetings && settings.calendarEnabled) ||
-        settings.presentationPauseEnabled;
-    final (tone, title, body) = !anyEnabled
-        ? (
-            PillTone.off,
-            'Detection is off',
-            'Turn on a detector below and breaks will adapt when you are busy.',
-          )
-        : live.presenting
-        ? (
-            PillTone.active,
-            'Presenting: timer paused',
-            'The timer resumes when the slideshow ends.',
-          )
-        : live.any
-        ? (
-            PillTone.active,
-            'Quiet mode is on',
-            'Breaks show a small reminder instead of the full screen until this ends.',
-          )
-        : (
-            PillTone.ok,
-            'Watching, nothing detected',
-            'Your breaks will appear normally.',
-          );
-    final color = StatusPill.colorFor(tone);
-    final signals = <(String, bool)>[
-      ('Call', live.call),
-      ('Meeting', live.meeting),
-      ('Camera', live.camera),
-      ('Microphone', live.mic),
-      ('Video', live.video),
-      ('Presentation', live.presenting),
-    ];
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(
-            liveRegion: true,
-            child: Row(
-              children: [
-                Icon(
-                  anyEnabled
-                      ? (live.any
-                            ? CupertinoIcons.bell_slash_fill
-                            : CupertinoIcons.eye_fill)
-                      : CupertinoIcons.eye_slash,
-                  color: color,
-                  size: 22,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        body,
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (anyEnabled) ...[
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final (name, on) in signals)
-                  StatusPill(name, tone: on ? PillTone.active : PillTone.off),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     final anyEnabled =
+//         settings.detectVideoCalls ||
+//         (settings.detectMeetings && settings.calendarEnabled) ||
+//         settings.presentationPauseEnabled;
+//     final (tone, title, body) = !anyEnabled
+//         ? (
+//             PillTone.off,
+//             'Detection is off',
+//             'Turn on a detector below and breaks will adapt when you are busy.',
+//           )
+//         : live.presenting
+//         ? (
+//             PillTone.active,
+//             'Presenting: timer paused',
+//             'The timer resumes when the slideshow ends.',
+//           )
+//         : live.any
+//         ? (
+//             PillTone.active,
+//             'Quiet mode is on',
+//             'Breaks show a small reminder instead of the full screen until this ends.',
+//           )
+//         : (
+//             PillTone.ok,
+//             'Watching, nothing detected',
+//             'Your breaks will appear normally.',
+//           );
+//     final color = StatusPill.colorFor(tone);
+//     final signals = <(String, bool)>[
+//       ('Call', live.call),
+//       ('Meeting', live.meeting),
+//       ('Camera', live.camera),
+//       ('Microphone', live.mic),
+//       ('Video', live.video),
+//       ('Presentation', live.presenting),
+//     ];
+//     return Container(
+//       width: double.infinity,
+//       padding: const EdgeInsets.all(20),
+//       decoration: BoxDecoration(
+//         color: color.withValues(alpha: 0.08),
+//         border: Border.all(color: color.withValues(alpha: 0.35)),
+//         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Semantics(
+//             liveRegion: true,
+//             child: Row(
+//               children: [
+//                 Icon(
+//                   anyEnabled
+//                       ? (live.any
+//                             ? CupertinoIcons.bell_slash_fill
+//                             : CupertinoIcons.eye_fill)
+//                       : CupertinoIcons.eye_slash,
+//                   color: color,
+//                   size: 22,
+//                 ),
+//                 const SizedBox(width: 14),
+//                 Expanded(
+//                   child: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       Text(
+//                         title,
+//                         style: TextStyle(
+//                           fontSize: 16,
+//                           fontWeight: FontWeight.w700,
+//                           color: AppTheme.textPrimary,
+//                         ),
+//                       ),
+//                       const SizedBox(height: 4),
+//                       Text(
+//                         body,
+//                         style: TextStyle(
+//                           fontSize: 13,
+//                           height: 1.5,
+//                           color: AppTheme.textSecondary,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           if (anyEnabled) ...[
+//             const SizedBox(height: 16),
+//             Wrap(
+//               spacing: 8,
+//               runSpacing: 8,
+//               children: [
+//                 for (final (name, on) in signals)
+//                   StatusPill(name, tone: on ? PillTone.active : PillTone.off),
+//               ],
+//             ),
+//           ],
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 class _DetectorTile extends StatelessWidget {
   final IconData icon;
