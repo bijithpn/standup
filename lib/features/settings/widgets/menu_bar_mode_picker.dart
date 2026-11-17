@@ -244,6 +244,7 @@ class _PreviewPainter extends CustomPainter {
           text: TextSpan(
             text: '1:00',
             style: TextStyle(
+              fontFamily: 'Inter',
               color: foreground,
               fontSize: 13,
               fontWeight: FontWeight.w600,

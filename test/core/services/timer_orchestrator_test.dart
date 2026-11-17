@@ -1,4 +1,6 @@
 import 'package:flutter/services.dart';
+import 'dart:async';
+import 'package:breakmate/core/services/timer_return_prompt.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_async/fake_async.dart';
 
@@ -281,6 +283,10 @@ class FakeActivityMonitor extends ActivityMonitor {
 }
 
 class FakeNotificationService extends NotificationService {
+  final reminders = <String>[];
+  @override
+  Future<void> showReminder({required String message}) async =>
+      reminders.add(message);
   bool showBreakReminderCalled = false;
   bool showClockOutReminderCalled = false;
 
@@ -352,6 +358,8 @@ void main() {
   late EventBus eventBus;
   late TimerEngine timerEngine;
   late TimerOrchestrator orchestrator;
+  late Completer<TimerReturnChoice?> returnChoice;
+  late List<Duration> returnPrompts;
 
   final MethodChannel channel = const MethodChannel('com.breakmate/ipc');
 
@@ -400,6 +408,8 @@ void main() {
       settingsRepository: fakeSettingsRepository,
       eventBus: eventBus,
     );
+    returnChoice = Completer<TimerReturnChoice?>();
+    returnPrompts = [];
 
     orchestrator = TimerOrchestrator(
       timerEngine: timerEngine,
@@ -412,6 +422,11 @@ void main() {
       adaptiveBreakService: fakeAdaptiveBreakService,
       settingsRepository: fakeSettingsRepository,
       eventBus: eventBus,
+      returnChoicePrompt: (remaining, interval) {
+        returnPrompts.add(remaining);
+        expect(interval, const Duration(minutes: 20));
+        return returnChoice.future;
+      },
     );
 
     orchestrator.initialize();
@@ -423,6 +438,80 @@ void main() {
   });
 
   group('TimerOrchestrator Coordination', () {
+    test(
+      'long idle followed by short sleep still offers the return choice',
+      () {
+        fakeAsync((async) {
+          returnChoice = Completer<TimerReturnChoice?>();
+          timerEngine.startTimers();
+          async.elapse(const Duration(minutes: 14, seconds: 43));
+          fakeActivityMonitor.callback?.call(false);
+          async.elapse(
+            Duration(minutes: timerEngine.resetTimerAfterMinutes + 1),
+          );
+          fakeActivityMonitor.onAway?.call(DateTime.now());
+          expect(returnPrompts, isEmpty);
+          expect(timerEngine.awaitingReturnDecision, isTrue);
+          fakeActivityMonitor.onBack?.call();
+          async.flushMicrotasks();
+          expect(returnPrompts, [const Duration(seconds: 317)]);
+          returnChoice.complete(TimerReturnChoice.continueSession);
+          async.flushMicrotasks();
+          expect(timerEngine.state, TimerState.running);
+          expect(timerEngine.timeUntilNextShortBreak.inSeconds, 317);
+          timerEngine.dispose();
+        });
+      },
+    );
+    test('long idle preserves progress and only resumes after Continue', () {
+      fakeAsync((async) {
+        returnChoice = Completer<TimerReturnChoice?>();
+        timerEngine.startTimers();
+        async.elapse(const Duration(minutes: 14, seconds: 43));
+        fakeActivityMonitor.callback?.call(false);
+        async.elapse(Duration(minutes: timerEngine.resetTimerAfterMinutes + 1));
+        expect(timerEngine.timeUntilNextShortBreak.inSeconds, 317);
+        expect(returnPrompts, isEmpty);
+        fakeActivityMonitor.callback?.call(true);
+        async.flushMicrotasks();
+        expect(returnPrompts, [const Duration(seconds: 317)]);
+        expect(timerEngine.state, TimerState.paused);
+        fakeActivityMonitor.callback?.call(true);
+        expect(returnPrompts, hasLength(1));
+        returnChoice.complete(TimerReturnChoice.continueSession);
+        async.flushMicrotasks();
+        expect(timerEngine.state, TimerState.running);
+        expect(timerEngine.timeUntilNextShortBreak.inSeconds, 317);
+        expect(
+          fakeNotificationService.reminders.any(
+            (text) => text.contains('paused'),
+          ),
+          isTrue,
+        );
+        timerEngine.dispose();
+      });
+    });
+
+    test('dismissing a return dialog leaves the preserved timer paused', () {
+      fakeAsync((async) {
+        returnChoice = Completer<TimerReturnChoice?>();
+        timerEngine.startTimers();
+        async.elapse(const Duration(minutes: 14, seconds: 43));
+        fakeActivityMonitor.onAway?.call(
+          DateTime.now().subtract(const Duration(minutes: 45)),
+        );
+        fakeActivityMonitor.onBack?.call();
+        async.flushMicrotasks();
+        expect(returnPrompts, hasLength(1));
+        returnChoice.complete(null);
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 1));
+        expect(timerEngine.state, TimerState.paused);
+        expect(timerEngine.timeUntilNextShortBreak.inSeconds, 317);
+        expect(timerEngine.awaitingReturnDecision, isTrue);
+        timerEngine.dispose();
+      });
+    });
     test('updates tray and dispatches IPC when timer state changes', () {
       timerEngine.startTimers();
 

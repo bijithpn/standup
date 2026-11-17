@@ -11,12 +11,12 @@ import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:breakmate/core/services/daily_reset_service.dart';
+import 'package:breakmate/core/services/desktop_update_notifier.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 
@@ -214,6 +214,9 @@ Future<void> _gracefulShutdown(
   }
 
   try {
+    if (sl.isRegistered<DesktopUpdateNotifier>()) {
+      sl<DesktopUpdateNotifier>().dispose();
+    }
     if (sl.isRegistered<TimerOrchestrator>()) {
       sl<TimerOrchestrator>().shutdown();
       debugPrint('[Shutdown] TimerOrchestrator shutdown complete.');
@@ -696,8 +699,6 @@ void mainCommon(FlavorConfig config) async {
             'sessionActive',
           }.contains(call.method)) {
             final ms = call.arguments;
-            // After a long absence the engine asks the user whether to restart.
-            sl<TimerEngine>().onNeedsRestart ??= _promptRestartTimer;
             sl<ActivityMonitor>().handleNative(
               call.method,
               atMs: ms is int ? ms : null,
@@ -1007,117 +1008,4 @@ class FakeBreakController extends ChangeNotifier implements BreakController {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-bool _restartPromptOpen = false;
-
-/// Centers the dashboard on the display containing the cursor.
-Future<void> _moveWindowToActiveDisplay() async {
-  try {
-    final cursor = await screenRetriever.getCursorScreenPoint();
-    final displays = await screenRetriever.getAllDisplays();
-    final size = await windowManager.getSize();
-    for (final d in displays) {
-      final origin = d.visiblePosition ?? Offset.zero;
-      final area = origin & (d.visibleSize ?? d.size);
-      if (area.contains(cursor)) {
-        await windowManager.setPosition(
-          Offset(
-            area.left + (area.width - size.width) / 2,
-            area.top + (area.height - size.height) / 2,
-          ),
-        );
-        return;
-      }
-    }
-  } catch (_) {}
-}
-
-/// Shows a restart-timer dialog after system wake; guarded so only one is open.
-Future<void> _promptRestartTimer() async {
-  if (_restartPromptOpen) return;
-  await sl<OverlayWindowService>().showDashboard(forceShow: true);
-  await _moveWindowToActiveDisplay();
-  await windowManager.focus();
-  final context = ErrorToastService.navigatorKey.currentContext;
-  if (context == null || !context.mounted) return;
-  _restartPromptOpen = true;
-  final start = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: 340,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceElevated,
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-          border: Border.all(
-            color: AppTheme.accentColor.withValues(alpha: 0.25),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 30,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.timer_outlined, size: 28, color: AppTheme.accentColor),
-            const SizedBox(height: 12),
-            Text(
-              'Welcome back',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'The break timer was reset while you were away. Start it again?',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.3,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: Text(
-                      'Not now',
-                      style: TextStyle(color: AppTheme.textSecondary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.accentColor,
-                    ),
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text('Start timer'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-  _restartPromptOpen = false;
-  if (start == true && sl<TimerEngine>().state == TimerState.idle) {
-    sl<TimerEngine>().startTimers();
-  }
 }

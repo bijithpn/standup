@@ -3,8 +3,8 @@
 
 #include <flutter/flutter_engine.h>
 
-// Registers `com.breakmate/native_enhancements`: cursor countdown pill, flash
-// reminder and display-sleep prevention. Mirrors the macOS channel of the same
+// Registers `com.breakmate/native_enhancements`: standalone duration picker,
+// cursor countdown pill, flash reminder and display-sleep prevention. Mirrors the macOS channel of the same
 // name. Must be called on the UI thread of the main window.
 void RegisterNativeEnhancementsBridge(flutter::FlutterEngine* engine);
 

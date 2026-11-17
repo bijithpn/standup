@@ -27,6 +27,7 @@ void main() {
       currentBuild: 42,
     );
     expect(update?.version, '2.0.0');
+    expect(update?.build, 60);
     expect(update?.notes, '<p>notes 2.0.0</p>');
   });
 
@@ -39,5 +40,25 @@ void main() {
       ),
       isNull,
     );
+  });
+
+  test('rejects unsafe download URLs even with a higher build', () {
+    for (final url in [
+      'file:///tmp/app',
+      'javascript:alert(1)',
+      '/app.exe',
+      'https://',
+      'http://example.com/app',
+    ]) {
+      final xml = _item(
+        '2.0.0',
+        60,
+        os: 'windows',
+      ).replaceAll('https://example.com/2.0.0', url);
+      expect(
+        FeedUpdateChecker.newestFor(xml, os: 'windows', currentBuild: 50),
+        isNull,
+      );
+    }
   });
 }

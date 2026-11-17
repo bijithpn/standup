@@ -113,6 +113,7 @@ def parse_args():
     parser.add_argument("--signature", default="", help="Sparkle Ed25519 signature")
     parser.add_argument("--size", default="0", help="DMG file size in bytes")
     parser.add_argument("--url", help="DMG download URL")
+    parser.add_argument("--os", choices=("macos", "windows", "linux"), default="macos", help="Release platform")
     parser.add_argument("--rerender", action="store_true", help="Only convert existing Markdown notes to HTML")
     parser.add_argument("--notes-file", default="", help="Path to release notes file")
     parser.add_argument("--notes", default="", help="Inline release notes")
@@ -160,36 +161,43 @@ def main():
     with open(appcast_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    version_exists = bool(re.search(rf'sparkle:shortVersionString="{re.escape(args.version)}"', content))
+    item_pattern = re.compile(r"<item>.*?</item>", re.DOTALL)
+
+    def matches_platform_version(item):
+        enclosure = re.search(r"<enclosure\b[^>]*>", item, re.DOTALL)
+        if not enclosure:
+            return False
+        attrs = dict(re.findall(r'([\w:]+)="([^"]*)"', enclosure.group(0)))
+        return (attrs.get("sparkle:os", "macos") == args.os and
+                attrs.get("sparkle:shortVersionString") == args.version)
+
+    version_exists = any(matches_platform_version(m.group(0)) for m in item_pattern.finditer(content))
 
     if version_exists:
         print(f"[PATCH] Updating existing v{args.version} entry — signature + length.")
-        if args.signature:
-            content = re.sub(
-                r'(sparkle:shortVersionString="' + re.escape(args.version) + r'"[^>]*?)sparkle:edSignature="[^"]*"',
-                r'\g<1>' + f'sparkle:edSignature="{args.signature}"',
-                content,
-                flags=re.DOTALL,
-            )
-        if args.size and args.size != "0":
-            content = re.sub(
-                r'(sparkle:shortVersionString="' + re.escape(args.version) + r'"[^>]*?)length="[^"]*"',
-                r'\g<1>' + f'length="{args.size}"',
-                content,
-                flags=re.DOTALL,
-            )
-        new_content = content
+        def patch_item(match):
+            item = match.group(0)
+            if not matches_platform_version(item):
+                return item
+            if args.signature:
+                item = re.sub(r'sparkle:edSignature="[^"]*"', lambda _: f'sparkle:edSignature="{html.escape(args.signature, quote=True)}"', item)
+            if args.size and args.size != "0":
+                item = re.sub(r'length="[^"]*"', lambda _: f'length="{html.escape(args.size, quote=True)}"', item)
+            return item
+        new_content = item_pattern.sub(patch_item, content)
     else:
         print(f"[PATCH] Inserting new v{args.version} entry at top of feed.")
+        platform_attribute = f' sparkle:os="{args.os}"' if args.os != "macos" else ""
+        install_note = INSTALL_NOTE if args.os == "macos" else ""
         new_item = f"""        <item>
             <title>Version {args.version}</title>
             <pubDate>{pub_date}</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v{args.version}</h3>
                 {notes_html}
-                {INSTALL_NOTE}
+                {install_note}
             ]]></description>
-            <enclosure url="{args.url}"
+            <enclosure url="{html.escape(args.url, quote=True)}"{platform_attribute}
                        sparkle:version="{args.build}"
                        sparkle:shortVersionString="{args.version}"
                        sparkle:edSignature="{args.signature}"

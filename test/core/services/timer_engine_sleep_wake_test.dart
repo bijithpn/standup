@@ -163,6 +163,111 @@ void main() {
   });
 
   group('pause across sleep', () {
+    test('Continue respects an active smart pause', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        async.elapse(const Duration(minutes: 14, seconds: 43));
+        engine.handleSystemSleep();
+        async.elapse(const Duration(minutes: 45));
+        engine.handleSystemWake();
+        when(() => detection.isVideoPlaying).thenReturn(true);
+        engine.resolveReturnDecision(startOver: false);
+        expect(engine.awaitingReturnDecision, isFalse);
+        expect(engine.state, TimerState.paused);
+        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+        when(() => detection.isVideoPlaying).thenReturn(false);
+        async.elapse(const Duration(seconds: 1));
+        expect(engine.state, TimerState.running);
+        engine.dispose();
+      });
+    });
+
+    test(
+      'a long tick gap without a native sleep event also asks before resetting',
+      () {
+        fakeAsync((async) {
+          final engine = newEngine()..startTimers();
+          async.elapse(const Duration(minutes: 14, seconds: 43));
+          async.elapseBlocking(const Duration(minutes: 45));
+          async.elapse(const Duration(seconds: 1));
+          expect(engine.awaitingReturnDecision, isTrue);
+          expect(engine.state, TimerState.paused);
+          expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+          engine.dispose();
+        });
+      },
+    );
+    test('5:17 remains frozen after long sleep until Continue is chosen', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        async.elapse(const Duration(minutes: 14, seconds: 43));
+        final totalWork = engine.totalWorkToday;
+        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+        engine.handleSystemSleep();
+        async.elapse(const Duration(minutes: 45));
+        engine.handleSystemWake();
+        expect(engine.awaitingReturnDecision, isTrue);
+        expect(engine.state, TimerState.paused);
+        engine.resumeTimers(isManual: false);
+        engine.startTimers();
+        async.elapse(const Duration(minutes: 2));
+        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+        expect(engine.totalWorkToday, totalWork);
+        engine.resolveReturnDecision(startOver: false);
+        expect(engine.state, TimerState.running);
+        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+        async.elapse(const Duration(seconds: 1));
+        expect(engine.timeUntilNextShortBreak.inSeconds, 316);
+        engine.dispose();
+      });
+    });
+
+    test('Start over resets the interval but preserves daily work totals', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        async.elapse(const Duration(minutes: 14, seconds: 43));
+        final totalWork = engine.totalWorkToday;
+        engine.handleSystemSleep();
+        async.elapse(const Duration(minutes: 45));
+        engine.handleSystemWake();
+        engine.resolveReturnDecision(startOver: true);
+        expect(engine.state, TimerState.running);
+        expect(engine.awaitingReturnDecision, isFalse);
+        expect(engine.timeUntilNextShortBreak, const Duration(minutes: 20));
+        expect(engine.workElapsedNotifier.value, Duration.zero);
+        expect(engine.totalWorkToday, totalWork);
+        engine.dispose();
+      });
+    });
+
+    test('a new day does not erase the pending return countdown', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        async.elapse(const Duration(minutes: 14, seconds: 43));
+        engine.requestReturnDecision();
+        engine.resetForNewDay();
+        expect(engine.awaitingReturnDecision, isTrue);
+        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+        expect(engine.totalWorkToday, Duration.zero);
+        engine.dispose();
+      });
+    });
+
+    test('a manual pause is preserved after a long sleep without a prompt', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        async.elapse(const Duration(minutes: 5));
+        engine.pauseTimers(isManual: true);
+        engine.handleSystemSleep();
+        async.elapse(const Duration(minutes: 45));
+        engine.handleSystemWake();
+        expect(engine.state, TimerState.paused);
+        expect(engine.isManuallyPaused, isTrue);
+        expect(engine.awaitingReturnDecision, isFalse);
+        expect(engine.timeUntilNextShortBreak, const Duration(minutes: 15));
+        engine.dispose();
+      });
+    });
     test('manually paused timer stays paused with remaining time intact', () {
       fakeAsync((async) {
         final engine = newEngine()..startTimers();

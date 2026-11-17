@@ -932,15 +932,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         MenuItem(key: 'micro_session', label: 'Quick Stretch'),
         if (_breakController?.isFocusSessionActive ?? false)
           MenuItem(key: 'focus_end', label: 'End Focus Session')
-        else ...[
-          MenuItem(key: 'focus_25', label: 'Focus 25 min'),
-          MenuItem(key: 'focus_50', label: 'Focus 50 min'),
-        ],
-        MenuItem(key: 'snooze_2', label: 'Snooze 2 min'),
-        MenuItem(key: 'snooze_5', label: 'Snooze 5 min'),
-        MenuItem(key: 'snooze_15', label: 'Snooze 15 min'),
-        MenuItem(key: 'snooze_60', label: 'Snooze 1 hour'),
-        MenuItem(key: 'snooze_today', label: 'Snooze rest of today'),
+        else
+          MenuItem(key: 'focus', label: 'Focus Mode'),
+        MenuItem(
+          key: 'snooze',
+          label: 'Snooze',
+          disabled: _breakController?.isFocusSessionActive ?? false,
+        ),
         MenuItem.separator(),
       ]);
     }
@@ -950,6 +948,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       MenuItem(key: 'open_companion', label: 'Companion Settings'),
       MenuItem(key: 'open_notifications', label: 'Notification Settings'),
       MenuItem(key: 'open_stats', label: 'View Statistics'),
+      MenuItem(key: 'check_for_updates', label: 'Check for Updates…'),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: '⏻ Quit BreakMate'),
     ]);

@@ -219,8 +219,8 @@ class GeneralSection extends StatelessWidget {
 
   Widget _buildResetTimer() {
     return buildListRow(
-      'Reset timer after',
-      'Inactivity time before resetting progress',
+      'Return choice after',
+      'After this much idle pause, ask how to resume when you return',
       null,
       CupertinoIcons.refresh,
       null,
