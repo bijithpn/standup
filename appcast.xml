@@ -3,7 +3,37 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                                              <item>
+        <language>en</language>                                                                                                              <item>
+            <title>Version 1.13.0</title>
+            <pubDate>Tue, 17 Nov 2026 12:08:04 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.13.0</h3>
+                <p>Bug fixes and performance improvements.</p>
+                
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.13.0/BreakMate-1.13.0-linux-x64.tar.gz" sparkle:os="linux"
+                       sparkle:version="51"
+                       sparkle:shortVersionString="1.13.0"
+                       sparkle:edSignature=""
+                       length="33162428"
+                       type="application/octet-stream" />
+        </item>
+<item>
+            <title>Version 1.13.0</title>
+            <pubDate>Tue, 17 Nov 2026 12:08:04 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.13.0</h3>
+                <p>Bug fixes and performance improvements.</p>
+                
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.13.0/BreakMate-Setup-1.13.0.exe" sparkle:os="windows"
+                       sparkle:version="51"
+                       sparkle:shortVersionString="1.13.0"
+                       sparkle:edSignature=""
+                       length="21425581"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.13.0</title>
             <pubDate>Tue, 17 Nov 2026 12:06:40 +0000</pubDate>
             <description><![CDATA[
