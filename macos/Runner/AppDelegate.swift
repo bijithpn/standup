@@ -648,13 +648,14 @@ private final class NativeTrayDurationPicker: NSObject, NSWindowDelegate, NSText
             label.textColor = secondaryColor
             content.addSubview(label)
         }
-        hours.frame = NSRect(x: 40, y: 120, width: 142, height: 40)
-        minutes.frame = NSRect(x: 198, y: 120, width: 142, height: 40)
+        hours.frame = NSRect(x: 40, y: 124, width: 142, height: 32)
+        minutes.frame = NSRect(x: 198, y: 124, width: 142, height: 32)
         let initial = min(1439, max(1, initialMinutes))
         hours.stringValue = String(initial / 60)
         minutes.stringValue = String(initial % 60)
         for (field, label) in [(hours, "Hours"), (minutes, "Minutes")] {
-            field.font = .monospacedDigitSystemFont(ofSize: 28, weight: .medium)
+            field.font = .monospacedDigitSystemFont(ofSize: 18, weight: .medium)
+            field.focusRingType = .none
             field.textColor = foreground
             field.backgroundColor = ActiveDialog.color(theme, "background", .textBackgroundColor)
             field.alignment = .center
