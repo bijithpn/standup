@@ -23,7 +23,7 @@ _OverlayWindowConfig _$OverlayWindowConfigFromJson(Map<String, dynamic> json) =>
       breakType: json['breakType'] as String?,
       theme: json['theme'] as String?,
       classicImage: json['classicImage'] as String?,
-      breakTemplate: json['breakTemplate'] as String? ?? 'minimal',
+      breakTemplate: json['breakTemplate'] as String? ?? 'balance',
       companionPetTheme: json['companionPetTheme'] as String? ?? 'grey_cat',
       clockFaceTextColorHex:
           (json['clockFaceTextColorHex'] as num?)?.toInt() ?? 0xFFFFFFFF,
@@ -39,6 +39,15 @@ _OverlayWindowConfig _$OverlayWindowConfigFromJson(Map<String, dynamic> json) =>
       breaksCompleted: (json['breaksCompleted'] as num?)?.toInt(),
       targetEndTime: (json['targetEndTime'] as num?)?.toInt(),
       allowFullPoster: json['allowFullPoster'] as bool? ?? false,
+      windowMode: json['windowMode'] as String? ?? 'immersive',
+      compactCorner: json['compactCorner'] as String? ?? 'bottomRight',
+      motionIntensity: (json['motionIntensity'] as num?)?.toDouble() ?? 0.6,
+      timeOfDay: json['timeOfDay'] as bool? ?? false,
+      soundscape: json['soundscape'] as String? ?? 'silence',
+      soundscapeVolume: (json['soundscapeVolume'] as num?)?.toDouble() ?? 0.4,
+      breakStartedAtMs: (json['breakStartedAtMs'] as num?)?.toInt(),
+      paused: json['paused'] as bool? ?? false,
+      breakFocus: json['breakFocus'] as String?,
     );
 
 Map<String, dynamic> _$OverlayWindowConfigToJson(
@@ -73,4 +82,13 @@ Map<String, dynamic> _$OverlayWindowConfigToJson(
   'breaksCompleted': instance.breaksCompleted,
   'targetEndTime': instance.targetEndTime,
   'allowFullPoster': instance.allowFullPoster,
+  'windowMode': instance.windowMode,
+  'compactCorner': instance.compactCorner,
+  'motionIntensity': instance.motionIntensity,
+  'timeOfDay': instance.timeOfDay,
+  'soundscape': instance.soundscape,
+  'soundscapeVolume': instance.soundscapeVolume,
+  'breakStartedAtMs': instance.breakStartedAtMs,
+  'paused': instance.paused,
+  'breakFocus': instance.breakFocus,
 };

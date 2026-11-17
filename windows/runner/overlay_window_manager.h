@@ -25,10 +25,16 @@ class OverlayWindowManager {
   void HandleEscapeKey();
   void OnDisplayChange();
   flutter::EncodableMap GetLastShowArgs() const { return last_show_args_; }
+  // Compact -> immersive for the same break, using the last shown args. Must
+  // not run inside the compact window's own message handler (it hides it).
+  void OpenImmersive();
+  // Keeps refreshes that still say "compact" from undoing OpenImmersive.
+  void ApplyModeOverride(std::map<std::string, flutter::EncodableValue>& args);
 
   struct OverlayEntry {
     HMONITOR monitor;
     std::unique_ptr<FlutterWindow> window;
+    bool compact = false;
   };
 
  private:
@@ -44,6 +50,10 @@ class OverlayWindowManager {
   // already-warm engine instead of paying that cost again.
   std::vector<OverlayEntry> warm_pool_;
   flutter::EncodableMap last_show_args_;
+  bool compact_active_ = false;
+  bool switched_to_immersive_ = false;
+
+  void ShowCompact(const std::map<std::string, flutter::EncodableValue>& args);
 
   void DestroyEntries(std::vector<OverlayEntry>& entries);
 };

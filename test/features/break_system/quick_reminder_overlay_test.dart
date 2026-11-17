@@ -1,11 +1,10 @@
-// Regression coverage: posture/eye-rest/meeting-break reminders must render
-// the minimal pill (icon + short label), never the old full break template
-// with long instructional copy.
+// Regression coverage: reminders render a compact card with short copy, never the full break template.
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/services/health_reminder_messages.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
 
 void main() {
@@ -49,63 +48,46 @@ void main() {
     );
   }
 
-  testWidgets(
-    'posture reminder shows only the minimal pill: icon + short label',
-    (tester) async {
-      await pumpReminder(tester, reminderType: 'posture');
-
-      expect(pillText('posture'), findsOneWidget);
-      expect(find.byIcon(Icons.accessibility_new_rounded), findsOneWidget);
-
-      // Must not contain the old full-template long instructional copy.
-      expect(
-        find.textContaining('sit up straight', findRichText: true),
-        findsNothing,
-      );
-    },
-  );
-
-  testWidgets(
-    'eye rest reminder shows only the minimal pill: icon + short label',
-    (tester) async {
-      await pumpReminder(tester, reminderType: 'eyeblink');
-
-      expect(pillText('eyeblink'), findsOneWidget);
-      expect(find.byIcon(Icons.remove_red_eye_rounded), findsOneWidget);
-      expect(
-        find.textContaining('look away', findRichText: true),
-        findsNothing,
-      );
-    },
-  );
-
-  testWidgets('meeting-break reminder shows the quiet minimal pill', (
+  testWidgets('posture reminder shows a compact card with its short label', (
     tester,
   ) async {
+    await pumpReminder(tester, reminderType: 'posture');
+
+    expect(pillText('posture'), findsOneWidget);
+    expect(
+      find.textContaining('sit up straight', findRichText: true),
+      findsNothing,
+    );
+  });
+
+  testWidgets('default reminder shows short wording only', (tester) async {
+    await pumpReminder(tester, reminderType: 'eyeblink');
+
+    expect(pillText('eyeblink'), findsOneWidget);
+    expect(find.textContaining('look away', findRichText: true), findsNothing);
+  });
+
+  testWidgets('meeting-break reminder shows the quiet card', (tester) async {
     await pumpReminder(tester, reminderType: 'meetingBreak');
 
     expect(find.text('Break ready after your meeting'), findsOneWidget);
-    expect(find.byIcon(Icons.videocam_rounded), findsOneWidget);
   });
 
-  testWidgets(
-    'the pill uses a translucent dark background, not the full break card style',
-    (tester) async {
-      await pumpReminder(tester, reminderType: 'posture');
+  testWidgets('the card is announced as a live region', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpReminder(tester, reminderType: 'meetingBreak');
 
-      final container = tester.widget<Container>(
-        find
-            .ancestor(of: pillText('posture'), matching: find.byType(Container))
-            .first,
-      );
-      final decoration = container.decoration as BoxDecoration;
-      final color = decoration.color!;
-
-      expect(color.a, closeTo(0.36, 0.01));
-      // Fully opaque black (the old full-screen break card look) would be a=1.0.
-      expect(color.a, lessThan(0.5));
-    },
-  );
+    expect(
+      tester.getSemantics(
+        find.bySemanticsLabel('Break ready after your meeting'),
+      ),
+      matchesSemantics(
+        label: 'Break ready after your meeting',
+        isLiveRegion: true,
+      ),
+    );
+    handle.dispose();
+  });
 
   testWidgets('shows the full poster when allowFullPoster is true', (
     tester,
@@ -115,19 +97,11 @@ void main() {
     expect(find.text('Sit up'), findsOneWidget);
     // Icon names what the reminder is about, not the app's own logo.
     expect(find.byIcon(Icons.accessibility_new_rounded), findsOneWidget);
-    // The poster has no 0.36-alpha pill container — it's full-bleed.
-    final pillContainers = find.byWidgetPredicate((widget) {
-      if (widget is! Container) return false;
-      final decoration = widget.decoration;
-      if (decoration is! BoxDecoration) return false;
-      final color = decoration.color;
-      return color != null && (color.a - 0.36).abs() < 0.01;
-    });
-    expect(pillContainers, findsNothing);
+    expect(find.byType(PosterReminderOverlay), findsOneWidget);
   });
 
   testWidgets(
-    'falls back to the minimal pill when allowFullPoster is false, even for meetingBreak',
+    'falls back to the compact card when allowFullPoster is false, even for meetingBreak',
     (tester) async {
       await pumpReminder(
         tester,
@@ -136,16 +110,7 @@ void main() {
       );
 
       expect(find.text('Break ready after your meeting'), findsOneWidget);
-      final container = tester.widget<Container>(
-        find
-            .ancestor(
-              of: find.text('Break ready after your meeting'),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
-      final decoration = container.decoration as BoxDecoration;
-      expect(decoration.color!.a, closeTo(0.36, 0.01));
+      expect(find.byType(PosterReminderOverlay), findsNothing);
     },
   );
 
@@ -154,11 +119,8 @@ void main() {
     'stretch': Icons.self_improvement_rounded,
     'standup': Icons.directions_walk_rounded,
   }.entries) {
-    testWidgets('${entry.key} reminder shows its own icon and wording', (
-      tester,
-    ) async {
+    testWidgets('${entry.key} reminder shows its own wording', (tester) async {
       await pumpReminder(tester, reminderType: entry.key);
-      expect(find.byIcon(entry.value), findsOneWidget);
       expect(pillText(entry.key), findsOneWidget);
     });
   }

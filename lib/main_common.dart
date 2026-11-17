@@ -63,19 +63,6 @@ void _setupGlobalErrors() {
   };
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    if (StandaloneBreakOverlay.onErrorCallbacks.isNotEmpty) {
-      for (final callback in List.from(
-        StandaloneBreakOverlay.onErrorCallbacks,
-      )) {
-        try {
-          callback(details);
-        } catch (e, st) {
-          ErrorHandler().handleError(e, st);
-        }
-      }
-      return const Material(color: Color(0xFF0A0A0F), child: SizedBox.shrink());
-    }
-
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(

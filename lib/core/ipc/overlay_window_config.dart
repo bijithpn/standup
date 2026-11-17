@@ -22,7 +22,7 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     String? breakType,
     String? theme,
     String? classicImage,
-    @Default('minimal') String breakTemplate,
+    @Default('balance') String breakTemplate,
     @Default('grey_cat') String companionPetTheme,
     @Default(0xFFFFFFFF) int clockFaceTextColorHex,
     @Default(true) bool clockFaceBlurEnabled,
@@ -37,6 +37,15 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     int? targetEndTime,
 
     @Default(false) bool allowFullPoster,
+    @Default('immersive') String windowMode,
+    @Default('bottomRight') String compactCorner,
+    @Default(0.6) double motionIntensity,
+    @Default(false) bool timeOfDay,
+    @Default('silence') String soundscape,
+    @Default(0.4) double soundscapeVolume,
+    int? breakStartedAtMs,
+    @Default(false) bool paused,
+    String? breakFocus,
   }) = _OverlayWindowConfig;
 
   factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) =>

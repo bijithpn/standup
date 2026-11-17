@@ -31,6 +31,11 @@ class MacOSBridge implements NativeBridgePlatform {
   }
 
   @override
+  Future<void> openImmersive() async {
+    await _invokeSafely('openImmersive');
+  }
+
+  @override
   Future<void> setVisualEffect(String material) async {
     await _invokeSafely('setVisualEffect', {'material': material});
   }

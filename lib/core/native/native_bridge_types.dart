@@ -302,6 +302,9 @@ abstract class NativeBridgePlatform {
   Future<void> showOverlay([OverlayArgs? args]);
   Future<void> hideOverlay({bool restoreMainWindow = true});
   Future<void> skipBreak();
+
+  /// Called from the overlay engine: turns the compact break window into the full-screen one.
+  Future<void> openImmersive();
   Future<void> setVisualEffect(String material);
   Future<void> focusApp();
   Future<void> setWindowLevel(String level);
@@ -370,6 +373,9 @@ class FallbackBridge implements NativeBridgePlatform {
 
   @override
   Future<void> skipBreak() async {}
+
+  @override
+  Future<void> openImmersive() async {}
 
   @override
   Future<void> setVisualEffect(String material) async {}

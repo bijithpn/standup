@@ -1,3 +1,4 @@
+import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart';
 import 'experience_preferences.dart';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'work_schedule.dart';
@@ -30,6 +31,13 @@ class SettingsModel {
   final bool showOnAllDisplays;
   final String breakTheme;
   final String breakTemplate;
+  final String breakDisplayMode;
+  final String compactCorner;
+  final double motionIntensity;
+  final String soundscape;
+  final double soundscapeVolume;
+  final bool longBreaksImmersive;
+  final bool adaptToTimeOfDay;
   final bool showExercisesInBreak;
   final String lastExerciseDate;
   final List<String> shownExercisesToday;
@@ -187,7 +195,14 @@ class SettingsModel {
     this.eyeBlinkReminderType = 'overlay',
     this.showOnAllDisplays = true,
     this.breakTheme = 'random',
-    this.breakTemplate = 'minimal',
+    this.breakTemplate = 'balance',
+    this.breakDisplayMode = 'compact',
+    this.compactCorner = 'bottomRight',
+    this.motionIntensity = 0.6,
+    this.soundscape = 'silence',
+    this.soundscapeVolume = 0.4,
+    this.longBreaksImmersive = true,
+    this.adaptToTimeOfDay = false,
     this.clockFaceTextColorHex = 0xFFFFFFFF,
     this.clockFaceBlurEnabled = true,
     this.overlayThemeMode = 'dark',
@@ -304,6 +319,13 @@ class SettingsModel {
     bool? showOnAllDisplays,
     String? breakTheme,
     String? breakTemplate,
+    String? breakDisplayMode,
+    String? compactCorner,
+    double? motionIntensity,
+    String? soundscape,
+    double? soundscapeVolume,
+    bool? longBreaksImmersive,
+    bool? adaptToTimeOfDay,
     bool? showExercisesInBreak,
     String? lastExerciseDate,
     List<String>? shownExercisesToday,
@@ -432,6 +454,13 @@ class SettingsModel {
       showOnAllDisplays: showOnAllDisplays ?? this.showOnAllDisplays,
       breakTheme: breakTheme ?? this.breakTheme,
       breakTemplate: breakTemplate ?? this.breakTemplate,
+      breakDisplayMode: breakDisplayMode ?? this.breakDisplayMode,
+      compactCorner: compactCorner ?? this.compactCorner,
+      motionIntensity: motionIntensity ?? this.motionIntensity,
+      soundscape: soundscape ?? this.soundscape,
+      soundscapeVolume: soundscapeVolume ?? this.soundscapeVolume,
+      longBreaksImmersive: longBreaksImmersive ?? this.longBreaksImmersive,
+      adaptToTimeOfDay: adaptToTimeOfDay ?? this.adaptToTimeOfDay,
       showExercisesInBreak: showExercisesInBreak ?? this.showExercisesInBreak,
       lastExerciseDate: lastExerciseDate ?? this.lastExerciseDate,
       shownExercisesToday: shownExercisesToday ?? this.shownExercisesToday,
@@ -584,6 +613,13 @@ class SettingsModel {
     'showOnAllDisplays': showOnAllDisplays,
     'breakTheme': breakTheme,
     'breakTemplate': breakTemplate,
+    'breakDisplayMode': breakDisplayMode,
+    'compactCorner': compactCorner,
+    'motionIntensity': motionIntensity,
+    'soundscape': soundscape,
+    'soundscapeVolume': soundscapeVolume,
+    'longBreaksImmersive': longBreaksImmersive,
+    'adaptToTimeOfDay': adaptToTimeOfDay,
     'showExercisesInBreak': showExercisesInBreak,
     'lastExerciseDate': lastExerciseDate,
     'shownExercisesToday': shownExercisesToday,
@@ -706,7 +742,14 @@ class SettingsModel {
       eyeBlinkReminderType: map['eyeBlinkReminderType'] as String? ?? 'overlay',
       showOnAllDisplays: map['showOnAllDisplays'] as bool? ?? true,
       breakTheme: map['breakTheme'] as String? ?? 'random',
-      breakTemplate: map['breakTemplate'] as String? ?? 'minimal',
+      breakTemplate: migrateTemplateId(map['breakTemplate'] as String?),
+      breakDisplayMode: map['breakDisplayMode'] as String? ?? 'compact',
+      compactCorner: map['compactCorner'] as String? ?? 'bottomRight',
+      motionIntensity: (map['motionIntensity'] as num?)?.toDouble() ?? 0.6,
+      soundscape: map['soundscape'] as String? ?? 'silence',
+      soundscapeVolume: (map['soundscapeVolume'] as num?)?.toDouble() ?? 0.4,
+      longBreaksImmersive: map['longBreaksImmersive'] as bool? ?? true,
+      adaptToTimeOfDay: map['adaptToTimeOfDay'] as bool? ?? false,
       showExercisesInBreak: map['showExercisesInBreak'] as bool? ?? true,
       lastExerciseDate: map['lastExerciseDate'] as String? ?? '',
       shownExercisesToday:

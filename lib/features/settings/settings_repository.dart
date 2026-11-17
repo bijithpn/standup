@@ -1,3 +1,5 @@
+import 'package:breakmate/features/break_overlay/wellness/wellness_models.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart';
 import 'experience_preferences.dart';
 import 'dart:convert';
 import 'work_schedule.dart';
@@ -228,7 +230,34 @@ class SettingsRepository extends ChangeNotifier {
       eyeBlinkReminderType: s.eyeBlinkReminderType,
       showOnAllDisplays: s.showOnAllDisplays,
       breakTheme: s.breakTheme,
-      breakTemplate: s.breakTemplate,
+      breakTemplate: migrateTemplateId(s.breakTemplate),
+      breakDisplayMode: _storage.getString(
+        'break_display_mode',
+        defaultValue: 'compact',
+      ),
+      compactCorner: _storage.getString(
+        'compact_corner',
+        defaultValue: 'bottomRight',
+      ),
+      motionIntensity: _storage.getDouble(
+        'motion_intensity',
+        defaultValue: 0.6,
+      ),
+      soundscape:
+          Soundscape.values.asNameMap().containsKey(
+            _storage.getString('soundscape'),
+          )
+          ? _storage.getString('soundscape')
+          : 'silence',
+      soundscapeVolume: _storage.getDouble(
+        'soundscape_volume',
+        defaultValue: 0.4,
+      ),
+      longBreaksImmersive: _storage.getBool(
+        'long_breaks_immersive',
+        defaultValue: true,
+      ),
+      adaptToTimeOfDay: _storage.getBool('adapt_to_time_of_day'),
       showExercisesInBreak: s.showExercisesInBreak,
       lastExerciseDate: s.lastExerciseDate,
       shownExercisesToday: _decodeStringList(s.shownExercisesTodayJson),
@@ -462,10 +491,36 @@ class SettingsRepository extends ChangeNotifier {
         defaultValue: true,
       ),
       breakTheme: _storage.getString('break_theme', defaultValue: 'random'),
-      breakTemplate: _storage.getString(
-        'break_template',
-        defaultValue: 'minimal',
+      breakTemplate: migrateTemplateId(
+        _storage.getString('break_template', defaultValue: 'balance'),
       ),
+      breakDisplayMode: _storage.getString(
+        'break_display_mode',
+        defaultValue: 'compact',
+      ),
+      compactCorner: _storage.getString(
+        'compact_corner',
+        defaultValue: 'bottomRight',
+      ),
+      motionIntensity: _storage.getDouble(
+        'motion_intensity',
+        defaultValue: 0.6,
+      ),
+      soundscape:
+          Soundscape.values.asNameMap().containsKey(
+            _storage.getString('soundscape'),
+          )
+          ? _storage.getString('soundscape')
+          : 'silence',
+      soundscapeVolume: _storage.getDouble(
+        'soundscape_volume',
+        defaultValue: 0.4,
+      ),
+      longBreaksImmersive: _storage.getBool(
+        'long_breaks_immersive',
+        defaultValue: true,
+      ),
+      adaptToTimeOfDay: _storage.getBool('adapt_to_time_of_day'),
       clockFaceStyle: _storage.getString(
         'clock_face_style',
         defaultValue: 'breakloop',
@@ -802,6 +857,16 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('companion_enabled', settings.companionEnabled);
 
     await _storage.setString('break_template', settings.breakTemplate);
+    await _storage.setString('break_display_mode', settings.breakDisplayMode);
+    await _storage.setString('compact_corner', settings.compactCorner);
+    await _storage.setDouble('motion_intensity', settings.motionIntensity);
+    await _storage.setString('soundscape', settings.soundscape);
+    await _storage.setDouble('soundscape_volume', settings.soundscapeVolume);
+    await _storage.setBool(
+      'long_breaks_immersive',
+      settings.longBreaksImmersive,
+    );
+    await _storage.setBool('adapt_to_time_of_day', settings.adaptToTimeOfDay);
     await _storage.setString('break_theme', settings.breakTheme);
     await _storage.setString('clock_face_style', settings.clockFaceStyle);
     await _storage.setString('menu_bar_style', settings.menuBarStyle);

@@ -5,6 +5,7 @@ import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
+import 'package:breakmate/core/services/soundscape_service.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
@@ -70,6 +71,7 @@ Future<void> initDependencies() async {
   sl.registerSingleton<DisplayController>(DisplayController(sl(), sl()));
 
   sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
+  sl.registerLazySingleton<SoundscapeService>(() => SoundscapeService());
 
   sl.registerSingleton<WellnessEngine>(
     WellnessEngine(appTracking: sl<AppTrackingService>()),

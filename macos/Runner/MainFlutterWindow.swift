@@ -23,6 +23,8 @@ class OverlayWindowManager: NSObject {
     private var isObservingSpaces = false
     private var escapeMonitor: Any?
     private var escapePresses: [Date] = []
+    private var compactActive = false
+    fileprivate var switchedToImmersive = false
 
     private static func currentScreensHash() -> Int {
         NSScreen.screens.map { "\($0.frame)" }.joined().hashValue
@@ -35,10 +37,25 @@ class OverlayWindowManager: NSObject {
         let controller: FlutterViewController
     }
     
-    func showOverlay(args: [String: Any]? = nil) {
+    func showOverlay(args inArgs: [String: Any]? = nil) {
+        var args = inArgs
+        let isRefresh = args?["refresh"] as? Bool == true
+        // Dart keeps refreshing with the original compact mode after the user opened the full view.
+        if !isRefresh { switchedToImmersive = false }
+        if switchedToImmersive { args?["windowMode"] = "immersive" }
+        // A data refresh racing a dismissal must not rebuild the panels the user just closed.
+        if args?["refresh"] as? Bool == true && overlayInstances.isEmpty { return }
         self.lastShowArgs = args
         
         let type = args?["type"] as? String ?? args?["overlayType"] as? String ?? "breakScreen"
+        if args?["windowMode"] as? String == "compact" && type == "breakScreen" {
+            showCompact(args)
+            return
+        }
+        if compactActive {
+            showGeneration += 1
+            destroyAllInstances()
+        }
         let isReminder = type == "quickReminder" || type == "preBreakWarning"
         let isPreview = args?["isPreview"] as? Bool ?? false
         let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
@@ -99,6 +116,7 @@ class OverlayWindowManager: NSObject {
         // zero baseline that counted as a "change" and tore down the live
         // overlay engines, leaving an opaque black panel with no UI on top.
         lastScreensHash = OverlayWindowManager.currentScreensHash()
+        NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         if !isObservingSpaces {
             isObservingSpaces = true
@@ -128,7 +146,61 @@ class OverlayWindowManager: NSObject {
         }
     }
 
+    private func compactFrame(on screen: NSScreen, args: [String: Any]?) -> NSRect {
+        let margin: CGFloat = 16
+        let w = CGFloat((args?["compactWidth"] as? NSNumber)?.doubleValue ?? 360) + 2 * margin
+        let h = CGFloat((args?["compactHeight"] as? NSNumber)?.doubleValue ?? 244) + 2 * margin
+        let area = screen.visibleFrame
+        let corner = args?["compactCorner"] as? String ?? "bottomRight"
+        let x = corner.hasSuffix("Left") ? area.minX : area.maxX - w
+        let y = corner.hasPrefix("top") ? area.maxY - h : area.minY
+        return NSRect(x: x, y: y, width: w, height: h)
+    }
+
+    private func showCompact(_ args: [String: Any]?) {
+        if compactActive, let (screen, instance) = overlayInstances.first {
+            instance.window.setFrame(compactFrame(on: screen, args: args), display: true)
+            updateData(args ?? [:])
+            return
+        }
+        showGeneration += 1
+        if !overlayInstances.isEmpty {
+            removeEscapeFailsafe()
+            destroyAllInstances()
+        }
+        let mouse = NSEvent.mouseLocation
+        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main ?? NSScreen.screens.first else { return }
+
+        var initialArgs = args ?? [:]
+        initialArgs["isTransparent"] = true
+        initialArgs["ignoreMouseEvents"] = false
+        let instance = createOverlayInstance(for: screen, args: initialArgs)
+        let window = instance.window
+        window.isReminder = true
+        window.level = .floating
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        window.setFrame(compactFrame(on: screen, args: args), display: true)
+        window.alphaValue = 0
+        overlayInstances[screen] = instance
+        compactActive = true
+        window.orderFront(nil)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.3
+            window.animator().alphaValue = 1.0
+        }
+
+        lastScreensHash = OverlayWindowManager.currentScreensHash()
+        NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        if !isObservingSpaces {
+            isObservingSpaces = true
+            NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(activeSpaceChanged), name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
+        }
+    }
+
     private func present(_ screen: NSScreen, args: [String: Any]?, isReminder: Bool) {
+        // A panel already tracked for this screen would be orphaned (visible, never hidden) if overwritten.
+        if let old = overlayInstances.removeValue(forKey: screen) { destroyInstance(old) }
         let instance: OverlayInstance
         var fadeDelay: TimeInterval = 0
         if let warm = warmPool.removeValue(forKey: screen) {
@@ -142,7 +214,11 @@ class OverlayWindowManager: NSObject {
         }
         instance.window.isReminder = isReminder
         overlayInstances[screen] = instance
-        instance.window.alphaValue = 0.0
+        // Zero-duration animator write also cancels a fade-out still running from the previous hide.
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            instance.window.animator().alphaValue = 0.0
+        }
 
         // Full screens must become key to receive Escape / any-key dismiss;
         // the panel is non-activating so this does not steal app focus.
@@ -170,6 +246,7 @@ class OverlayWindowManager: NSObject {
     func hideOverlay(restoreMainWindow: Bool = true) {
         showGeneration += 1
         lastHideTime = Date()
+        switchedToImmersive = false
         removeEscapeFailsafe()
         NativePowerAssertionManager.shared.releaseDisplaySleep()
         if overlayInstances.isEmpty {
@@ -177,6 +254,8 @@ class OverlayWindowManager: NSObject {
             return
         }
 
+        let wasCompact = compactActive
+        compactActive = false
         let entries = overlayInstances
         overlayInstances.removeAll()
         let instances = Array(entries.values)
@@ -207,6 +286,7 @@ class OverlayWindowManager: NSObject {
                 // Already reused by a new show during the fade-out: leave it alone.
                 if self.overlayInstances.values.contains(where: { $0.window === instance.window }) { continue }
                 instance.window.orderOut(nil)
+                if wasCompact { continue }
                 instance.window.ignoresMouseEvents = false
                 let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
                 channel.invokeMethod("resetOverlay", arguments: nil)
@@ -220,6 +300,7 @@ class OverlayWindowManager: NSObject {
             for instance in instances where !self.overlayInstances.values.contains(where: { $0.window === instance.window }) {
                 instance.window.orderOut(nil)
                 instance.window.alphaValue = 0.0
+                if wasCompact { self.destroyInstance(instance) }
             }
         }
 
@@ -227,8 +308,10 @@ class OverlayWindowManager: NSObject {
         // see `warmPool`. They're only ever actually torn down when the
         // screen configuration changes (their window frames would be
         // stale) or the app is quitting.
-        for (screen, instance) in entries {
-            warmPool[screen] = instance
+        if !wasCompact {
+            for (screen, instance) in entries {
+                warmPool[screen] = instance
+            }
         }
 
         NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
@@ -347,6 +430,7 @@ class OverlayWindowManager: NSObject {
         for instance in warmPool.values { destroyInstance(instance) }
         overlayInstances.removeAll()
         warmPool.removeAll()
+        compactActive = false
     }
     
     func setClickThrough(_ enabled: Bool) {
@@ -357,7 +441,7 @@ class OverlayWindowManager: NSObject {
     
     func updateData(_ data: [String: Any]) {
         let type = data["type"] as? String ?? data["overlayType"] as? String ?? ""
-        if !type.isEmpty {
+        if !type.isEmpty && !compactActive {
             let isReminder = type == "quickReminder" || type == "preBreakWarning"
             for instance in overlayInstances.values {
                 instance.window.isReminder = isReminder
@@ -397,7 +481,8 @@ class OverlayWindowManager: NSObject {
         // A real display change means every window frame (active or
         // pooled) is stale — unlike a normal hide, these can't be kept
         // warm for reuse, they have to be rebuilt against the new screens.
-        let savedArgs = self.lastShowArgs
+        var savedArgs = self.lastShowArgs
+        savedArgs?["refresh"] = nil
         destroyAllInstances()
         let generation = showGeneration
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -488,6 +573,15 @@ class OverlayWindowManager: NSObject {
                     mainWindow.bridgeChannel?.invokeMethod("completeBreak", arguments: call.arguments)
                 }
                 OverlayWindowManager.shared.hideOverlay()
+                result(nil)
+            case "openImmersive":
+                var args = OverlayWindowManager.shared.lastShowArgs ?? [:]
+                args["windowMode"] = "immersive"
+                args["refresh"] = nil
+                DispatchQueue.main.async {
+                    OverlayWindowManager.shared.showOverlay(args: args)
+                    OverlayWindowManager.shared.switchedToImmersive = true
+                }
                 result(nil)
             case "setIgnoreMouseEvents":
                 if let args = call.arguments as? [String: Any], let ignore = args["ignore"] as? Bool {
