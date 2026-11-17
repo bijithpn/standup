@@ -36,6 +36,8 @@ class OverlayWindowManager: NSObject {
     }
     
     func showOverlay(args: [String: Any]? = nil) {
+        // A data refresh racing a dismissal must not rebuild the panels the user just closed.
+        if args?["refresh"] as? Bool == true && overlayInstances.isEmpty { return }
         self.lastShowArgs = args
         
         let type = args?["type"] as? String ?? args?["overlayType"] as? String ?? "breakScreen"
@@ -99,6 +101,7 @@ class OverlayWindowManager: NSObject {
         // zero baseline that counted as a "change" and tore down the live
         // overlay engines, leaving an opaque black panel with no UI on top.
         lastScreensHash = OverlayWindowManager.currentScreensHash()
+        NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         if !isObservingSpaces {
             isObservingSpaces = true
@@ -129,6 +132,8 @@ class OverlayWindowManager: NSObject {
     }
 
     private func present(_ screen: NSScreen, args: [String: Any]?, isReminder: Bool) {
+        // A panel already tracked for this screen would be orphaned (visible, never hidden) if overwritten.
+        if let old = overlayInstances.removeValue(forKey: screen) { destroyInstance(old) }
         let instance: OverlayInstance
         var fadeDelay: TimeInterval = 0
         if let warm = warmPool.removeValue(forKey: screen) {
@@ -142,7 +147,11 @@ class OverlayWindowManager: NSObject {
         }
         instance.window.isReminder = isReminder
         overlayInstances[screen] = instance
-        instance.window.alphaValue = 0.0
+        // Zero-duration animator write also cancels a fade-out still running from the previous hide.
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0
+            instance.window.animator().alphaValue = 0.0
+        }
 
         // Full screens must become key to receive Escape / any-key dismiss;
         // the panel is non-activating so this does not steal app focus.

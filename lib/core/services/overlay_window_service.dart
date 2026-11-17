@@ -47,6 +47,7 @@ class OverlayWindowService extends ChangeNotifier {
           'showOnAllDisplays': showOnAllDisplays,
           'isPreview': isPreview,
           'theme': breakTheme,
+          'refresh': true,
           'isTransparent':
               type == OverlayType.quickReminder ||
               type == OverlayType.preBreakWarning,
@@ -168,6 +169,7 @@ class OverlayWindowService extends ChangeNotifier {
       }
 
       if (Platform.isWindows) {
+        await NativeBridge.hideOverlay();
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isLinux) {
         await NativeBridge.hideOverlay(restoreMainWindow: true);
@@ -216,14 +218,24 @@ class OverlayWindowService extends ChangeNotifier {
   /// Hides the overlay and resets window state (level, dock/menu bar, size); state is cleared even if a step throws.
   Future<void> hideOverlay() async {
     if (!_isOverlayVisible) {
+      // Native may still have panels up if this flag drifted; a no-op when it does not.
+      if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        await NativeBridge.hideOverlay(restoreMainWindow: false);
+      }
       return;
     }
+    // Cleared before any await so a late refresh cannot see a half-hidden overlay as visible.
+    _isOverlayVisible = false;
+    _currentOverlayType = null;
 
     try {
       _logger.info('Hiding overlay and resetting window state');
 
       if (Platform.isWindows) {
         try {
+          await NativeBridge.hideOverlay(
+            restoreMainWindow: _wasMainVisibleBeforeOverlay,
+          );
           await _windowsChannel.invokeMethod('resetToNormal');
         } catch (e, st) {
           ErrorHandler().handleError(e, st);
@@ -294,6 +306,7 @@ class OverlayWindowService extends ChangeNotifier {
     _isOverlayVisible = false;
     _currentOverlayType = null;
     if (Platform.isWindows) {
+      await NativeBridge.hideOverlay();
       await _windowsChannel.invokeMethod('resetToNormal');
     } else if (Platform.isLinux) {
       await NativeBridge.hideOverlay();

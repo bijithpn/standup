@@ -247,6 +247,8 @@ void SecondaryWindows::ForwardToMain(const char* method) {
 }
 
 void SecondaryWindows::ShowOverlay(FlValue* args) {
+  // A data refresh racing a dismissal must not rebuild the windows the user just closed.
+  if (overlays_.empty() && GetBool(args, "refresh", false)) return;
   if (!overlays_.empty()) {
     // A reminder may be up on the primary monitor only; a break that wants
     // every monitor rebuilds from the pool instead of being ignored.

@@ -27,6 +27,12 @@ struct OverlayEnumData {
 };
 
 void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args) {
+  // A data refresh racing a dismissal must not rebuild the windows the user just closed.
+  auto refresh = args.find("refresh");
+  if (overlay_windows_.empty() && refresh != args.end() && std::holds_alternative<bool>(refresh->second) &&
+      std::get<bool>(refresh->second)) {
+    return;
+  }
   if (!overlay_windows_.empty()) {
     // A reminder may be up on the primary monitor only; a break that wants
     // every monitor rebuilds from the warm pool instead of being ignored.

@@ -21,7 +21,6 @@ enum NotificationIntensity {
       balanced => 20,
       firm => 10,
     },
-    showOnAllDisplays: this == firm,
     strictMode: false,
     intensityLevel: 'standard',
   );
@@ -31,7 +30,6 @@ enum NotificationIntensity {
     return settings.soundEnabled == preset.soundEnabled &&
         settings.notificationsEnabled == preset.notificationsEnabled &&
         settings.preBreakWarningSeconds == preset.preBreakWarningSeconds &&
-        settings.showOnAllDisplays == preset.showOnAllDisplays &&
         !settings.strictMode &&
         settings.intensityLevel == 'standard';
   }
