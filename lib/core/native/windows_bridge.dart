@@ -28,6 +28,11 @@ class WindowsBridge implements NativeBridgePlatform {
   }
 
   @override
+  Future<void> openImmersive() async {
+    await _invokeSafely('openImmersive');
+  }
+
+  @override
   Future<void> setVisualEffect(String material) async {
     developer.log(
       'setVisualEffect not supported on Windows',

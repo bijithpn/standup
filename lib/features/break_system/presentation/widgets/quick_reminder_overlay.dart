@@ -2,10 +2,14 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/health_reminder_messages.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/wellness/motion_kit.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_models.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_start_warning_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
 
-/// Renders short reminders and the pre-break warning: break-start card, full poster, or a minimal pill depending on type and context.
+/// Renders short reminders and the pre-break warning: break-start card, full poster, or a compact template-styled card depending on type and context.
 class QuickReminderOverlay extends StatefulWidget {
   final String? reminderType;
   final String overlayType;
@@ -16,6 +20,7 @@ class QuickReminderOverlay extends StatefulWidget {
   final VoidCallback? onSkip;
 
   final bool allowFullPoster;
+  final String templateId;
 
   const QuickReminderOverlay({
     super.key,
@@ -27,6 +32,7 @@ class QuickReminderOverlay extends StatefulWidget {
     this.remainingSecondsNotifier,
     this.onSkip,
     this.allowFullPoster = false,
+    this.templateId = defaultWellnessTemplateId,
   });
 
   @override
@@ -36,6 +42,7 @@ class QuickReminderOverlay extends StatefulWidget {
 class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
   // Re-rolled per reminder type so the pill wording varies between reminders.
   int _wordingSeed = Random().nextInt(1 << 30);
+  final int _startedAtMs = DateTime.now().millisecondsSinceEpoch;
 
   @override
   void didUpdateWidget(QuickReminderOverlay oldWidget) {
@@ -100,71 +107,122 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
       );
     }
 
-    return Center(
-      child: FadeTransition(
-        opacity: CurvedAnimation(
-          parent: fadeAnimation,
-          curve: Curves.easeOut,
-          reverseCurve: Curves.easeIn,
-        ),
-        child: ScaleTransition(
-          scale: Tween<double>(begin: 0.96, end: 1.0).animate(
-            CurvedAnimation(
-              parent: fadeAnimation,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeIn,
+    final kind = switch (reminderType) {
+      'blink' => ReminderKind.eyes,
+      'posture' => ReminderKind.posture,
+      'hydration' => ReminderKind.hydration,
+      'stretch' => ReminderKind.stretch,
+      'standup' => ReminderKind.standup,
+      'meetingBreak' => ReminderKind.mindful,
+      _ when HealthReminderMessages.isCustom(reminderType) =>
+        ReminderKind.mindful,
+      _ => ReminderKind.eyes,
+    };
+    final template = wellnessTemplateById(widget.templateId);
+    final tier = resolveTier(
+      animationsEnabled: true,
+      reduceMotionPref: false,
+      osReduce: MediaQuery.disableAnimationsOf(context),
+    );
+    final eased = CurvedAnimation(
+      parent: fadeAnimation,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: AnimatedBuilder(
+          animation: eased,
+          builder: (_, child) => Opacity(
+            opacity: eased.value,
+            child: Transform.translate(
+              offset: Offset(0, 8 * (1 - eased.value)),
+              child: child,
             ),
           ),
-          child: _MinimalReminderPill(icon: icon, text: pillText),
+          child: MotionScope(
+            startedAtMs: _startedAtMs,
+            tier: tier,
+            builder: (context, clock) => _ReminderCard(
+              palette: template.palette,
+              text: pillText,
+              art: template.reminderArt(context, kind, clock),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _MinimalReminderPill extends StatelessWidget {
-  final IconData icon;
+class _ReminderCard extends StatelessWidget {
+  final BreakPalette palette;
   final String text;
+  final Widget art;
 
-  const _MinimalReminderPill({required this.icon, required this.text});
+  const _ReminderCard({
+    required this.palette,
+    required this.text,
+    required this.art,
+  });
 
   @override
   Widget build(BuildContext context) {
     final contrast = MediaQuery.highContrastOf(context);
-    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1;
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 320),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: contrast ? 1 : 0.36),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: contrast ? 1 : 0.12),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: Colors.white.withValues(alpha: contrast ? 1 : 0.86),
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              text,
-              maxLines: largeText ? 3 : 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: contrast ? 1 : 0.88),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Inter',
+    final dark = palette.isDark;
+    final surface = contrast
+        ? (dark ? Colors.black : Colors.white)
+        : palette.surface;
+    final foreground = contrast
+        ? (dark ? Colors.white : Colors.black)
+        : palette.textPrimary;
+    return Semantics(
+      liveRegion: true,
+      label: text,
+      child: ExcludeSemantics(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 320),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: contrast ? foreground : palette.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 24,
+                offset: Offset(0, 8),
               ),
-            ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: RepaintBoundary(child: art),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  text,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 14,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: BreakOverlayTheme.fontFamily,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -14,15 +14,15 @@ import 'dart:ui' as ui;
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:breakmate/features/break_system/domain/break_model.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
-import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/wellness/motion_kit.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_models.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
 import 'package:window_manager/window_manager.dart';
 
-/// `--dart-define=TEMPLATES=zen,iris_rest` measures only those.
+/// `--dart-define=TEMPLATES=aurora,flowline` measures only those.
 const _only = String.fromEnvironment('TEMPLATES');
 
 /// `--dart-define=FULLSCREEN=true` measures in a full-screen window, which is
@@ -33,27 +33,7 @@ final List<String> _ids = _only.isEmpty
     ? _all
     : _all.where(_only.split(',').contains).toList();
 
-const _all = [
-  'activities',
-  'companion',
-  'floating',
-  'minimal',
-  'zen',
-  'breathe_line',
-  'one_word',
-  'focus_orb',
-  'iris_rest',
-  'quiet_pill',
-  'classic',
-  'hud',
-  'clock_face',
-  'split_view',
-  'step_guide',
-  'haiku_card',
-  'paper_light',
-  'night_sky',
-  'wind_down',
-];
+final _all = [for (final t in wellnessTemplates) t.id];
 
 class _Storage implements StorageService {
   @override
@@ -115,13 +95,9 @@ class _HarnessState extends State<_Harness> with TickerProviderStateMixin {
   static const _warmUp = Duration(seconds: 1);
   static const _measure = Duration(seconds: 5);
 
-  late final AnimationController _kenBurns = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 15),
-  )..repeat(reverse: true);
-
   int _index = 0;
   int _remaining = 55;
+  final int _startedAtMs = DateTime.now().millisecondsSinceEpoch;
   final List<ui.FrameTiming> _frames = [];
   bool _measuring = false;
   Timer? _tick;
@@ -185,7 +161,6 @@ class _HarnessState extends State<_Harness> with TickerProviderStateMixin {
   @override
   void dispose() {
     _tick?.cancel();
-    _kenBurns.dispose();
     super.dispose();
   }
 
@@ -196,20 +171,19 @@ class _HarnessState extends State<_Harness> with TickerProviderStateMixin {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'Inter'),
       home: Scaffold(
-        body: BreakTemplateSwitcher(
+        body: MotionScope(
           key: ValueKey(id),
-          breakTemplate: id,
-          breakInfo: const BreakModel(
-            type: BreakType.short,
-            durationSeconds: 60,
-            title: 'Rest Your Eyes',
-            tip: 'Look 20 feet away for 20 seconds.',
+          startedAtMs: _startedAtMs,
+          tier: MotionTier.full,
+          builder: (context, clock) => wellnessTemplateById(id).immersive(
+            context,
+            BreakSession(
+              totalSeconds: 60,
+              remainingSeconds: _remaining,
+              startedAtMs: _startedAtMs,
+            ),
+            clock,
           ),
-          settings: const SettingsModel(),
-          remaining: _remaining,
-          total: 60,
-          onSkip: null,
-          kenBurnsController: _kenBurns,
         ),
       ),
     );

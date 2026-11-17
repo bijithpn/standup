@@ -62,10 +62,18 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 
 | | |
 | --- | --- |
-| <img src="screenshots/today.jpg" alt="Today dashboard"><br>**Today** — live countdown, next-break reasoning, quiet mode | <img src="screenshots/break-templates.jpg" alt="Break template gallery"><br>**Break templates** — searchable gallery with accent colors |
-| <img src="screenshots/focus-mode.jpg" alt="Smart detection settings"><br>**Smart detection** — meetings, video calls, presentation pause | <img src="screenshots/companion-gallery.jpg" alt="Companion gallery"><br>**Companion** — 3D species, breeds, and streaks |
-| <img src="screenshots/statistics.jpg" alt="Statistics dashboard"><br>**Statistics** — productivity and wellness scores | <img src="screenshots/themes.jpg" alt="Theme presets"><br>**Themes** — 12 curated presets plus auto light/dark |
-| <img src="screenshots/overlay_6.jpg" alt="Zen Mode breathing break"><br>**Zen Mode break** — paced breathing circle | <img src="screenshots/overlay_5.jpg" alt="Quiet pill reminder"><br>**Quiet Pill** — subtle reminder during meetings |
+| <img src="screenshots/today.jpg" alt="Today dashboard"><br>**Today** — live countdown, next-break reasoning, quiet mode | <img src="screenshots/focus-mode.jpg" alt="Smart detection settings"><br>**Smart detection** — meetings, video calls, presentation pause |
+| <img src="screenshots/companion-gallery.jpg" alt="Companion gallery"><br>**Companion** — 3D species, breeds, and streaks | <img src="screenshots/statistics.jpg" alt="Statistics dashboard"><br>**Statistics** — productivity and wellness scores |
+
+### Break templates
+
+Six templates, each shown full screen or as a small floating card. Details in [docs/wellness-templates.md](docs/wellness-templates.md).
+
+| | |
+| --- | --- |
+| <img src="screenshots/templates/balance.jpg" alt="Balance"><br>**Balance** — floating geometry, a kinetic mobile | <img src="screenshots/templates/zen_ink.jpg" alt="Zen Ink"><br>**Zen Ink** — a brush enso that fills as the break runs |
+| <img src="screenshots/templates/flowline.jpg" alt="Flowline"><br>**Flowline** — time as a wave | <img src="screenshots/templates/aurora.jpg" alt="Aurora Flow"><br>**Aurora Flow** — slow layered light |
+| <img src="screenshots/templates/midnight.jpg" alt="Midnight Drift"><br>**Midnight Drift** — moon and orbital rings | <img src="screenshots/templates/liquid.jpg" alt="Liquid Harmony"><br>**Liquid Harmony** — soft morphing shapes |
 
 ---
 
@@ -112,7 +120,8 @@ One **Health reminders** switch turns on five gentle nudges, scheduled around ho
 
 ### Break overlay
 
-- Full-screen overlay with multiple templates (including breathing, eye-sync, and Night Sky), animated posters, and per-template accent colors.
+- Six break templates (Balance, Zen Ink, Flowline, Aurora Flow, Midnight Drift, Liquid Harmony) shown as a small floating card, a full-screen view, or automatically. See [docs/wellness-templates.md](docs/wellness-templates.md).
+- Optional ambient soundscapes (rain, ocean, forest; off by default), motion intensity, reduced-motion support, and compact standalone reminders that use the selected template's artwork.
 - Context line explaining *why* the break started and what is expected.
 - Guided exercises with automatic posture and eye-rest prompts.
 - 12 curated theme presets (e.g. Crimson Ember, Ocean Abyss, Aurora Borealis, Desert Dusk, Lavender Mist, Monokai Pro).

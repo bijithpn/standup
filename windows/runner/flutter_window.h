@@ -61,6 +61,10 @@ class FlutterWindow : public Win32Window {
     is_overlay_ = is_overlay;
   }
 
+  void SetCompact(bool compact) {
+    compact_ = compact;
+  }
+
   void SetIsPiP(bool is_pip) {
     is_pip_ = is_pip;
   }
@@ -113,6 +117,7 @@ class FlutterWindow : public Win32Window {
   // Companion state
   bool is_companion_ = false;
   bool is_overlay_ = false;
+  bool compact_ = false;
   bool is_pip_ = false;
   flutter::EncodableMap initial_settings_;
 

@@ -204,6 +204,9 @@ void SecondaryWindows::AddOverlayChannels(Surface* surface) {
           ForwardToMain(method.c_str());
           HideOverlay();
           Ok(call);
+        } else if (method == "openImmersive") {
+          Ok(call);
+          OpenImmersive();
         } else if (method == "setIgnoreMouseEvents") {
           SetClickThrough(surface->window, GetBool(args, "ignore", false));
           Ok(call);
@@ -234,7 +237,8 @@ gboolean SecondaryWindows::OnOverlayKey(GtkWidget*, GdkEventKey* event, gpointer
   auto* self = static_cast<SecondaryWindows*>(data);
   // The overlay may not have keyboard focus, and a strict break cannot be
   // dismissed at all.
-  if (event->keyval == GDK_KEY_Escape && !self->overlays_.empty() && !self->overlay_strict_) {
+  if (event->keyval == GDK_KEY_Escape && !self->overlays_.empty() && !self->overlay_strict_ &&
+      !self->compact_active_) {
     self->ForwardToMain("skipBreak");
     self->HideOverlay();
   }
@@ -246,9 +250,108 @@ void SecondaryWindows::ForwardToMain(const char* method) {
   Invoke(main_bridge_, method, empty);
 }
 
+void SecondaryWindows::PlaceCompact(Surface* surface, FlValue* args) {
+  GdkMonitor* monitor = MonitorByIndex(surface->monitor);
+  if (monitor == nullptr) return;
+  GdkRectangle work;
+  gdk_monitor_get_geometry(monitor, &surface->geometry);
+  gdk_monitor_get_workarea(monitor, &work);
+
+  // Card plus a 16px margin per side so its shadow is not clipped.
+  const int w = static_cast<int>(Num(args, "compactWidth", 360)) + 32;
+  const int h = static_cast<int>(Num(args, "compactHeight", 244)) + 32;
+  const std::string corner = Str(args, "compactCorner", "bottomRight");
+  const int x = corner.find("Left") != std::string::npos ? work.x : work.x + work.width - w;
+  const int y = corner.rfind("top", 0) == 0 ? work.y : work.y + work.height - h;
+
+  GtkWindow* window = GTK_WINDOW(surface->window);
+  gtk_window_set_default_size(window, w, h);
+  gtk_window_resize(window, w, h);
+  gtk_window_move(window, x, y);
+}
+
+void SecondaryWindows::ShowCompact(FlValue* args) {
+  if (last_overlay_args_ != nullptr) fl_value_unref(last_overlay_args_);
+  last_overlay_args_ = fl_value_ref(args);
+  overlay_strict_ = false;
+
+  double px = 0, py = 0;
+  sys::GetCursorPosition(&px, &py);
+  const int index = MonitorIndexAt(static_cast<int>(px), static_cast<int>(py));
+  GdkRectangle geo;
+  if (MonitorByIndex(index) == nullptr) return;
+  gdk_monitor_get_geometry(MonitorByIndex(index), &geo);
+
+  Surface* surface = nullptr;
+  for (auto it = overlay_pool_.begin(); it != overlay_pool_.end(); ++it) {
+    if ((*it)->compact && (*it)->monitor == index && SameRect((*it)->geometry, geo)) {
+      surface = *it;
+      overlay_pool_.erase(it);
+      break;
+    }
+  }
+  const bool warm = surface != nullptr;
+  if (!warm) {
+    surface = NewSurface("overlay");
+    surface->compact = true;
+    AddOverlayChannels(surface);
+  }
+
+  GtkWindow* window = GTK_WINDOW(surface->window);
+  gtk_window_set_type_hint(window, GDK_WINDOW_TYPE_HINT_NOTIFICATION);
+  gtk_window_set_accept_focus(window, FALSE);
+  gtk_window_set_focus_on_map(window, FALSE);
+  SetClickThrough(surface->window, false);
+  surface->monitor = index;
+  PlaceCompact(surface, args);
+
+  surface->want_visible = true;
+  if (warm) {
+    Invoke(surface->bridge, "updateOverlayData", args);
+    gtk_widget_show(surface->window);
+  }
+  overlays_.push_back(surface);
+  compact_active_ = true;
+
+  if (overlay_push_source_ != 0) g_source_remove(overlay_push_source_);
+  overlay_push_source_ = g_timeout_add(1000, &SecondaryWindows::OnPushOverlayData, this);
+}
+
+void SecondaryWindows::OpenImmersive() {
+  if (!compact_active_ || last_overlay_args_ == nullptr) return;
+  g_autoptr(FlValue) args = CopyMap(last_overlay_args_);
+  SetStr(args, "windowMode", "immersive");
+  SetBool(args, "refresh", false);
+  ShowOverlay(args);
+  switched_to_immersive_ = true;
+}
+
 void SecondaryWindows::ShowOverlay(FlValue* args) {
+  const bool refresh = GetBool(args, "refresh", false);
+  if (!refresh) switched_to_immersive_ = false;
+  // Dart keeps refreshing with the original compact mode after the user opened the full view.
+  g_autoptr(FlValue) patched = nullptr;
+  if (refresh && switched_to_immersive_ && Str(args, "windowMode") == "compact") {
+    patched = CopyMap(args);
+    SetStr(patched, "windowMode", "immersive");
+    args = patched;
+  }
+
   // A data refresh racing a dismissal must not rebuild the windows the user just closed.
-  if (overlays_.empty() && GetBool(args, "refresh", false)) return;
+  if (overlays_.empty() && refresh) return;
+  const bool compact = Str(args, "windowMode") == "compact" &&
+                       Str(args, "type", Str(args, "overlayType", "breakScreen")) == "breakScreen";
+  if (compact && compact_active_ && !overlays_.empty()) {
+    if (last_overlay_args_ != nullptr) fl_value_unref(last_overlay_args_);
+    last_overlay_args_ = fl_value_ref(args);
+    PlaceCompact(overlays_[0], args);
+    return;
+  }
+  if (!overlays_.empty() && (compact || compact_active_)) HideOverlay();
+  if (compact) {
+    ShowCompact(args);
+    return;
+  }
   if (!overlays_.empty()) {
     // A reminder may be up on the primary monitor only; a break that wants
     // every monitor rebuilds from the pool instead of being ignored.
@@ -279,7 +382,7 @@ void SecondaryWindows::ShowOverlay(FlValue* args) {
 
     Surface* surface = nullptr;
     for (auto it = overlay_pool_.begin(); it != overlay_pool_.end(); ++it) {
-      if ((*it)->monitor == i && SameRect((*it)->geometry, geo)) {
+      if (!(*it)->compact && (*it)->monitor == i && SameRect((*it)->geometry, geo)) {
         surface = *it;
         overlay_pool_.erase(it);
         break;
@@ -329,6 +432,8 @@ void SecondaryWindows::UpdateOverlay(FlValue* args) {
 }
 
 void SecondaryWindows::HideOverlay() {
+  switched_to_immersive_ = false;
+  compact_active_ = false;
   if (overlays_.empty()) return;
   if (overlay_push_source_ != 0) {
     g_source_remove(overlay_push_source_);
@@ -354,7 +459,11 @@ void SecondaryWindows::OnDisplaysChanged() {
   // new layout so it keeps covering every screen.
   const bool was_active = !overlays_.empty();
   FlValue* args = nullptr;
-  if (was_active && last_overlay_args_ != nullptr) args = fl_value_ref(last_overlay_args_);
+  if (was_active && last_overlay_args_ != nullptr) {
+    args = CopyMap(last_overlay_args_);
+    SetBool(args, "refresh", false);
+  }
+  compact_active_ = false;
 
   for (Surface* surface : overlays_) DestroySurface(surface);
   overlays_.clear();

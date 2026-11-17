@@ -1,6 +1,7 @@
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/ipc/overlay_window_config.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -16,9 +17,11 @@ class BreakOverlayConfigLoader {
   }) {
     try {
       if (SimplePrefs.instance.isReady) {
-        final template = SimplePrefs.instance.getString(
-          'break_template',
-          defaultValue: 'minimal',
+        final template = migrateTemplateId(
+          SimplePrefs.instance.getString(
+            'break_template',
+            defaultValue: 'balance',
+          ),
         );
         final petTheme = SimplePrefs.instance.getString(
           'companion_pet_theme',
@@ -64,12 +67,29 @@ class BreakOverlayConfigLoader {
           defaultValue: '',
         );
 
+        final prefs = SimplePrefs.instance;
         return OverlayWindowConfig(
           title: defaultTitle,
           tip: defaultMessage,
           durationSeconds: defaultDurationSeconds,
           remainingSeconds: defaultDurationSeconds,
           breakTemplate: template,
+          windowMode: prefs.getString('break_display_mode') == 'immersive'
+              ? 'immersive'
+              : 'compact',
+          compactCorner: prefs.getString(
+            'compact_corner',
+            defaultValue: 'bottomRight',
+          ),
+          motionIntensity: prefs.getDouble(
+            'motion_intensity',
+            defaultValue: 0.6,
+          ),
+          soundscape: prefs.getString('soundscape', defaultValue: 'silence'),
+          soundscapeVolume: prefs.getDouble(
+            'soundscape_volume',
+            defaultValue: 0.4,
+          ),
           companionPetTheme: petTheme,
           showWellnessNotes: showNotes,
           strictMode: strict,

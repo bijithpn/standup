@@ -172,18 +172,19 @@ bool FlutterWindow::Show() {
     // Apply full-screen bounds and force a frame-change so the NC area
     // (none for WS_POPUP) and z-order are re-evaluated before the window
     // becomes visible.
+    const bool no_activate = ignore_mouse_events_ || compact_;
     UINT swp_flags = SWP_FRAMECHANGED;
-    if (ignore_mouse_events_) {
+    if (no_activate) {
       swp_flags |= SWP_NOACTIVATE;
     }
     SetWindowPos(GetHandle(), HWND_TOPMOST, left, top, width, height, swp_flags);
 
     // Now make the window visible. SW_SHOWNOACTIVATE avoids stealing focus
     // from other windows when the overlay is click-through.
-    UINT show_flag = ignore_mouse_events_ ? SW_SHOWNOACTIVATE : SW_SHOW;
+    UINT show_flag = no_activate ? SW_SHOWNOACTIVATE : SW_SHOW;
     res = ShowWindow(GetHandle(), show_flag);
 
-    if (!ignore_mouse_events_) {
+    if (!no_activate) {
       SetForegroundWindow(GetHandle());
     }
   } else {
@@ -660,10 +661,12 @@ void FlutterWindow::SetupBridge() {
                  strict = std::get<bool>(it->second);
              }
            }
+           OverlayWindowManager::GetInstance()->ApplyModeOverride(params);
            OverlayWindowManager::GetInstance()->ShowOverlay(strict, params);
            if (args) {
                // Schedule a delayed update to ensure Dart is ready
-               auto map = *args;
+               flutter::EncodableMap map;
+               for (const auto& kv : params) map[flutter::EncodableValue(kv.first)] = kv.second;
                HWND hwnd = GetHandle();
                std::thread([hwnd, map]() {
                    Sleep(1000);
@@ -909,7 +912,7 @@ void FlutterWindow::OnDestroy() {
   if (main_window_ == this) WTSUnRegisterSessionNotification(GetHandle());
 
   // Decrement keyboard hook reference count for overlay windows and unhook if needed
-  if (keyboard_hook_ && is_overlay_) {
+  if (keyboard_hook_ && is_overlay_ && !compact_) {
     keyboard_hook_ref_count_--;
     if (keyboard_hook_ref_count_ <= 0) {
       UnhookWindowsHookEx(keyboard_hook_);
@@ -956,6 +959,7 @@ void FlutterWindow::ConfigureAsOverlay() {
   LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
   exStyle |= WS_EX_LAYERED;
   exStyle |= WS_EX_TOOLWINDOW;
+  if (compact_) exStyle |= WS_EX_NOACTIVATE;
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
   // Fully opaque — Flutter renders the surface content; DWM composites it.
@@ -971,6 +975,9 @@ void FlutterWindow::ConfigureAsOverlay() {
                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
   is_overlay_mode_ = true;
+
+  // A compact card must not block Win+Tab or desktop switching.
+  if (compact_) return;
 
   // Low-level keyboard hook to block virtual desktop switch gestures (Win+Ctrl
   // arrows, Win+Tab) while the break overlay is active.
@@ -1073,6 +1080,16 @@ void FlutterWindow::SetupOverlayBridge() {
                   std::make_unique<flutter::EncodableValue>(flutter::EncodableMap()));
             }
             OverlayWindowManager::GetInstance()->HideOverlay();
+            result->Success();
+          }
+          else if (method_name == "openImmersive") {
+            // Deferred: it hides the window whose handler is running.
+            if (main_window_) {
+              auto* task = new std::function<void()>([]() {
+                OverlayWindowManager::GetInstance()->OpenImmersive();
+              });
+              PostMessage(main_window_->GetHandle(), WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+            }
             result->Success();
           }
           else if (method_name == "setIgnoreMouseEvents") {

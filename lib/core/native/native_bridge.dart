@@ -31,6 +31,7 @@ class NativeBridge {
   static Future<void> hideOverlay({bool restoreMainWindow = true}) =>
       _platform.hideOverlay(restoreMainWindow: restoreMainWindow);
   static Future<void> skipBreak() => _platform.skipBreak();
+  static Future<void> openImmersive() => _platform.openImmersive();
   static Future<void> setVisualEffect(String material) =>
       _platform.setVisualEffect(material);
   static Future<void> focusApp() => _platform.focusApp();

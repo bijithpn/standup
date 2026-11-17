@@ -3,33 +3,25 @@ import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/features/settings/experience_preferences.dart';
 import 'package:breakmate/shared/utils/accessibility_preferences.dart';
 import 'package:breakmate/shared/utils/reduced_motion.dart';
-import 'dart:math';
 import 'package:breakmate/core/ipc/ipc_maps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/ipc/overlay_window_config.dart';
-import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
-import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_theme.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_timer_manager.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_overlay_keyboard_handler.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_overlay_content.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_overlay_config_loader.dart';
-
-export 'package:breakmate/features/break_system/presentation/standalone_overlay/break_theme.dart';
 
 /// Root widget of the separate overlay window/engine; renders break, pre-break warning and quick reminder from data pushed by the main app.
 class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
   final String message;
   final int initialDurationSeconds;
-
-  // Lets template widgets report build errors so the overlay can fall back to the error template.
-  static final List<void Function(FlutterErrorDetails)> onErrorCallbacks = [];
 
   const StandaloneBreakOverlay({
     super.key,
@@ -51,15 +43,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   late OverlayWindowConfig _config;
   ExperiencePreferences _experience = const ExperiencePreferences();
-  late String _currentTemplate;
-  late BreakTheme _currentTheme;
-  late AnimationController _kenBurnsController;
   late AnimationController _fadeController;
-  bool _classicEffectsRunning = false;
 
   int _screenId = 0;
   int _maxWarningSeconds = 10;
-  bool _templateFailed = false;
 
   BreakModel? _cachedBreakModel;
   SettingsModel? _cachedSettingsModel;
@@ -89,18 +76,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     AppMotion.reduceMotion = _config.reduceMotion || !_config.enableAnimations;
     _initialized = true;
 
-    _currentTemplate = AppConstants.wellnessSlideshow.isNotEmpty
-        ? AppConstants.wellnessSlideshow[Random().nextInt(
-            AppConstants.wellnessSlideshow.length,
-          )]
-        : '';
-    _currentTheme =
-        BreakTheme.values[Random().nextInt(BreakTheme.values.length)];
-
-    _kenBurnsController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 15),
-    );
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -108,7 +83,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     _setupBridge();
     _loadInitialData();
-    StandaloneBreakOverlay.onErrorCallbacks.add(_handleTemplateError);
   }
 
   // Pulls data that was set before this engine was ready to receive "updateOverlayData".
@@ -171,21 +145,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                 .inSeconds
                 .clamp(0, config.durationSeconds);
       remainingSecondsNotifier.value = remainingSeconds;
-      if (config.theme != null) {
-        _currentTheme = BreakTheme.values.firstWhere(
-          (e) => e.name == config.theme,
-          orElse: () => _currentTheme,
-        );
-      }
-      if (config.classicImage != null) {
-        _currentTemplate = config.classicImage!;
-      }
-      _syncClassicEffects(
-        config.breakTemplate == 'classic' &&
-            config.enableAnimations &&
-            !prefersReducedMotion,
-      );
-
       if (config.reminderType != null &&
           config.reminderType != _config.reminderType) {
         _maxWarningSeconds = newRemaining;
@@ -221,15 +180,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _syncClassicEffects(
-      _config.breakTemplate == 'classic' &&
-          _config.enableAnimations &&
-          !prefersReducedMotion,
-    );
     if (prefersReducedMotion) _fadeController.duration = Duration.zero;
-    if (_config.breakTemplate == 'classic' && _currentTemplate.isNotEmpty) {
-      precacheImage(AssetImage(_currentTemplate), context);
-    }
   }
 
   // Native -> overlay calls: updateOverlayData, isReady, resetOverlay (reuse the window for the next break), setScreenInfo.
@@ -259,24 +210,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     });
   }
 
-  void _syncClassicEffects(bool enabled) {
-    if (_classicEffectsRunning == enabled) return;
-    _classicEffectsRunning = enabled;
-    if (enabled) {
-      _kenBurnsController.repeatUnlessReducedMotion(
-        reverse: true,
-        staticValue: 0,
-      );
-    } else {
-      _kenBurnsController.stop();
-    }
-  }
-
   void _completeBreak() =>
       completeBreak(_config.isPreview, _config.overlayType, _fadeController);
   void _skipBreak() =>
       skipBreak(_config.isPreview, _config.overlayType, _fadeController);
   void _quitApp() => _bridge.invokeMethod('quitApp');
+
+  bool get _isCompact =>
+      _config.overlayType == 'breakScreen' && _config.windowMode == 'compact';
 
   // Strict mode only locks real breaks; reminders and previews can always be dismissed.
   bool get _canDismiss =>
@@ -285,31 +226,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       _config.overlayType == 'quickReminder' ||
       _config.overlayType == 'preBreakWarning';
 
-  // Swaps to the error template once so a broken template does not leave a blank full-screen overlay.
-  void _handleTemplateError(FlutterErrorDetails details) {
-    if (!_templateFailed) {
-      debugPrint(
-        'Template ${_config.breakTemplate} failed: ${details.exception}',
-      );
-      _templateFailed = true;
-      ErrorToastService.showError(
-        'Template "${_config.breakTemplate}" could not be loaded.',
-      );
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _config = _config.copyWith(breakTemplate: 'error_template');
-            _cachedSettingsModel = null;
-          });
-        }
-      });
-    }
-  }
-
   @override
   void dispose() {
-    StandaloneBreakOverlay.onErrorCallbacks.remove(_handleTemplateError);
-    _kenBurnsController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -351,7 +269,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           child: FadeTransition(
             opacity: _fadeController,
             child: Material(
-              color: _config.overlayType == 'preBreakWarning'
+              color: _config.overlayType == 'preBreakWarning' || _isCompact
                   ? Colors.transparent
                   : (isDimmedOverlay
                         ? Colors.black.withValues(alpha: 0.25)
@@ -378,8 +296,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                         canDismiss: _canDismiss,
                         breakInfo: _cachedBreakModel!,
                         settings: _cachedSettingsModel!,
-                        currentTemplate: _currentTemplate,
-                        kenBurnsController: _kenBurnsController,
                         lookedAway: lookedAway,
                         onLookedAway: () => setState(() => lookedAway = true),
                       ),

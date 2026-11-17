@@ -17,6 +17,59 @@ OverlayWindowManager::~OverlayWindowManager() {
   DestroyAll();
 }
 
+using ArgMap = std::map<std::string, flutter::EncodableValue>;
+
+static std::string StringArg(const ArgMap& args, const char* key, const char* fallback) {
+  auto it = args.find(key);
+  return it != args.end() && std::holds_alternative<std::string>(it->second)
+             ? std::get<std::string>(it->second)
+             : fallback;
+}
+
+static double NumberArg(const ArgMap& args, const char* key, double fallback) {
+  auto it = args.find(key);
+  if (it == args.end()) return fallback;
+  if (auto* i = std::get_if<int32_t>(&it->second)) return *i;
+  if (auto* l = std::get_if<int64_t>(&it->second)) return static_cast<double>(*l);
+  if (auto* d = std::get_if<double>(&it->second)) return *d;
+  return fallback;
+}
+
+static bool IsCompact(const ArgMap& args) {
+  std::string type = StringArg(args, "type", StringArg(args, "overlayType", "breakScreen").c_str());
+  return StringArg(args, "windowMode", "immersive") == "compact" && type == "breakScreen";
+}
+
+// Card size plus a 16px margin per side (so the card's shadow is not clipped),
+// pinned to a corner of the monitor work area. Physical pixels.
+static RECT CompactRect(HMONITOR monitor, const ArgMap& args) {
+  MONITORINFO info = {};
+  info.cbSize = sizeof(MONITORINFO);
+  GetMonitorInfo(monitor, &info);
+  double scale = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+  int w = static_cast<int>((NumberArg(args, "compactWidth", 360) + 32) * scale);
+  int h = static_cast<int>((NumberArg(args, "compactHeight", 244) + 32) * scale);
+  std::string corner = StringArg(args, "compactCorner", "bottomRight");
+  const RECT& work = info.rcWork;
+  int left = corner.find("Left") != std::string::npos ? work.left : work.right - w;
+  int top = corner.rfind("top", 0) == 0 ? work.top : work.bottom - h;
+  return RECT{left, top, left + w, top + h};
+}
+
+static flutter::EncodableMap ToEncodableMap(const ArgMap& args) {
+  flutter::EncodableMap map;
+  for (const auto& [key, value] : args) map[flutter::EncodableValue(key)] = value;
+  return map;
+}
+
+static ArgMap ToArgMap(const flutter::EncodableMap& map) {
+  ArgMap args;
+  for (const auto& [key, value] : map) {
+    if (std::holds_alternative<std::string>(key)) args[std::get<std::string>(key)] = value;
+  }
+  return args;
+}
+
 struct OverlayEnumData {
   std::vector<OverlayWindowManager::OverlayEntry>* windows;
   std::vector<OverlayWindowManager::OverlayEntry>* warm_pool;
@@ -31,6 +84,25 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
   auto refresh = args.find("refresh");
   if (overlay_windows_.empty() && refresh != args.end() && std::holds_alternative<bool>(refresh->second) &&
       std::get<bool>(refresh->second)) {
+    return;
+  }
+  bool compact = IsCompact(args);
+  if (compact && compact_active_ && !overlay_windows_.empty()) {
+    last_show_args_ = ToEncodableMap(args);
+    RECT rect = CompactRect(overlay_windows_[0].monitor, args);
+    HWND hwnd = overlay_windows_[0].window->GetHandle();
+    RECT current;
+    if (GetWindowRect(hwnd, &current) && !EqualRect(&current, &rect)) {
+      overlay_windows_[0].window->SetOverlayRect(rect);
+      overlay_windows_[0].window->Show();
+    }
+    return;
+  }
+  if (!overlay_windows_.empty() && (compact || compact_active_)) {
+    HideOverlay();
+  }
+  if (compact) {
+    ShowCompact(args);
     return;
   }
   if (!overlay_windows_.empty()) {
@@ -86,7 +158,7 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     // avoids a cold FlutterEngine start (the dominant cost of "why does
     // Preview take seconds to appear") entirely.
     for (auto pool_it = warm_pool->begin(); pool_it != warm_pool->end(); ++pool_it) {
-      if (pool_it->monitor != hMonitor) continue;
+      if (pool_it->monitor != hMonitor || pool_it->compact) continue;
 
       OverlayWindowManager::OverlayEntry entry = std::move(*pool_it);
       warm_pool->erase(pool_it);
@@ -178,8 +250,70 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, reinterpret_cast<LPARAM>(&enum_data));
 }
 
+void OverlayWindowManager::ShowCompact(const ArgMap& args) {
+  last_show_args_ = ToEncodableMap(args);
+  POINT cursor = {};
+  GetCursorPos(&cursor);
+  HMONITOR monitor = MonitorFromPoint(cursor, MONITOR_DEFAULTTOPRIMARY);
+  RECT rect = CompactRect(monitor, args);
+  compact_active_ = true;
+
+  for (auto it = warm_pool_.begin(); it != warm_pool_.end(); ++it) {
+    if (it->monitor != monitor || !it->compact) continue;
+    OverlayEntry entry = std::move(*it);
+    warm_pool_.erase(it);
+    entry.window->SetOverlayRect(rect);
+    entry.window->Show();
+    overlay_windows_.push_back(std::move(entry));
+    UpdateOverlayData(last_show_args_);
+    return;
+  }
+
+  flutter::DartProject project(L"data");
+  project.set_dart_entrypoint("overlayMain");
+  auto window = std::make_unique<FlutterWindow>(project);
+  window->SetIsOverlay(true);
+  window->SetCompact(true);
+  if (!window->Create(L"StandupOverlay", Win32Window::Point(rect.left, rect.top),
+                      Win32Window::Size(rect.right - rect.left, rect.bottom - rect.top), monitor, WS_POPUP)) {
+    compact_active_ = false;
+    return;
+  }
+  window->SetQuitOnClose(false);
+  window->ConfigureAsOverlay();
+  window->SetOverlayRect(rect);
+  window->Show();
+  IpcBridgeManager::GetInstance()->RegisterEngine(window->GetEngine());
+  overlay_windows_.push_back(OverlayEntry{monitor, std::move(window), true});
+}
+
+void OverlayWindowManager::OpenImmersive() {
+  if (!compact_active_) return;
+  ArgMap args = ToArgMap(last_show_args_);
+  args["windowMode"] = flutter::EncodableValue(std::string("immersive"));
+  args.erase("refresh");
+  bool strict = false;
+  auto it = args.find("strictMode");
+  if (it != args.end() && std::holds_alternative<bool>(it->second)) strict = std::get<bool>(it->second);
+  ShowOverlay(strict, args);
+  switched_to_immersive_ = true;
+}
+
+void OverlayWindowManager::ApplyModeOverride(ArgMap& args) {
+  auto it = args.find("refresh");
+  bool refresh = it != args.end() && std::holds_alternative<bool>(it->second) && std::get<bool>(it->second);
+  if (!refresh) {
+    switched_to_immersive_ = false;
+  } else if (switched_to_immersive_ && StringArg(args, "windowMode", "") == "compact") {
+    args["windowMode"] = flutter::EncodableValue(std::string("immersive"));
+  }
+}
+
 void OverlayWindowManager::HideOverlay() {
+  switched_to_immersive_ = false;
   if (overlay_windows_.empty()) return;
+  for (auto& entry : overlay_windows_) entry.compact = compact_active_;
+  compact_active_ = false;
 
   // Keep the engines alive, hidden, for instant reuse next time — see
   // `warm_pool_`. They're only ever actually torn down when the display
@@ -209,6 +343,7 @@ void OverlayWindowManager::DestroyEntries(std::vector<OverlayEntry>& entries) {
 }
 
 void OverlayWindowManager::DestroyAll() {
+  compact_active_ = false;
   DestroyEntries(overlay_windows_);
   DestroyEntries(warm_pool_);
 }
@@ -228,7 +363,7 @@ void OverlayWindowManager::UpdateOverlayData(const flutter::EncodableMap& data) 
 }
 
 void OverlayWindowManager::HandleEscapeKey() {
-  if (overlay_windows_.empty()) return;
+  if (overlay_windows_.empty() || compact_active_) return;
 
   // Respect strict mode: if the break cannot be skipped, swallow the key.
   bool strict = false;
@@ -265,12 +400,8 @@ void OverlayWindowManager::OnDisplayChange() {
     strict = std::get<bool>(it->second);
   }
 
-  std::map<std::string, flutter::EncodableValue> args;
-  for (const auto& [key, value] : last_show_args_) {
-    if (std::holds_alternative<std::string>(key)) {
-      args[std::get<std::string>(key)] = value;
-    }
-  }
+  ArgMap args = ToArgMap(last_show_args_);
+  args.erase("refresh");
 
   DestroyAll();
   if (was_active) {

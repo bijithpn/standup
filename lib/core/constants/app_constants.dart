@@ -5,16 +5,6 @@ class AppConstants {
   static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
-  static const List<String> wellnessSlideshow = [
-    'assets/slideshow/lake_reflection.jpg',
-    'assets/slideshow/misty_lake.jpg',
-    'assets/slideshow/mountain_valley.jpg',
-    'assets/slideshow/forest_sunrise.jpg',
-    'assets/slideshow/sunset_sea.jpg',
-    'assets/slideshow/river_valley.jpg',
-    'assets/slideshow/lone_tree.jpg',
-  ];
-
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
   static const int defaultPreBreakWarningSeconds = 3;

@@ -207,7 +207,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      final skipBtnFinder = find.byTooltip('Skip break');
+      final skipBtnFinder = find.text('Skip');
       expect(skipBtnFinder, findsOneWidget);
 
       await tester.tap(skipBtnFinder);
@@ -453,7 +453,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byTooltip('Skip break'), findsNothing);
+        expect(find.text('Skip'), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );

@@ -31,7 +31,13 @@ class OverlayWindowService extends ChangeNotifier {
     String breakTheme = 'random',
     String? reminderType,
     Map<String, dynamic>? overlayData,
+    String windowMode = 'immersive',
+    String compactCorner = 'bottomRight',
+    double compactWidth = 360,
+    double compactHeight = 244,
   }) async {
+    final isCompact =
+        windowMode == 'compact' && type == OverlayType.breakScreen;
     final settings = sl<SettingsRepository>().currentSettings;
     overlayData = {
       'reduceMotion': settings.reduceMotion || !settings.enableAnimations,
@@ -47,6 +53,10 @@ class OverlayWindowService extends ChangeNotifier {
           'showOnAllDisplays': showOnAllDisplays,
           'isPreview': isPreview,
           'theme': breakTheme,
+          'windowMode': windowMode,
+          'compactCorner': compactCorner,
+          'compactWidth': compactWidth,
+          'compactHeight': compactHeight,
           'refresh': true,
           'isTransparent':
               type == OverlayType.quickReminder ||
@@ -65,7 +75,9 @@ class OverlayWindowService extends ChangeNotifier {
     if (!_isOverlayVisible) {
       // Captured only for the first overlay so a stacked overlay does not overwrite it.
       _wasMainVisibleBeforeOverlay =
-          type == OverlayType.breakScreen && (await windowManager.isVisible());
+          type == OverlayType.breakScreen &&
+          !isCompact &&
+          (await windowManager.isVisible());
       _logger.info(
         'Main window visibility status before overlay: $_wasMainVisibleBeforeOverlay',
       );
@@ -84,6 +96,10 @@ class OverlayWindowService extends ChangeNotifier {
             'showOnAllDisplays': showOnAllDisplays,
             'isPreview': isPreview,
             'theme': breakTheme,
+            'windowMode': windowMode,
+            'compactCorner': compactCorner,
+            'compactWidth': compactWidth,
+            'compactHeight': compactHeight,
             'isTransparent':
                 type == OverlayType.quickReminder ||
                 type == OverlayType.preBreakWarning,
@@ -95,7 +111,7 @@ class OverlayWindowService extends ChangeNotifier {
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(OverlayArgs(args: args));
 
-          if (type == OverlayType.breakScreen) {
+          if (type == OverlayType.breakScreen && !isCompact) {
             // Hide the main window shortly after the overlay appears so it does not flash or stay behind.
             Future.delayed(const Duration(milliseconds: 200), () {
               if (!isPreview) {
@@ -110,6 +126,10 @@ class OverlayWindowService extends ChangeNotifier {
             'showOnAllDisplays': showOnAllDisplays,
             'isPreview': isPreview,
             'theme': breakTheme,
+            'windowMode': windowMode,
+            'compactCorner': compactCorner,
+            'compactWidth': compactWidth,
+            'compactHeight': compactHeight,
             'isTransparent':
                 type == OverlayType.quickReminder ||
                 type == OverlayType.preBreakWarning,
@@ -120,14 +140,17 @@ class OverlayWindowService extends ChangeNotifier {
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(OverlayArgs(args: args));
-          if (strictMode && type == OverlayType.breakScreen && !isPreview) {
+          if (strictMode &&
+              type == OverlayType.breakScreen &&
+              !isCompact &&
+              !isPreview) {
             await NativeBridge.setPresentationOptions(
               hideDock: true,
               hideMenu: true,
             );
           }
 
-          if (type == OverlayType.breakScreen) {
+          if (type == OverlayType.breakScreen && !isCompact) {
             Future.delayed(const Duration(milliseconds: 200), () {
               if (!isPreview) {
                 windowManager.hide();

@@ -3,38 +3,12 @@ import 'dart:io';
 
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
-import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
-import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-
-/// Every template identifier, in the order of the design spec.
-const allBreakTemplateIds = [
-  'activities',
-  'companion',
-  'floating',
-  'minimal',
-  'zen',
-  'breathe_line',
-  'one_word',
-  'focus_orb',
-  'iris_rest',
-  'quiet_pill',
-  'classic',
-  'hud',
-  'clock_face',
-  'split_view',
-  'step_guide',
-  'haiku_card',
-  'paper_light',
-  'night_sky',
-  'wind_down',
-];
 
 class FakeStorageService implements StorageService {
   @override
@@ -208,68 +182,3 @@ const longBreak = BreakModel(
   title: 'Take a Break',
   tip: 'Stand up. Roll your shoulders. Take three slow breaths.',
 );
-
-/// Pumps [templateId] through [BreakTemplateSwitcher] at [size].
-Future<void> pumpBreakTemplate(
-  WidgetTester tester,
-  String templateId, {
-  Size size = const Size(1280, 800),
-  bool dark = true,
-  bool reducedMotion = false,
-  bool preview = false,
-  BreakModel breakInfo = shortBreak,
-  SettingsModel settings = const SettingsModel(),
-  int remaining = 39,
-  int total = 60,
-  VoidCallback? onSkip,
-  Duration settleFor = const Duration(seconds: 2),
-}) async {
-  tester.view.physicalSize = size;
-  tester.view.devicePixelRatio = 1.0;
-  addTearDown(tester.view.resetPhysicalSize);
-  addTearDown(tester.view.resetDevicePixelRatio);
-
-  late AnimationController kenBurns;
-  Widget app = DefaultAssetBundle(
-    bundle: TestAssetBundle(),
-    child: MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: dark ? Brightness.dark : Brightness.light,
-        fontFamily: 'Inter',
-      ),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(disableAnimations: reducedMotion),
-        child: child!,
-      ),
-      home: Scaffold(
-        body: StatefulBuilder(
-          builder: (context, _) {
-            kenBurns = AnimationController(
-              vsync: tester,
-              duration: const Duration(seconds: 10),
-            );
-            addTearDown(kenBurns.dispose);
-            Widget w = BreakTemplateSwitcher(
-              breakTemplate: templateId,
-              breakInfo: breakInfo,
-              settings: settings,
-              remaining: remaining,
-              total: total,
-              onSkip: onSkip,
-              kenBurnsController: kenBurns,
-            );
-            if (preview) w = BreakPreviewScope(child: w);
-            // Dark is the default; light is opted into with a palette scope.
-            return BreakPaletteScope(
-              palette: dark ? BreakPalette.dark : BreakPalette.light,
-              child: w,
-            );
-          },
-        ),
-      ),
-    ),
-  );
-  await tester.pumpWidget(app);
-  await tester.pump(settleFor);
-}

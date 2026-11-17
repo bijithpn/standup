@@ -11,7 +11,7 @@ import 'package:breakmate/features/settings/experience_preferences.dart';
 import 'package:breakmate/features/settings/widgets/advanced_settings.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_overlay_keyboard_handler.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/accessible_break_view.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 
 void main() {
@@ -189,7 +189,6 @@ void main() {
       tester.view.physicalSize = const Size(640, 480);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final animation = AnimationController(vsync: tester);
       await tester.pumpWidget(
         MaterialApp(
           home: MediaQuery(
@@ -197,8 +196,7 @@ void main() {
               size: Size(640, 480),
               textScaler: TextScaler.linear(1.5),
             ),
-            child: BreakTemplateSwitcher(
-              breakTemplate: 'activities',
+            child: AccessibleBreakView(
               breakInfo: const BreakModel(
                 type: BreakType.short,
                 durationSeconds: 30,
@@ -213,11 +211,8 @@ void main() {
                 ),
               ),
               remaining: 30,
-              total: 30,
-              onSkip: () {},
-              kenBurnsController: animation,
               exerciseTitle: 'Quiet rest',
-              exerciseInstructions: 'Rest comfortably.',
+              instructions: 'Rest comfortably.',
             ),
           ),
         ),
@@ -226,7 +221,6 @@ void main() {
       expect(find.text('Move your neck'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
-      animation.dispose();
     },
   );
 }

@@ -37,6 +37,8 @@ class SecondaryWindows {
   void SetMainBridge(FlMethodChannel* bridge) { main_bridge_ = bridge; }
 
   void ShowOverlay(FlValue* args);
+  // Compact -> immersive for the same break, from the last shown args.
+  void OpenImmersive();
   void UpdateOverlay(FlValue* args);
   void HideOverlay();
   FlValue* LastOverlayArgs() const { return last_overlay_args_; }
@@ -60,6 +62,7 @@ class SecondaryWindows {
     std::vector<FlMethodChannel*> channels;
     std::vector<std::unique_ptr<EventStream>> streams;
     bool want_visible = false;
+    bool compact = false;
     int monitor = 0;
     GdkRectangle geometry = {0, 0, 0, 0};
   };
@@ -70,6 +73,8 @@ class SecondaryWindows {
   void DestroySurface(Surface* surface);
 
   void PlaceOnMonitor(Surface* surface, int monitor_index, bool fullscreen);
+  void ShowCompact(FlValue* args);
+  void PlaceCompact(Surface* surface, FlValue* args);
   void AddOverlayChannels(Surface* surface);
   void AddCompanionChannels(Surface* surface, FlValue* initial_settings, const char* data_name);
 
@@ -94,6 +99,8 @@ class SecondaryWindows {
   std::vector<Surface*> overlay_pool_;
   FlValue* last_overlay_args_ = nullptr;
   bool overlay_strict_ = false;
+  bool compact_active_ = false;
+  bool switched_to_immersive_ = false;
   guint overlay_push_source_ = 0;
 
   Surface* companion_ = nullptr;

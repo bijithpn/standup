@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:breakmate/core/services/snooze_timer.dart';
 import 'dart:math';
 import 'package:breakmate/features/settings/exercise_model.dart';
-import 'package:breakmate/core/constants/app_constants.dart';
 
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -28,13 +27,16 @@ import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/services/timer_explanation.dart';
 import 'package:breakmate/core/services/timer_explanation_overlay_service.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:breakmate/core/services/soundscape_service.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_models.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// UI-facing controller over [TimerEngine]: opens/closes the break overlay window, runs focus sessions, snooze, music and hotkeys.
-class BreakController extends ChangeNotifier with WidgetsBindingObserver {
+/// UI-facing controller over [TimerEngine]: opens/closes the break overlay window, runs focus sessions, snooze, soundscapes and hotkeys.
+class BreakController extends ChangeNotifier {
   final AppLogger _logger = AppLogger();
   final TimerEngine _timerEngine;
   final SettingsRepository _settingsRepo;
@@ -43,15 +45,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   String? _currentExerciseTitle;
   String? _currentExerciseInstructions;
 
-  AudioPlayer? _audioPlayer;
-  bool _isPlayingMusic = false;
-  Timer? _fadeTimer;
   final SnoozeTimer _snoozeTimer = SnoozeTimer();
   DateTime? get snoozeResumeAt => _snoozeTimer.resumeAt;
-  double _currentVolume = 0.0;
-
-  String _currentTemplate = '';
-  String _classicImage = '';
+  int? _breakStartedAtMs;
+  bool _soundscapeActive = false;
+  bool _soundscapeSuspended = false;
 
   TimerState? _lastOverlayState;
   bool _hasShownPreBreakWarning = false;
@@ -98,28 +96,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _timerEngine.startTimers();
     _statsService.load();
 
-    _audioPlayer = AudioPlayer();
-    _audioPlayer!.setReleaseMode(ReleaseMode.loop);
-
     _timerEngine.addListener(_handleGlobalOverlays);
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  // Timers may not fire while the app is hidden, so snap the music fade to its final volume.
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.paused) {
-      if (_fadeTimer != null && _fadeTimer!.isActive) {
-        _fadeTimer!.cancel();
-        if (_isPlayingMusic) {
-          _currentVolume = 1.0;
-        } else {
-          _currentVolume = 0.0;
-        }
-        _audioPlayer?.setVolume(_currentVolume);
-      }
-    }
   }
 
   /// Reacts to every timer tick: shows the break overlay on break start, the pre-break warning in the last 3s, and tears down on end.
@@ -141,12 +118,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       // Guards against re-showing the overlay on every tick of the same break.
       _lastOverlayState = TimerState.breakActive;
 
-      final isLong = _timerEngine.activeBreak?.type == BreakType.long;
-      _currentTemplate = _microExercise != null
-          ? 'activities'
-          : settings.breakTemplate;
+      _breakStartedAtMs = DateTime.now().millisecondsSinceEpoch;
 
-      // Break still starts, but the user gets a notice since the overlay is suppressed/quiet in meetings.
       if (isMeetingActive || isPresenting) {
         if (!_hasShownMeetingBreakNotice) {
           _hasShownMeetingBreakNotice = true;
@@ -156,59 +129,28 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
 
-      if (_currentTemplate == 'activities' ||
+      if (_microExercise != null ||
+          settings.showExercisesInBreak ||
           settings.experience.hasExerciseRestrictions) {
         _pickRandomExercise();
       }
 
-      _classicImage = AppConstants.wellnessSlideshow.isNotEmpty
-          ? AppConstants.wellnessSlideshow[Random().nextInt(
-              AppConstants.wellnessSlideshow.length,
-            )]
-          : '';
-
+      final data = _breakOverlayData(settings);
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
         builder: (_) => const SizedBox.shrink(),
-        strictMode: settings.strictMode,
+        strictMode: data['strictMode'] as bool,
         breakTheme: settings.breakTheme,
         showOnAllDisplays: settings.showOnAllDisplays,
         // Sent over IPC to the overlay process, which parses it into OverlayWindowConfig.
-        overlayData: {
-          'isLong': isLong,
-          'breakType': _timerEngine.activeBreak?.type.name,
-          'template': _currentTemplate,
-          'breakTemplate': _currentTemplate,
-          'classicImage': _classicImage,
-          'companionPetTheme': settings.companionPetTheme,
-          'enableAnimations': settings.enableAnimations,
-          'intensityLevel': settings.intensityLevel,
-          'showWellnessNotes': settings.showExercisesInBreak,
-          'experience': settings.experience.toMap(),
-          'durationSeconds':
-              _timerEngine.activeBreak?.durationSeconds ??
-              _timerEngine.countdownSeconds,
-          'remainingSeconds': _timerEngine.countdownSeconds,
-          'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
-          'exerciseTitle': _currentExerciseTitle,
-          'exerciseInstructions': _currentExerciseInstructions,
-          'breaksCompleted': _statsService.stats.breaksCompleted,
-          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
-          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
-          'overlayThemeMode': settings.overlayThemeMode,
-          'breathPreset': settings.breathPreset,
-          'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
-          'customImagePath': settings.customImagePath ?? '',
-        },
+        overlayData: data,
       );
 
-      if (settings.strictMode) {
+      if (data['strictMode'] as bool) {
         strictModeController.enableStrictMode();
       }
 
-      if (settings.playMusicDuringBreak) {
-        _startMusic();
-      }
+      _startSoundscape(settings);
     } else if (shouldShowWarning &&
         !_hasShownPreBreakWarning &&
         !overlayService.isOverlayVisible) {
@@ -237,8 +179,127 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       _hasShownMeetingBreakNotice = false;
       overlayService.hideOverlay();
       strictModeController.disableStrictMode();
-      _stopMusic();
+      _breakStartedAtMs = null;
+      _stopSoundscape();
     }
+
+    _syncSoundscapeSleep();
+  }
+
+  bool get _isQuietContext {
+    final c = _timerEngine.contextManager;
+    return c.isMeetingActive() || c.isPresentationActive();
+  }
+
+  BreakDisplayMode _resolveDisplayMode(
+    SettingsModel settings, {
+    required bool isLong,
+  }) {
+    // A compact window cannot enforce a lock, so strict breaks stay immersive.
+    // Meetings and presentations never get an immersive window.
+    if (_isQuietContext) return BreakDisplayMode.compact;
+    if (settings.strictMode) return BreakDisplayMode.immersive;
+    final mode = BreakDisplayMode.values.asNameMap()[settings.breakDisplayMode];
+    return switch (mode) {
+      BreakDisplayMode.immersive => BreakDisplayMode.immersive,
+      BreakDisplayMode.automatic => AutoModeRules(
+        longBreaksImmersive: settings.longBreaksImmersive,
+      ).resolve(isLongBreak: isLong),
+      _ => BreakDisplayMode.compact,
+    };
+  }
+
+  Map<String, dynamic> _displayData(
+    SettingsModel settings, {
+    required bool isLong,
+    required String focus,
+    bool preview = false,
+  }) {
+    final mode = _resolveDisplayMode(settings, isLong: isLong);
+    return {
+      'strictMode':
+          !preview && settings.strictMode && mode == BreakDisplayMode.immersive,
+      'windowMode': mode.name,
+      'compactCorner': settings.compactCorner,
+      'compactWidth': 360,
+      'compactHeight': 244,
+      'motionIntensity': settings.motionIntensity,
+      'timeOfDay': settings.adaptToTimeOfDay,
+      'soundscape': settings.soundscape,
+      'soundscapeVolume': settings.soundscapeVolume,
+      'breakStartedAtMs':
+          _breakStartedAtMs ?? DateTime.now().millisecondsSinceEpoch,
+      'paused': _timerEngine.systemSleepPaused,
+      'breakFocus': focus,
+    };
+  }
+
+  Map<String, dynamic> _breakOverlayData(SettingsModel settings) {
+    final isLong = _timerEngine.activeBreak?.type == BreakType.long;
+    return {
+      'isLong': isLong,
+      'breakType': _timerEngine.activeBreak?.type.name,
+      'template': settings.breakTemplate,
+      'breakTemplate': settings.breakTemplate,
+      'companionPetTheme': settings.companionPetTheme,
+      'enableAnimations': settings.enableAnimations,
+      'intensityLevel': settings.intensityLevel,
+      'showWellnessNotes': settings.showExercisesInBreak,
+      'experience': settings.experience.toMap(),
+      'durationSeconds':
+          _timerEngine.activeBreak?.durationSeconds ??
+          _timerEngine.countdownSeconds,
+      'remainingSeconds': _timerEngine.countdownSeconds,
+      'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
+      'exerciseTitle': _currentExerciseTitle,
+      'exerciseInstructions': _currentExerciseInstructions,
+      'breaksCompleted': _statsService.stats.breaksCompleted,
+      'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+      'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+      'overlayThemeMode': settings.overlayThemeMode,
+      'breathPreset': settings.breathPreset,
+      'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
+      'customImagePath': settings.customImagePath ?? '',
+      ..._displayData(
+        settings,
+        isLong: isLong,
+        focus: isLong || _microExercise != null ? 'stretch' : 'eyes',
+      ),
+    };
+  }
+
+  Soundscape _soundscapeOf(SettingsModel settings) =>
+      Soundscape.values.asNameMap()[settings.soundscape] ?? Soundscape.silence;
+
+  void _startSoundscape(SettingsModel settings) {
+    final scape = _soundscapeOf(settings);
+    if (scape == Soundscape.silence) return;
+    _soundscapeActive = true;
+    _soundscapeSuspended = false;
+    sl<SoundscapeService>().start(
+      scape,
+      settings.soundscapeVolume,
+      muted:
+          settings.quietModeEnabled ||
+          !settings.soundEnabled ||
+          _isQuietContext,
+    );
+  }
+
+  void _stopSoundscape({bool immediate = false}) {
+    if (!_soundscapeActive) return;
+    _soundscapeActive = false;
+    _soundscapeSuspended = false;
+    sl<SoundscapeService>().stop(immediate: immediate);
+  }
+
+  void _syncSoundscapeSleep() {
+    if (!_soundscapeActive) return;
+    final asleep = _timerEngine.systemSleepPaused;
+    if (asleep == _soundscapeSuspended) return;
+    _soundscapeSuspended = asleep;
+    final service = sl<SoundscapeService>();
+    asleep ? service.suspend() : service.resume();
   }
 
   String? _currentExerciseId;
@@ -578,22 +639,15 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     _logger.info('Starting break preview for template: $activeTemplate');
 
-    _classicImage = AppConstants.wellnessSlideshow.isNotEmpty
-        ? AppConstants.wellnessSlideshow[Random().nextInt(
-            AppConstants.wellnessSlideshow.length,
-          )]
-        : '';
-
     overlayService.showOverlay(
       type: OverlayType.breakScreen,
       builder: (_) => const SizedBox.shrink(),
       isPreview: true,
       overlayData: {
         'isLong': false,
-        'breakType': activeTemplate == 'wind_down' ? 'windDown' : 'short',
+        'breakType': 'short',
         'template': activeTemplate,
         'breakTemplate': activeTemplate,
-        'classicImage': _classicImage,
         'companionPetTheme': settings.companionPetTheme,
         'enableAnimations': settings.enableAnimations,
         'intensityLevel': settings.intensityLevel,
@@ -614,13 +668,16 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         'breathPreset': settings.breathPreset,
         'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
         'customImagePath': settings.customImagePath ?? '',
+        ..._displayData(settings, isLong: false, focus: 'eyes', preview: true),
       },
     );
 
+    _startSoundscape(settings);
     Timer(const Duration(seconds: 10), () {
       if (overlayService.isOverlayVisible &&
           overlayService.currentOverlayType == OverlayType.breakScreen) {
         overlayService.hideOverlay();
+        _stopSoundscape();
       }
     });
   }
@@ -696,40 +753,19 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     if (_timerEngine.state == TimerState.breakActive) {
       final overlayService = sl<OverlayWindowService>();
       final settings = _settingsRepo.currentSettings;
-      final isLong = _timerEngine.activeBreak?.type == BreakType.long;
+      final data = _breakOverlayData(settings);
 
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
         builder: (_) => const SizedBox.shrink(),
-        strictMode: settings.strictMode,
+        strictMode: data['strictMode'] as bool,
         breakTheme: settings.breakTheme,
         showOnAllDisplays: settings.showOnAllDisplays,
-        overlayData: {
-          'isLong': isLong,
-          'breakType': _timerEngine.activeBreak?.type.name,
-          'template': settings.breakTemplate,
-          'breakTemplate': settings.breakTemplate,
-          'companionPetTheme': settings.companionPetTheme,
-          'enableAnimations': settings.enableAnimations,
-          'intensityLevel': settings.intensityLevel,
-          'showWellnessNotes': settings.showExercisesInBreak,
-          'experience': settings.experience.toMap(),
-          'durationSeconds':
-              _timerEngine.activeBreak?.durationSeconds ??
-              _timerEngine.countdownSeconds,
-          'remainingSeconds': _timerEngine.countdownSeconds,
-          'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
-          'exerciseTitle': _currentExerciseTitle,
-          'exerciseInstructions': _currentExerciseInstructions,
-          'breaksCompleted': _statsService.stats.breaksCompleted,
-          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
-          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
-          'overlayThemeMode': settings.overlayThemeMode,
-          'breathPreset': settings.breathPreset,
-          'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
-          'customImagePath': settings.customImagePath ?? '',
-        },
+        overlayData: data,
       );
+      if (_soundscapeActive) {
+        sl<SoundscapeService>().setVolume(settings.soundscapeVolume);
+      }
     }
   }
 
@@ -752,68 +788,17 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  // Starts silent then fades in to avoid an abrupt start.
-  Future<void> _startMusic() async {
-    if (_isPlayingMusic) return;
-    _isPlayingMusic = true;
-
-    try {
-      if (_audioPlayer == null) {
-        _audioPlayer = AudioPlayer();
-        await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
-        await _audioPlayer!.setSource(AssetSource('music/lofi_1.mp3'));
-      }
-
-      await _audioPlayer!.resume();
-      _audioPlayer!.setVolume(0);
-      _fadeVolume(1.0);
-    } catch (e) {
-      _isPlayingMusic = false;
-      _logger.warning('Failed to play music: $e');
-    }
-  }
-
-  Future<void> _stopMusic() async {
-    if (!_isPlayingMusic) return;
-    _isPlayingMusic = false;
-
-    _fadeVolume(
-      0.0,
-      onComplete: () {
-        _audioPlayer?.pause();
-      },
-    );
-  }
-
-  void _fadeVolume(double target, {VoidCallback? onComplete}) {
-    _fadeTimer?.cancel();
-    const steps = 20;
-    final delta = (target - _currentVolume) / steps;
-
-    _fadeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      _currentVolume += delta;
-      if ((delta > 0 && _currentVolume >= target) ||
-          (delta < 0 && _currentVolume <= target)) {
-        _currentVolume = target;
-        timer.cancel();
-        onComplete?.call();
-      }
-      _audioPlayer?.setVolume(_currentVolume);
-    });
-  }
-
   void _emit(AppEvent event) {
     sl<EventBus>().emit(event);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _timerEngine.removeListener(_onTimerChanged);
     _settingsRepo.removeListener(_onSettingsChanged);
     _focusTimer?.cancel();
     _snoozeTimer.cancel();
-    _audioPlayer?.dispose();
+    _stopSoundscape(immediate: true);
     super.dispose();
   }
 }

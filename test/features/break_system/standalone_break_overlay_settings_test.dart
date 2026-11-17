@@ -162,7 +162,7 @@ void main() {
       serve(shortBreak(extra: {'lookedAwayPromptEnabled': true}));
       await show(tester);
       await tester.tap(find.text('I looked away'));
-      await tester.tap(find.byTooltip('Skip break'));
+      await tester.tap(find.text('Skip'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
       expect(calls.any((c) => c.method == 'completeBreak'), isFalse);
