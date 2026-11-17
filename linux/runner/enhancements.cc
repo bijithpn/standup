@@ -422,7 +422,28 @@ void RegisterEnhancements(FlBinaryMessenger* messenger) {
     const std::string method = fl_method_call_get_name(call);
     FlValue* args = fl_method_call_get_args(call);
 
-    if (method == "showTrayDurationPicker") {
+    if (method == "showTimerReturnPrompt") {
+      const int remaining = std::max(0, static_cast<int>(Num(args, "remainingSeconds", 0)));
+      const int interval = std::max(1, static_cast<int>(Num(args, "intervalMinutes", 20)));
+      GtkWidget* dialog = gtk_message_dialog_new(nullptr, GTK_DIALOG_MODAL,
+          GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE, "%s", "Welcome back");
+      gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog),
+          "Your break timer is paused with %d:%02d remaining. Continue where you left off, or start a fresh %d-minute interval.",
+          remaining / 60, remaining % 60, interval);
+      gtk_dialog_add_buttons(GTK_DIALOG(dialog), "_Not now", GTK_RESPONSE_CANCEL,
+          "Start _over", 2, "_Continue", 1, nullptr);
+      gtk_dialog_set_default_response(GTK_DIALOG(dialog), 1);
+      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_MOUSE);
+      gtk_window_present(GTK_WINDOW(dialog));
+      const int response = gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_widget_destroy(dialog);
+      if (response == 1 || response == 2) {
+        g_autoptr(FlValue) choice = fl_value_new_string(response == 1 ? "continue" : "restart");
+        Ok(call, choice);
+      } else {
+        Ok(call);
+      }
+    } else if (method == "showTrayDurationPicker") {
       static bool picker_open = false;
       if (picker_open) {
         Fail(call, "PICKER_OPEN", "A duration picker is already open.");

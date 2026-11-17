@@ -5,7 +5,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:breakmate/core/constants/app_constants.dart';
-import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:flutter/widgets.dart';
@@ -19,6 +18,7 @@ import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
+import 'package:breakmate/core/services/timer_return_prompt.dart';
 
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/daily_insight_notifier_service.dart';
@@ -56,6 +56,11 @@ class TimerOrchestrator {
 
   String? _lastTrayTitle;
   String? _lastTrayTooltip;
+  bool _longIdlePending = false;
+  bool _returnPromptOpen = false;
+  bool _disposed = false;
+  final Future<TimerReturnChoice?> Function(Duration, Duration)
+  returnChoicePrompt;
 
   TimerOrchestrator({
     required this.timerEngine,
@@ -68,11 +73,14 @@ class TimerOrchestrator {
     this.adaptiveBreakService,
     required this.settingsRepository,
     required this.eventBus,
+    this.returnChoicePrompt = TimerReturnPrompt.show,
   });
 
   /// Restores saved state, applies cold-boot recovery, then subscribes to engine events and starts idle/usage tracking.
   void initialize() {
     _logger.info('Initializing TimerOrchestrator...');
+    _disposed = false;
+    timerEngine.onReturnDecisionNeeded = _requestReturnChoice;
 
     _restoreState();
 
@@ -80,12 +88,12 @@ class TimerOrchestrator {
         timerEngine.stateData.lastTickTime != null) {
       final lastTick = timerEngine.stateData.lastTickTime!;
       final durationAway = DateTime.now().difference(lastTick);
-      // Away longer than one work interval counts as a rest, so start a fresh session instead of resuming.
+      // Preserve the saved countdown until the user decides how to return.
       if (durationAway.inMinutes >= timerEngine.shortBreakIntervalMinutes) {
         _logger.info(
-          'Cold boot recovery: Away for ${durationAway.inMinutes}m. Resetting focus session.',
+          'Cold boot recovery: Away for ${durationAway.inMinutes}m. Asking how to resume.',
         );
-        timerEngine.resetTimers();
+        timerEngine.requestReturnDecision();
       } else {
         _logger.info(
           'Cold boot recovery: Resuming focus session after ${durationAway.inSeconds}s away.',
@@ -93,7 +101,12 @@ class TimerOrchestrator {
         timerEngine.stateData.lastTickTime = DateTime.now();
         timerEngine.startTimers();
       }
-      sl<StorageService>().setInt('timer_last_tick_time', 0);
+    }
+    if (timerEngine.awaitingReturnDecision ||
+        (timerEngine.state == TimerState.paused &&
+            timerEngine.pausedForInactivity &&
+            !timerEngine.isManuallyPaused)) {
+      timerEngine.requestReturnDecision();
     }
 
     _eventSubscription = eventBus.stream.listen(_handleEvent);
@@ -434,11 +447,66 @@ class TimerOrchestrator {
     }
   }
 
-  // Idle: discard idle time and pause; return: resume unless manually paused or another pause (e.g. meeting) applies. A long idle also resets the break cycle.
+  void _requestReturnChoice() => unawaited(_presentReturnChoice());
+
+  Future<void> _presentReturnChoice() async {
+    if (_disposed ||
+        _returnPromptOpen ||
+        timerEngine.systemSleepPaused ||
+        activityMonitor.isIdle ||
+        !timerEngine.awaitingReturnDecision) {
+      return;
+    }
+    _returnPromptOpen = true;
+    try {
+      saveState();
+      final remaining = timerEngine.timeUntilNextShortBreak;
+      unawaited(
+        notificationService
+            .showReminder(
+              message:
+                  'Your break timer is paused. Choose Continue or Start over.',
+            )
+            .catchError((Object error) {
+              _logger.warning('Return notification unavailable: $error');
+            }),
+      );
+      final choice = await returnChoicePrompt(
+        remaining,
+        Duration(minutes: timerEngine.shortBreakIntervalMinutes),
+      );
+      if (_disposed ||
+          choice == null ||
+          !timerEngine.awaitingReturnDecision ||
+          timerEngine.systemSleepPaused) {
+        return;
+      }
+      timerEngine.resolveReturnDecision(
+        startOver: choice == TimerReturnChoice.startOver,
+      );
+      saveState();
+    } catch (error) {
+      // Dismissing or failing to show the prompt must not restart the countdown.
+      _logger.warning(
+        'Return choice unavailable; timer remains paused: $error',
+      );
+    } finally {
+      _returnPromptOpen = false;
+    }
+  }
+
+  // Short idle resumes normally; long idle offers a choice without discarding progress.
   void _setupActivityMonitor() {
     activityMonitor.setIdleSampleCallback(timerEngine.reportIdleSeconds);
     activityMonitor.setAwayCallbacks(
-      onAway: (at) => timerEngine.handleSystemSleep(at: at),
+      onAway: (at) {
+        _pauseAutoResumeTimer?.cancel();
+        final needsChoice = _longIdlePending;
+        _longIdlePending = false;
+        timerEngine.handleSystemSleep(at: at);
+        if (needsChoice) timerEngine.requestReturnDecision();
+        saveState();
+      },
       onBack: () {
         timerEngine.handleSystemWake();
         // With auto-resume off the user must restart the timer themselves.
@@ -447,7 +515,7 @@ class TimerOrchestrator {
           timerEngine.pauseTimers(isManual: true);
         } else if (timerEngine.state == TimerState.running) {
           notificationService.showReminder(
-            message: 'Welcome back! Your timer has started again.',
+            message: 'Timer resumed',
           );
         }
       },
@@ -460,13 +528,17 @@ class TimerOrchestrator {
           timerEngine.pausedForInactivity &&
           !timerEngine.stateData.isManuallyPaused) {
         _pauseAutoResumeTimer?.cancel();
-        if (settingsRepository.currentSettings.autoResumeOnActivity) {
+        if (_longIdlePending || timerEngine.awaitingReturnDecision) {
+          _longIdlePending = false;
+          timerEngine.requestReturnDecision();
+        } else if (settingsRepository.currentSettings.autoResumeOnActivity) {
           timerEngine.resumeTimers(isManual: false);
           notificationService.showReminder(
-            message: 'Welcome back! Your timer has started again.',
+            message: 'Timer resumed',
           );
         }
       } else if (!isActive && state == TimerState.running) {
+        _longIdlePending = false;
         timerEngine.discardIdleTime(
           Duration(seconds: activityMonitor.lastIdleSeconds.round()),
         );
@@ -476,9 +548,9 @@ class TimerOrchestrator {
           Duration(minutes: timerEngine.resetTimerAfterMinutes),
           () {
             if (timerEngine.state == TimerState.paused) {
-              timerEngine.resetCycleOnIdle();
+              _longIdlePending = true;
               _logger.info(
-                'Timer & break cycle reset after ${timerEngine.resetTimerAfterMinutes} min idle',
+                'Long idle reached; preserving cycle until return choice.',
               );
             }
           },
@@ -578,6 +650,8 @@ class TimerOrchestrator {
           'Session restored from today: ${savedSession.workElapsedSeconds}s work elapsed',
         );
       } else {
+        timerEngine.stateData.awaitingReturnDecision = false;
+        timerEngine.stateData.pausedForInactivity = false;
         timerEngine.stateData.workElapsed = Duration.zero;
         timerEngine.stateData.totalWorkToday = Duration.zero;
         timerEngine.stateData.postureElapsedSeconds = 0;
@@ -591,6 +665,8 @@ class TimerOrchestrator {
         );
       }
     } else {
+      timerEngine.stateData.awaitingReturnDecision = false;
+      timerEngine.stateData.pausedForInactivity = false;
       sessionStateRepository.clearSession();
       timerEngine.stateData.workElapsed = Duration.zero;
       timerEngine.stateData.totalWorkToday = Duration.zero;
@@ -609,7 +685,9 @@ class TimerOrchestrator {
   /// Called on app quit: pauses, saves and disposes.
   void shutdown() {
     _logger.info('Shutting down TimerOrchestrator...');
-    timerEngine.pauseTimers(isManual: true);
+    if (!timerEngine.awaitingReturnDecision) {
+      timerEngine.pauseTimers(isManual: true);
+    }
     saveState();
 
     if (!settingsRepository.currentSettings.enableSessionResume) {
@@ -620,6 +698,8 @@ class TimerOrchestrator {
   }
 
   void dispose() {
+    _disposed = true;
+    timerEngine.onReturnDecisionNeeded = null;
     _eventSubscription?.cancel();
     _usageTrackerTimer?.cancel();
     _pauseAutoResumeTimer?.cancel();

@@ -46,6 +46,7 @@ Changes compared with `v1.12.2` (build `50`).
 
 ### Added
 
+- A return dialog and Welcome back notification after long sleep or idle periods, with independent native dialogs on macOS, Windows and Linux. Continue preserves the remaining countdown, Start over begins a fresh interval, and Not now leaves the timer paused.
 - Six wellness break templates: Balance, Zen ink, Flowline, Aurora Flow, Midnight Drift and Liquid Harmony, with compact and full-screen views.
 - A six-card template gallery with static previews and a live preview of the selected template.
 - Optional rain, ocean and forest soundscapes, with volume and motion-intensity controls. Soundscapes are off by default.
@@ -56,19 +57,22 @@ Changes compared with `v1.12.2` (build `50`).
 
 ### Changed
 
+- The macOS return dialog (**Paused while away**) follows the selected app theme and custom accent, shows the saved countdown prominently, and uses app-styled **Not now**, **Start over** and **Continue** actions without the generic system alert icon.
+- **Check for Updates…** on macOS opens a themed, independent update panel that shows checking, up-to-date, update-ready and error states before handing off to Sparkle's install flow. It opens on the display with the pointer and over fullscreen apps.
 - Replaced the long list of Focus and Snooze durations in the tray with **Focus Mode** and **Snooze**. Each opens an independent native hours-and-minutes dialog with Cancel and Start buttons, even when the dashboard is closed or hidden; an active focus session retains its End Focus Session action.
 - Existing retired break-template choices migrate to one of the six wellness templates.
 - Break motion shares the session clock between compact and immersive views and respects reduced-motion settings.
 
 ### Fixed
 
-- macOS Focus Mode and Snooze use a smaller independent panel with numeric fields and steppers, avoiding dropdown menus that stretch to the screen edges.
+- Long absences no longer silently reset the work countdown. The saved remaining time stays paused until a return choice, including across a same-day restart with session recovery enabled.
+- macOS Focus Mode and Snooze use a smaller, theme-matched independent panel with numeric fields, avoiding dropdown menus that stretch to the screen edges.
 - Refreshing a break overlay after dismissal no longer recreates a closed overlay.
 - Opening companion or break-overlay engines no longer takes notification handling away from the main macOS app.
 - Release-feed updates match both platform and version, preserving other platforms' signatures and file sizes when a release is rebuilt.
 - Invalid or non-HTTPS Windows/Linux update download links are ignored; background checks time out and recover on later checks.
 
-Release validation: live notification delivery and installer interaction on installed Windows/Linux apps still require testing on those systems.
+Release validation: live notification delivery, the return dialog and installer interaction on installed Windows/Linux apps, multi-display and fullscreen-Space placement on macOS, and a real Sparkle download/install still require manual testing.
 
 ## [1.12.2] - 2026-11-14
 

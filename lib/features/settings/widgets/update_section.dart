@@ -127,7 +127,18 @@ class _UpdateSectionState extends State<UpdateSection> {
     }
     try {
       debugPrint('UpdateSection: Invoking checkForUpdates method channel');
-      await _channel.invokeMethod('checkForUpdates');
+      await _channel.invokeMethod('checkForUpdates', {
+        'theme': {
+          'background': AppTheme.surfaceElevated.toARGB32(),
+          'surface': AppTheme.surfaceCard.toARGB32(),
+          'border': AppTheme.border.toARGB32(),
+          'foreground': AppTheme.textPrimary.toARGB32(),
+          'secondary': AppTheme.textSecondary.toARGB32(),
+          'accent': AppTheme.accent.toARGB32(),
+          'onAccent': AppTheme.onAccent.toARGB32(),
+          'isDark': AppTheme.activePreset.isDark,
+        },
+      });
     } catch (e) {
       _checkTimeout?.cancel();
       debugPrint('UpdateSection: Error invoking checkForUpdates: $e');

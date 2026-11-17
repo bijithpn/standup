@@ -7,6 +7,7 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/main_common.dart';
 import 'dart:io';
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -126,6 +127,7 @@ class MenuBarController {
             .invokeMethod<int>('showTrayDurationPicker', {
               'isFocus': isFocus,
               'initialMinutes': initial,
+              'theme': _dialogTheme,
             });
       }
       if (minutes == null ||
@@ -150,6 +152,17 @@ class MenuBarController {
     }
   }
 
+  static Map<String, Object> get _dialogTheme => {
+    'background': AppTheme.surfaceElevated.toARGB32(),
+    'surface': AppTheme.surfaceCard.toARGB32(),
+    'border': AppTheme.border.toARGB32(),
+    'foreground': AppTheme.textPrimary.toARGB32(),
+    'secondary': AppTheme.textSecondary.toARGB32(),
+    'accent': AppTheme.accent.toARGB32(),
+    'onAccent': AppTheme.onAccent.toARGB32(),
+    'isDark': AppTheme.activePreset.isDark,
+  };
+
   bool _checkingForUpdates = false;
 
   Future<void> _checkForUpdates() async {
@@ -157,11 +170,10 @@ class MenuBarController {
     _checkingForUpdates = true;
     try {
       if (Platform.isMacOS) {
-        // User-facing Sparkle check includes release notes, download, install,
-        // and relaunch rather than the Settings informational probe.
+        // Independent themed panel remains visible over fullscreen apps.
         await const MethodChannel(
           'com.breakmate/sparkle',
-        ).invokeMethod<void>('startUpdate');
+        ).invokeMethod<void>('showUpdatePanel', {'theme': _dialogTheme});
       } else if (Platform.isWindows || Platform.isLinux) {
         await sl<OverlayWindowService>().showDashboard(forceShow: true);
         ErrorToastService.showInfo('Checking for updates…');

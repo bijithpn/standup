@@ -29,5 +29,6 @@ class TimerStateData {
   bool systemSleepPaused = false;
   bool manualOverride = false;
   bool pausedForInactivity = false;
+  bool awaitingReturnDecision = false;
   DateTime? lastTickTime;
 }

@@ -297,6 +297,10 @@ class TimerEngine extends ChangeNotifier {
 
   /// Starts the tick loop; from idle it enters running, and a resumed break keeps its remaining time.
   void startTimers() {
+    if (_stateData.awaitingReturnDecision) {
+      _startTicking();
+      return;
+    }
     _syncSettingsFromRepo();
 
     if (state == TimerState.idle) {
@@ -364,7 +368,7 @@ class TimerEngine extends ChangeNotifier {
       final now = clock.now();
 
       // Ticks are ignored while the system is asleep/locked; handleSystemWake resumes.
-      if (_stateData.systemSleepPaused) {
+      if (_stateData.systemSleepPaused || _stateData.awaitingReturnDecision) {
         return;
       }
 
@@ -825,6 +829,7 @@ class TimerEngine extends ChangeNotifier {
     _stateData.workElapsed = Duration.zero;
     _stateData.completedShortBreaksInCycle = 0;
     _stateData.longBreakWindowStartedAt = clock.now();
+    syncNotifiersFromState();
     _logger.info('Reset break cycle after user idle timeout');
     notifyListeners();
   }
@@ -869,6 +874,7 @@ class TimerEngine extends ChangeNotifier {
     _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     _stateData.state = TimerState.paused;
     if (isManual) {
+      _stateData.awaitingReturnDecision = false;
       _stateData.isManuallyPaused = true;
     }
     _stateData.manualOverride = false;
@@ -894,6 +900,8 @@ class TimerEngine extends ChangeNotifier {
 
   void resumeTimers({bool isManual = true}) {
     if (state == TimerState.breakActive) return;
+    if (_stateData.awaitingReturnDecision && !isManual) return;
+    _stateData.awaitingReturnDecision = false;
     _stateData.pausedForInactivity = false;
     if (!isManual && !_contextManager.shouldRunWorkTimer()) {
       _stateData.isManuallyPaused = false;
@@ -922,6 +930,7 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void resetTimers() {
+    _stateData.awaitingReturnDecision = false;
     _stateData.pausedForInactivity = false;
     _stateData.workElapsed = Duration.zero;
     _resetAllReminderCounters();
@@ -948,7 +957,7 @@ class TimerEngine extends ChangeNotifier {
   bool resetForNewDay() {
     if (state == TimerState.breakActive) return false;
     _stateData.totalWorkToday = Duration.zero;
-    _stateData.workElapsed = Duration.zero;
+    if (!awaitingReturnDecision) _stateData.workElapsed = Duration.zero;
     _resetAllReminderCounters();
     _stateData.isPreBreak = false;
     _stateData.completedShortBreaksInCycle = 0;
@@ -1012,8 +1021,35 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Set by the orchestrator; invoked after a long absence resets the session so timers can be restarted.
-  VoidCallback? onNeedsRestart;
+  bool get awaitingReturnDecision => _stateData.awaitingReturnDecision;
+
+  /// Preserve the current cycle until the user chooses how to return.
+  void requestReturnDecision() {
+    if (state == TimerState.idle ||
+        state == TimerState.breakActive ||
+        state == TimerState.windDown ||
+        _stateData.isManuallyPaused) {
+      return;
+    }
+    _stateData.awaitingReturnDecision = true;
+    pauseTimers();
+    _stateData.pausedForInactivity = true;
+    _stateData.lastTickTime = clock.now();
+    syncNotifiersFromState();
+    onReturnDecisionNeeded?.call();
+  }
+
+  void resolveReturnDecision({required bool startOver}) {
+    if (!awaitingReturnDecision || _stateData.systemSleepPaused) return;
+    _stateData.awaitingReturnDecision = false;
+    if (startOver) resetCycleOnIdle();
+    // Confirmation does not override a meeting, presentation, or work schedule.
+    resumeTimers(isManual: false);
+    _startTicking();
+  }
+
+  /// Set by the orchestrator to present the return-choice dialog.
+  VoidCallback? onReturnDecisionNeeded;
 
   /// Freezes ticking and persists the last tick time so wake can compute time away even after a restart.
   void handleSystemSleep({DateTime? at}) {
@@ -1037,7 +1073,7 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reconciles after sleep: extends a running break by the time asleep, ends it if past due, or resets the session if away longer than one work interval.
+  /// Reconciles sleep without counting it as work. Long absences require a choice.
   void handleSystemWake() {
     _logger.info(
       'System wake or screen unlock detected: checking recovery flow',
@@ -1108,20 +1144,20 @@ class TimerEngine extends ChangeNotifier {
       return;
     }
 
+    if (awaitingReturnDecision) {
+      requestReturnDecision();
+      return;
+    }
+
     final lastTick = _stateData.lastTickTime ?? clock.now();
     final durationAway = clock.now().difference(lastTick);
 
     if (state != TimerState.windDown &&
         durationAway.inMinutes >= _shortBreakIntervalMinutes) {
       _logger.info(
-        'Away for ${durationAway.inMinutes}m. Resetting focus session.',
+        'Away for ${durationAway.inMinutes}m. Waiting for return choice.',
       );
-      resetTimers();
-      if (_settingsRepository.currentSettings.autoResumeOnActivity) {
-        startTimers();
-      } else {
-        onNeedsRestart?.call();
-      }
+      requestReturnDecision();
     } else if (state == TimerState.running || state == TimerState.paused) {
       _stateData.lastTickTime = clock.now();
       resumeTimers(isManual: false);

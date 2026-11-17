@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 
@@ -46,8 +47,22 @@ void main() {
         'showTrayDurationPicker',
         'showTrayDurationPicker',
       ]);
-      expect(calls.first.arguments, {'isFocus': true, 'initialMinutes': 25});
-      expect(calls.last.arguments, {'isFocus': false, 'initialMinutes': 15});
+      expect(calls.first.arguments['isFocus'], isTrue);
+      expect(calls.first.arguments['initialMinutes'], 25);
+      expect(calls.last.arguments['isFocus'], isFalse);
+      expect(calls.last.arguments['initialMinutes'], 15);
+      for (final call in calls) {
+        expect(call.arguments['theme'], {
+          'background': AppTheme.surfaceElevated.toARGB32(),
+          'surface': AppTheme.surfaceCard.toARGB32(),
+          'border': AppTheme.border.toARGB32(),
+          'foreground': AppTheme.textPrimary.toARGB32(),
+          'secondary': AppTheme.textSecondary.toARGB32(),
+          'accent': AppTheme.accent.toARGB32(),
+          'onAccent': AppTheme.onAccent.toARGB32(),
+          'isDark': AppTheme.activePreset.isDark,
+        });
+      }
       expect(breaks.focusDurations, [90]);
       expect(breaks.snoozeDurations, [75]);
     },

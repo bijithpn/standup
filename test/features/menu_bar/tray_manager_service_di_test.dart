@@ -57,7 +57,7 @@ void main() {
   });
 
   test(
-    'macOS tray update action opens the full Sparkle flow',
+    'macOS tray update action opens the update panel',
     () async {
       const channel = MethodChannel('com.breakmate/sparkle');
       final methods = <String>[];
@@ -71,7 +71,7 @@ void main() {
             .setMockMethodCallHandler(channel, null),
       );
       await MenuBarController().handleAction('check_for_updates');
-      expect(methods, ['startUpdate']);
+      expect(methods, ['showUpdatePanel']);
     },
     skip: !Platform.isMacOS,
   );

@@ -106,6 +106,39 @@ INT_PTR CALLBACK TrayDurationDialogProc(HWND dialog, UINT message, WPARAM wparam
   return FALSE;
 }
 
+INT_PTR CALLBACK TimerReturnDialogProc(HWND dialog, UINT message, WPARAM wparam, LPARAM lparam) {
+  if (message == WM_INITDIALOG) {
+    SetDlgItemTextW(dialog, IDC_RETURN_DESCRIPTION, reinterpret_cast<const wchar_t*>(lparam));
+    POINT cursor = {};
+    GetCursorPos(&cursor);
+    MONITORINFO monitor = {};
+    monitor.cbSize = sizeof(monitor);
+    RECT bounds = {};
+    GetWindowRect(dialog, &bounds);
+    if (GetMonitorInfoW(MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST), &monitor)) {
+      const RECT& work = monitor.rcWork;
+      SetWindowPos(dialog, HWND_TOPMOST,
+          work.left + (work.right - work.left - (bounds.right - bounds.left)) / 2,
+          work.top + (work.bottom - work.top - (bounds.bottom - bounds.top)) / 2,
+          0, 0, SWP_NOSIZE);
+    }
+    SetForegroundWindow(dialog);
+    return TRUE;
+  }
+  if (message == WM_COMMAND) {
+    const int control = LOWORD(wparam);
+    if (control == IDC_RETURN_CONTINUE || control == IDC_RETURN_RESTART || control == IDCANCEL) {
+      EndDialog(dialog, control == IDC_RETURN_CONTINUE ? 1 : control == IDC_RETURN_RESTART ? 2 : 0);
+      return TRUE;
+    }
+  }
+  if (message == WM_CLOSE) {
+    EndDialog(dialog, 0);
+    return TRUE;
+  }
+  return FALSE;
+}
+
 std::wstring Widen(const std::string& s) {
   if (s.empty()) return std::wstring();
   int n = MultiByteToWideChar(CP_UTF8, 0, s.data(), (int)s.size(), nullptr, 0);
@@ -488,7 +521,25 @@ void RegisterNativeEnhancementsBridge(flutter::FlutterEngine* engine) {
         const std::string& method = call.method_name();
         const EncodableValue* args = call.arguments();
 
-        if (method == "showTrayDurationPicker") {
+        if (method == "showTimerReturnPrompt") {
+          const int remaining = std::max(0, static_cast<int>(NumArgOr(args, "remainingSeconds", 0)));
+          const int interval = std::max(1, static_cast<int>(NumArgOr(args, "intervalMinutes", 20)));
+          const int seconds = remaining % 60;
+          const std::wstring description = L"Your break timer is paused with " +
+              std::to_wstring(remaining / 60) + L":" + (seconds < 10 ? L"0" : L"") +
+              std::to_wstring(seconds) + L" remaining. Continue where you left off, or start a fresh " +
+              std::to_wstring(interval) + L"-minute interval.";
+          const INT_PTR choice = DialogBoxParamW(GetModuleHandle(nullptr),
+              MAKEINTRESOURCEW(IDD_TIMER_RETURN), nullptr, TimerReturnDialogProc,
+              reinterpret_cast<LPARAM>(description.c_str()));
+          if (choice == -1) {
+            result->Error("PROMPT_UNAVAILABLE", "Unable to open the return dialog.");
+          } else if (choice == 1 || choice == 2) {
+            result->Success(EncodableValue(choice == 1 ? "continue" : "restart"));
+          } else {
+            result->Success();
+          }
+        } else if (method == "showTrayDurationPicker") {
           static bool picker_open = false;
           if (picker_open) {
             result->Error("PICKER_OPEN", "A duration picker is already open.");

@@ -21,6 +21,10 @@ class TimerRepository {
   }) {
     try {
       _storageService.setString('timer_state', state.state.name);
+      _storageService.setBool(
+        'timer_awaiting_return_decision',
+        state.awaitingReturnDecision,
+      );
       _storageService.setString('timer_mode', state.mode.name);
       _storageService.setInt('timer_work_elapsed', state.workElapsed.inSeconds);
       _storageService.setInt(
@@ -129,6 +133,10 @@ class TimerRepository {
         (s) => s.name == stateStr,
         orElse: () => TimerState.idle,
       );
+      state.awaitingReturnDecision =
+          state.state == TimerState.paused &&
+          _storageService.getBool('timer_awaiting_return_decision');
+      if (state.awaitingReturnDecision) state.pausedForInactivity = true;
 
       // An interrupted break is not resumed; return to running with a fresh work interval.
       if (state.state == TimerState.breakActive) {
