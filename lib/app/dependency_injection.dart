@@ -33,6 +33,8 @@ import 'package:breakmate/features/analytics/app_icon_cache.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
+import 'package:breakmate/core/services/desktop_update_notifier.dart';
+import 'package:breakmate/core/services/feed_update_checker.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/features/analytics/focus_insight_service.dart';
 import 'package:breakmate/features/analytics/focus_streak_service.dart';
@@ -61,6 +63,18 @@ Future<void> initDependencies() async {
   sl.registerSingleton<SessionStateRepository>(SessionStateRepository(sl()));
   sl.registerSingleton<SettingsRepository>(SettingsRepository(storage: sl()));
   sl.registerSingleton<NotificationService>(NotificationService());
+  sl.registerLazySingleton<DesktopUpdateNotifier>(
+    () => DesktopUpdateNotifier(
+      check: FeedUpdateChecker().check,
+      notify: sl<NotificationService>().showUpdateAvailable,
+      readNotifiedBuild: () =>
+          sl<StorageService>().getInt('last_notified_update_build'),
+      saveNotifiedBuild: (build) async {
+        await sl<StorageService>().setInt('last_notified_update_build', build);
+      },
+    ),
+    dispose: (service) => service.dispose(),
+  );
   sl.registerSingleton<ActivityMonitor>(ActivityMonitor());
   sl.registerSingleton<AppNavigationService>(AppNavigationService(sl()));
   sl.registerSingleton<WindowService>(WindowService.instance);

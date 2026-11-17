@@ -422,7 +422,72 @@ void RegisterEnhancements(FlBinaryMessenger* messenger) {
     const std::string method = fl_method_call_get_name(call);
     FlValue* args = fl_method_call_get_args(call);
 
-    if (method == "showCursorCountdown") {
+    if (method == "showTrayDurationPicker") {
+      static bool picker_open = false;
+      if (picker_open) {
+        Fail(call, "PICKER_OPEN", "A duration picker is already open.");
+        return;
+      }
+      picker_open = true;
+      const bool focus = GetBool(args, "isFocus", false);
+      const int initial = std::clamp(static_cast<int>(Num(args, "initialMinutes", 15)), 1, 1439);
+      // No transient parent: the dashboard can stay closed or hidden.
+      GtkWidget* dialog = gtk_dialog_new_with_buttons(focus ? "Focus Mode" : "Snooze",
+          nullptr, GTK_DIALOG_MODAL, "_Cancel", GTK_RESPONSE_CANCEL,
+          "_Start", GTK_RESPONSE_ACCEPT, nullptr);
+      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_MOUSE);
+      gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+      gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
+      GtkWidget* grid = gtk_grid_new();
+      gtk_container_set_border_width(GTK_CONTAINER(grid), 20);
+      gtk_grid_set_column_spacing(GTK_GRID(grid), 20);
+      gtk_grid_set_row_spacing(GTK_GRID(grid), 12);
+      GtkWidget* description = gtk_label_new(focus
+          ? "Pause break reminders while you focus."
+          : "Pause break reminders, then resume automatically.");
+      gtk_label_set_line_wrap(GTK_LABEL(description), TRUE);
+      gtk_label_set_max_width_chars(GTK_LABEL(description), 36);
+      gtk_grid_attach(GTK_GRID(grid), description, 0, 0, 2, 1);
+      GtkWidget* hours = gtk_spin_button_new_with_range(0, 23, 1);
+      GtkWidget* minutes = gtk_spin_button_new_with_range(0, 59, 1);
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(hours), initial / 60);
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(minutes), initial % 60);
+      GtkWidget* hours_label = gtk_label_new_with_mnemonic("_Hours");
+      GtkWidget* minutes_label = gtk_label_new_with_mnemonic("_Minutes");
+      gtk_label_set_mnemonic_widget(GTK_LABEL(hours_label), hours);
+      gtk_label_set_mnemonic_widget(GTK_LABEL(minutes_label), minutes);
+      gtk_grid_attach(GTK_GRID(grid), hours_label, 0, 1, 1, 1);
+      gtk_grid_attach(GTK_GRID(grid), minutes_label, 1, 1, 1, 1);
+      gtk_grid_attach(GTK_GRID(grid), hours, 0, 2, 1, 1);
+      gtk_grid_attach(GTK_GRID(grid), minutes, 1, 2, 1, 1);
+      gtk_entry_set_activates_default(GTK_ENTRY(hours), TRUE);
+      gtk_entry_set_activates_default(GTK_ENTRY(minutes), TRUE);
+      GtkWidget* controls[] = {dialog, hours, minutes};
+      auto changed = +[](GtkSpinButton*, gpointer data) {
+        auto** widgets = static_cast<GtkWidget**>(data);
+        const int total = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widgets[1])) * 60
+            + gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widgets[2]));
+        gtk_dialog_set_response_sensitive(GTK_DIALOG(widgets[0]), GTK_RESPONSE_ACCEPT, total > 0);
+      };
+      g_signal_connect(hours, "value-changed", G_CALLBACK(changed), controls);
+      g_signal_connect(minutes, "value-changed", G_CALLBACK(changed), controls);
+      gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), grid);
+      gtk_widget_show_all(dialog);
+      gtk_window_present(GTK_WINDOW(dialog));
+      const int response = gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_spin_button_update(GTK_SPIN_BUTTON(hours));
+      gtk_spin_button_update(GTK_SPIN_BUTTON(minutes));
+      const int duration = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(hours)) * 60
+          + gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(minutes));
+      gtk_widget_destroy(dialog);
+      picker_open = false;
+      if (response == GTK_RESPONSE_ACCEPT && duration > 0) {
+        g_autoptr(FlValue) value = fl_value_new_int(duration);
+        Ok(call, value);
+      } else {
+        Ok(call);
+      }
+    } else if (method == "showCursorCountdown") {
       CursorCountdown::Get().Start(static_cast<int>(Num(args, "seconds", 15)));
       Ok(call);
     } else if (method == "hideCursorCountdown") {

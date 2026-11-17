@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <shellapi.h>
+#include "resource.h"
 
 #include <flutter/method_channel.h>
 #include <flutter/standard_method_codec.h>
@@ -35,6 +36,74 @@ double NumArgOr(const EncodableValue* args, const char* key, double fallback) {
   if (const auto* i = std::get_if<int32_t>(&it->second)) return *i;
   if (const auto* l = std::get_if<int64_t>(&it->second)) return static_cast<double>(*l);
   return fallback;
+}
+
+struct TrayDurationOptions {
+  bool focus;
+  int initial;
+};
+
+int SelectedDuration(HWND dialog) {
+  const auto hours = SendDlgItemMessageW(dialog, IDC_DURATION_HOURS, CB_GETCURSEL, 0, 0);
+  const auto minutes = SendDlgItemMessageW(dialog, IDC_DURATION_MINUTES, CB_GETCURSEL, 0, 0);
+  return hours == CB_ERR || minutes == CB_ERR ? 0 : static_cast<int>(hours * 60 + minutes);
+}
+
+INT_PTR CALLBACK TrayDurationDialogProc(HWND dialog, UINT message, WPARAM wparam, LPARAM lparam) {
+  if (message == WM_INITDIALOG) {
+    const auto* options = reinterpret_cast<const TrayDurationOptions*>(lparam);
+    SetWindowTextW(dialog, options->focus ? L"Focus Mode" : L"Snooze");
+    SetDlgItemTextW(dialog, IDC_DURATION_DESCRIPTION, options->focus
+        ? L"Pause break reminders while you focus."
+        : L"Pause break reminders, then resume automatically.");
+    for (int value = 0; value < 60; ++value) {
+      const auto text = std::to_wstring(value);
+      SendDlgItemMessageW(dialog, IDC_DURATION_MINUTES, CB_ADDSTRING, 0,
+                         reinterpret_cast<LPARAM>(text.c_str()));
+      if (value < 24) {
+        SendDlgItemMessageW(dialog, IDC_DURATION_HOURS, CB_ADDSTRING, 0,
+                           reinterpret_cast<LPARAM>(text.c_str()));
+      }
+    }
+    SendDlgItemMessageW(dialog, IDC_DURATION_HOURS, CB_SETCURSEL, options->initial / 60, 0);
+    SendDlgItemMessageW(dialog, IDC_DURATION_MINUTES, CB_SETCURSEL, options->initial % 60, 0);
+    POINT cursor = {};
+    GetCursorPos(&cursor);
+    MONITORINFO monitor = {};
+    monitor.cbSize = sizeof(monitor);
+    RECT bounds = {};
+    GetWindowRect(dialog, &bounds);
+    if (GetMonitorInfoW(MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST), &monitor)) {
+      const RECT& work = monitor.rcWork;
+      SetWindowPos(dialog, HWND_TOPMOST,
+          work.left + (work.right - work.left - (bounds.right - bounds.left)) / 2,
+          work.top + (work.bottom - work.top - (bounds.bottom - bounds.top)) / 2,
+          0, 0, SWP_NOSIZE);
+    }
+    SetForegroundWindow(dialog);
+    return TRUE;
+  }
+  if (message == WM_COMMAND) {
+    const int control = LOWORD(wparam);
+    if (control == IDCANCEL) {
+      EndDialog(dialog, 0);
+      return TRUE;
+    }
+    if (control == IDOK) {
+      const int duration = SelectedDuration(dialog);
+      if (duration > 0) EndDialog(dialog, duration);
+      return TRUE;
+    }
+    if (HIWORD(wparam) == CBN_SELCHANGE) {
+      EnableWindow(GetDlgItem(dialog, IDOK), SelectedDuration(dialog) > 0);
+      return TRUE;
+    }
+  }
+  if (message == WM_CLOSE) {
+    EndDialog(dialog, 0);
+    return TRUE;
+  }
+  return FALSE;
 }
 
 std::wstring Widen(const std::string& s) {
@@ -419,7 +488,29 @@ void RegisterNativeEnhancementsBridge(flutter::FlutterEngine* engine) {
         const std::string& method = call.method_name();
         const EncodableValue* args = call.arguments();
 
-        if (method == "showCursorCountdown") {
+        if (method == "showTrayDurationPicker") {
+          static bool picker_open = false;
+          if (picker_open) {
+            result->Error("PICKER_OPEN", "A duration picker is already open.");
+            return;
+          }
+          const TrayDurationOptions options = {
+              ArgOr<bool>(call.arguments(), "isFocus", false),
+              std::clamp(static_cast<int>(NumArgOr(call.arguments(), "initialMinutes", 15)), 1, 1439)};
+          picker_open = true;
+          // No dashboard owner: this dialog works when the main window is hidden.
+          const INT_PTR duration = DialogBoxParamW(GetModuleHandle(nullptr),
+              MAKEINTRESOURCEW(IDD_TRAY_DURATION), nullptr, TrayDurationDialogProc,
+              reinterpret_cast<LPARAM>(&options));
+          picker_open = false;
+          if (duration == -1) {
+            result->Error("PICKER_UNAVAILABLE", "Unable to create the duration picker.");
+          } else if (duration > 0) {
+            result->Success(EncodableValue(static_cast<int>(duration)));
+          } else {
+            result->Success();
+          }
+        } else if (method == "showCursorCountdown") {
           g_cursor->Start((int)NumArgOr(args, "seconds", 15));
           result->Success();
         } else if (method == "hideCursorCountdown") {

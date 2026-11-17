@@ -54,6 +54,21 @@ END
 // remains consistent on all systems.
 IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
 
+IDD_TRAY_DURATION DIALOGEX 0, 0, 250, 132
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "BreakMate"
+FONT 9, "Segoe UI"
+BEGIN
+    LTEXT "Choose how long to pause break reminders.", IDC_DURATION_DESCRIPTION, 14, 12, 222, 24
+    LTEXT "Hours", -1, 14, 44, 100, 12
+    LTEXT "Minutes", -1, 132, 44, 100, 12
+    COMBOBOX IDC_DURATION_HOURS, 14, 60, 104, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX IDC_DURATION_MINUTES, 132, 60, 104, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON "Cancel", IDCANCEL, 114, 102, 56, 18
+    DEFPUSHBUTTON "Start", IDOK, 180, 102, 56, 18
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

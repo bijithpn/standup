@@ -6,12 +6,14 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// Newest release found in the appcast feed.
 class FeedUpdate {
   const FeedUpdate({
+    required this.build,
     required this.version,
     required this.notes,
     required this.downloadUrl,
   });
 
   final String version;
+  final int build;
   final String notes;
   final Uri downloadUrl;
 }
@@ -40,14 +42,21 @@ class FeedUpdateChecker {
     final client = _client ?? HttpClient()
       ..connectionTimeout = const Duration(seconds: 15);
     try {
-      final request = await client.getUrl(Uri.parse(feedUrl));
-      final response = await request.close();
+      final request = await client
+          .getUrl(Uri.parse(feedUrl))
+          .timeout(const Duration(seconds: 15));
+      final response = await request.close().timeout(
+        const Duration(seconds: 15),
+      );
       if (response.statusCode != 200) {
         throw HttpException('Update server returned ${response.statusCode}');
       }
-      return await response.transform(utf8.decoder).join();
+      return await response
+          .transform(utf8.decoder)
+          .join()
+          .timeout(const Duration(seconds: 15));
     } finally {
-      if (_client == null) client.close();
+      if (_client == null) client.close(force: true);
     }
   }
 
@@ -73,8 +82,14 @@ class FeedUpdateChecker {
       if (attrs['sparkle:os'] != os) continue;
 
       final build = int.tryParse(attrs['sparkle:version'] ?? '');
-      final url = Uri.tryParse(attrs['url'] ?? '');
-      if (build == null || url == null || build <= bestBuild) continue;
+      final url = Uri.tryParse((attrs['url'] ?? '').replaceAll('&amp;', '&'));
+      if (build == null ||
+          url == null ||
+          url.scheme != 'https' ||
+          url.host.isEmpty ||
+          build <= bestBuild) {
+        continue;
+      }
 
       final notes = RegExp(
         r'<description><!\[CDATA\[(.*?)\]\]></description>',
@@ -83,6 +98,7 @@ class FeedUpdateChecker {
 
       bestBuild = build;
       best = FeedUpdate(
+        build: build,
         version: attrs['sparkle:shortVersionString'] ?? '$build',
         notes: notes ?? '',
         downloadUrl: url,

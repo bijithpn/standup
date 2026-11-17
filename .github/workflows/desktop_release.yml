@@ -189,3 +189,42 @@ jobs:
           done
           echo "::error::Release $TAG_NAME was not created within 40 minutes."
           exit 1
+
+      - name: Publish Windows and Linux appcast entries
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          RAW_VERSION=$(awk '/^version:/ {print $2}' pubspec.yaml)
+          VERSION="${RAW_VERSION%%+*}"
+          BUILD="${RAW_VERSION##*+}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Wait for the macOS appcast commit as well as its release assets.
+          # Then reapply our entries to the latest feed on every push retry.
+          for _ in $(seq 1 80); do
+            git fetch origin main
+            git checkout -B desktop-appcast origin/main
+            if ! python3 -c 'import sys, xml.etree.ElementTree as E; r=E.parse("appcast.xml"); ns="{http://www.andymatuschak.org/xml-namespaces/sparkle}"; sys.exit(0 if any(e.get(ns+"version")==sys.argv[1] and e.get(ns+"os", "macos")=="macos" for e in r.iter("enclosure")) else 1)' "$BUILD"; then
+              echo "Waiting for macOS appcast build $BUILD..."
+              sleep 30
+              continue
+            fi
+            for OS in windows linux; do
+              if [ "$OS" = windows ]; then
+                ASSET="BreakMate-Setup-${VERSION}.exe"
+              else
+                ASSET="BreakMate-${VERSION}-linux-x64.tar.gz"
+              fi
+              python3 scripts/patch_appcast.py \
+                --os "$OS" --version "$VERSION" --build "$BUILD" \
+                --size "$(stat -c%s "dist/$ASSET")" \
+                --url "https://github.com/${RELEASE_REPOSITORY}/releases/download/v${VERSION}/${ASSET}"
+            done
+            git add appcast.xml
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "chore: update desktop appcast for v${VERSION} [skip ci]"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::Could not publish Windows/Linux appcast entries."
+          exit 1

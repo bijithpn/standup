@@ -1,6 +1,8 @@
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'dart:io';
+import 'package:breakmate/core/services/desktop_update_notifier.dart';
 import 'package:breakmate/features/settings/backup_service.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
@@ -64,6 +66,9 @@ class ServiceBootstrapper {
       settingsRepo.currentSettings.notificationsEnabled,
     );
     notifications.setSoundEnabled(settingsRepo.currentSettings.soundEnabled);
+    if (Platform.isWindows || Platform.isLinux) {
+      sl<DesktopUpdateNotifier>().start();
+    }
 
     await sl<StatsService>().initialize();
     mark('stats.initialize');

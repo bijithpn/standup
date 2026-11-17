@@ -1,6 +1,7 @@
 import Cocoa
 import FlutterMacOS
 import Sparkle
+import UserNotifications
 import appkit_ui_element_colors
 import audioplayers_darwin
 import flutter_local_notifications
@@ -23,7 +24,10 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
     // crashes the process the moment any window_manager Dart call reaches the secondary isolate.
     ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
     AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
+    // Secondary engines must not take notification clicks away from the main engine.
+    let notificationDelegate = UNUserNotificationCenter.current().delegate
     FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
+    UNUserNotificationCenter.current().delegate = notificationDelegate
     MacOSWindowUtilsPlugin.register(with: registry.registrar(forPlugin: "MacOSWindowUtilsPlugin"))
     
     WindowBridge.register(with: registry.registrar(forPlugin: "WindowBridge"))
@@ -31,7 +35,7 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
 }
 
 @main
-class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
+class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate, SPUStandardUserDriverDelegate, UNUserNotificationCenterDelegate {
   static func main() {
     #if DEBUG
     DebugDisclaim.relaunchIfNeeded()
@@ -77,8 +81,119 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   
   // The updater is started a couple of seconds after launch (see applicationDidFinishLaunching) so
   // Sparkle's setup does not sit on the main thread while the first window is being created.
-  lazy var updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
+  lazy var updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: self)
   private var updaterStarted = false
+  private let updateNotificationIdentifier = "com.breakmate.update-available"
+  private let notifiedUpdateBuildKey = "BreakMateLastNotifiedUpdateBuild"
+  private var pendingUpdateNotificationBuild: String?
+  // Notification Center holds its delegate weakly. Retain the Flutter plugin
+  // while forwarding reminder notifications to it.
+  private var flutterNotificationDelegate: UNUserNotificationCenterDelegate?
+
+  func installUpdateNotificationDelegate() {
+    let center = UNUserNotificationCenter.current()
+    if center.delegate !== self {
+      flutterNotificationDelegate = center.delegate
+      center.delegate = self
+    }
+  }
+
+  var supportsGentleScheduledUpdateReminders: Bool { true }
+
+  func standardUserDriverWillHandleShowingUpdate(_ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState) {
+    // Keep Sparkle's standard UI; notifications supplement background alerts.
+    guard !state.userInitiated,
+          UserDefaults.standard.string(forKey: notifiedUpdateBuildKey) != update.versionString,
+          pendingUpdateNotificationBuild != update.versionString else { return }
+    let build = update.versionString
+    pendingUpdateNotificationBuild = build
+    let center = UNUserNotificationCenter.current()
+    // Reuses the same app permission as reminder notifications. A denial leaves
+    // Sparkle's regular update window available and does not mark the build notified.
+    center.requestAuthorization(options: [.alert]) { [weak self] granted, error in
+      DispatchQueue.main.async {
+        guard let self = self, self.pendingUpdateNotificationBuild == build else { return }
+        guard granted else {
+          self.pendingUpdateNotificationBuild = nil
+          if let error = error { NSLog("Sparkle notification authorization failed: \(error)") }
+          return
+        }
+        let content = UNMutableNotificationContent()
+        content.title = "BreakMate update available"
+        content.body = "Version \(update.displayVersionString) is ready. Click to review and install."
+        content.userInfo = ["updateBuild": build]
+        let request = UNNotificationRequest(identifier: self.updateNotificationIdentifier, content: content, trigger: nil)
+        center.add(request) { error in
+          DispatchQueue.main.async {
+            if let error = error {
+              NSLog("Sparkle notification failed: \(error)")
+            } else {
+              UserDefaults.standard.set(build, forKey: self.notifiedUpdateBuildKey)
+            }
+            // The update may have received attention while submission was in flight.
+            if self.pendingUpdateNotificationBuild != build {
+              center.removeDeliveredNotifications(withIdentifiers: [self.updateNotificationIdentifier])
+            } else {
+              self.pendingUpdateNotificationBuild = nil
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private func clearUpdateNotification() {
+    pendingUpdateNotificationBuild = nil
+    let center = UNUserNotificationCenter.current()
+    center.removePendingNotificationRequests(withIdentifiers: [updateNotificationIdentifier])
+    center.removeDeliveredNotifications(withIdentifiers: [updateNotificationIdentifier])
+  }
+
+  func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
+    clearUpdateNotification()
+  }
+
+  func standardUserDriverWillFinishUpdateSession() {
+    clearUpdateNotification()
+  }
+
+  func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    guard notification.request.identifier == updateNotificationIdentifier else {
+      if let delegate = flutterNotificationDelegate,
+         delegate.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:))) {
+        delegate.userNotificationCenter?(center, willPresent: notification, withCompletionHandler: completionHandler)
+      } else {
+        completionHandler([])
+      }
+      return
+    }
+    if #available(macOS 11.0, *) {
+      completionHandler([.banner, .list])
+    } else {
+      completionHandler([.alert])
+    }
+  }
+
+  func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+    guard response.notification.request.identifier == updateNotificationIdentifier else {
+      if let delegate = flutterNotificationDelegate,
+         delegate.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:didReceive:withCompletionHandler:))) {
+        delegate.userNotificationCenter?(center, didReceive: response, withCompletionHandler: completionHandler)
+      } else {
+        completionHandler()
+      }
+      return
+    }
+    DispatchQueue.main.async { [weak self] in
+      if let self = self, response.actionIdentifier == UNNotificationDefaultActionIdentifier {
+        self.clearUpdateNotification()
+        self.ensureUpdaterStarted()
+        NSApp.activate(ignoringOtherApps: true)
+        self.updaterController.checkForUpdates(nil)
+      }
+      completionHandler()
+    }
+  }
 
   /// Starts Sparkle once; safe to call from the launch timer and from a
   /// user-initiated check that arrives before the timer fires.
@@ -135,6 +250,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
+    installUpdateNotificationDelegate()
     if let controller = mainFlutterWindow?.contentViewController as? FlutterViewController {
     let registrar = controller.registrar(forPlugin: "AppBridges")
 
@@ -154,6 +270,12 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
       let enhancementChannel = FlutterMethodChannel(name: "com.breakmate/native_enhancements", binaryMessenger: registrar.messenger)
       enhancementChannel.setMethodCallHandler { call, result in
           switch call.method {
+          case "showTrayDurationPicker":
+              let args = call.arguments as? [String: Any]
+              let picker = NativeTrayDurationPicker(
+                  isFocus: args?["isFocus"] as? Bool ?? false,
+                  initialMinutes: args?["initialMinutes"] as? Int ?? 15)
+              result(picker.show())
           case "showCursorCountdown":
               let seconds = (call.arguments as? [String: Any])?["seconds"] as? Int ?? 15
               NativeCursorCountdownWindow.shared.startCountdown(seconds: seconds)
@@ -267,6 +389,146 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
         guard let error = error else { return }
         NSLog("Sparkle: Update check cycle failed: \(error.localizedDescription)")
         sparkleBridge?.updater(updater, didAbortWithError: error)
+    }
+}
+
+/// A separate native window: never opens or attaches to the dashboard.
+private final class NativeTrayDurationPicker: NSObject, NSWindowDelegate, NSTextFieldDelegate {
+    private let panel = NSPanel(
+        contentRect: NSRect(x: 0, y: 0, width: 320, height: 202),
+        styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    private let hours = NSTextField(frame: NSRect(x: 20, y: 88, width: 104, height: 30))
+    private let minutes = NSTextField(frame: NSRect(x: 170, y: 88, width: 104, height: 30))
+    private let hoursStepper = NSStepper(frame: NSRect(x: 126, y: 88, width: 19, height: 30))
+    private let minutesStepper = NSStepper(frame: NSRect(x: 276, y: 88, width: 19, height: 30))
+    private let startButton = NSButton(title: "Start", target: nil, action: nil)
+    private let hint = NSTextField(labelWithString: "Reminders resume automatically.")
+
+    init(isFocus: Bool, initialMinutes: Int) {
+        super.init()
+        panel.title = isFocus ? "Focus Mode" : "Snooze"
+        panel.delegate = self
+        panel.isReleasedWhenClosed = false
+        panel.isFloatingPanel = true
+        panel.hidesOnDeactivate = false
+        panel.level = .floating
+        panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        guard let content = panel.contentView else { return }
+        let description = NSTextField(wrappingLabelWithString: isFocus
+            ? "Pause break reminders while you focus."
+            : "Choose how long to pause break reminders.")
+        description.frame = NSRect(x: 20, y: 154, width: 280, height: 30)
+        description.font = .systemFont(ofSize: 13)
+        description.textColor = .secondaryLabelColor
+        content.addSubview(description)
+        for (text, x) in [("Hours", CGFloat(20)), ("Minutes", CGFloat(170))] {
+            let label = NSTextField(labelWithString: text)
+            label.frame = NSRect(x: x, y: 126, width: 104, height: 18)
+            label.font = .systemFont(ofSize: 12, weight: .medium)
+            content.addSubview(label)
+        }
+        let initial = min(1439, max(1, initialMinutes))
+        hours.stringValue = String(initial / 60)
+        minutes.stringValue = String(initial % 60)
+        for (field, label) in [(hours, "Hours"), (minutes, "Minutes")] {
+            field.font = .monospacedDigitSystemFont(ofSize: 18, weight: .medium)
+            field.alignment = .center
+            field.bezelStyle = .roundedBezel
+            field.delegate = self
+            field.setAccessibilityLabel(label)
+            content.addSubview(field)
+        }
+        for (stepper, maximum, label) in [(hoursStepper, 23.0, "Hours"), (minutesStepper, 59.0, "Minutes")] {
+            stepper.minValue = 0
+            stepper.maxValue = maximum
+            stepper.increment = 1
+            stepper.valueWraps = false
+            stepper.target = self
+            stepper.setAccessibilityLabel(label)
+            content.addSubview(stepper)
+        }
+        hoursStepper.action = #selector(stepHours)
+        minutesStepper.action = #selector(stepMinutes)
+        hint.frame = NSRect(x: 20, y: 54, width: 280, height: 18)
+        hint.font = .systemFont(ofSize: 11)
+        hint.textColor = .secondaryLabelColor
+        content.addSubview(hint)
+        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelSelection))
+        cancel.frame = NSRect(x: 146, y: 14, width: 72, height: 30)
+        cancel.bezelStyle = .rounded
+        cancel.keyEquivalent = "\u{1b}"
+        content.addSubview(cancel)
+        startButton.frame = NSRect(x: 228, y: 14, width: 72, height: 30)
+        startButton.bezelStyle = .rounded
+        startButton.target = self
+        startButton.action = #selector(startSelection)
+        startButton.keyEquivalent = "\r"
+        content.addSubview(startButton)
+        panel.defaultButtonCell = startButton.cell as? NSButtonCell
+        panel.initialFirstResponder = minutes
+        hours.nextKeyView = minutes
+        minutes.nextKeyView = cancel
+        cancel.nextKeyView = startButton
+        startButton.nextKeyView = hours
+        durationChanged()
+    }
+
+    private var selectedDuration: Int? {
+        guard let h = Int(hours.stringValue), (0...23).contains(h),
+              let m = Int(minutes.stringValue), (0...59).contains(m) else { return nil }
+        return h * 60 + m
+    }
+
+    private func durationChanged() {
+        let duration = selectedDuration
+        startButton.isEnabled = (duration ?? 0) > 0
+        if duration == nil {
+            hint.stringValue = "Use 0–23 hours and 0–59 minutes."
+        } else if duration == 0 {
+            hint.stringValue = "Choose at least one minute."
+        } else {
+            hint.stringValue = "Reminders resume automatically."
+        }
+        hint.textColor = startButton.isEnabled ? .secondaryLabelColor : .systemRed
+        if let h = Int(hours.stringValue), (0...23).contains(h) { hoursStepper.integerValue = h }
+        if let m = Int(minutes.stringValue), (0...59).contains(m) { minutesStepper.integerValue = m }
+    }
+
+    func controlTextDidChange(_ notification: Notification) { durationChanged() }
+
+    @objc private func stepHours() {
+        hours.stringValue = String(hoursStepper.integerValue)
+        durationChanged()
+    }
+
+    @objc private func stepMinutes() {
+        minutes.stringValue = String(minutesStepper.integerValue)
+        durationChanged()
+    }
+
+    @objc private func startSelection() {
+        guard let duration = selectedDuration, duration > 0 else { return }
+        NSApp.stopModal(withCode: .OK)
+    }
+
+    @objc private func cancelSelection() { NSApp.stopModal(withCode: .cancel) }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        cancelSelection()
+        return false
+    }
+
+    func show() -> Int? {
+        let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        if let area = screen?.visibleFrame {
+            panel.setFrameOrigin(NSPoint(x: area.midX - panel.frame.width / 2,
+                                         y: area.midY - panel.frame.height / 2))
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        defer { panel.orderOut(nil) }
+        guard NSApp.runModal(for: panel) == .OK else { return nil }
+        return selectedDuration
     }
 }
 
@@ -581,6 +843,7 @@ class SparkleBridge: NSObject {
                 self.startInformationalCheck(attemptsLeft: 20, result: result)
             case "startUpdate":
                 NSLog("SparkleBridge: Triggering checkForUpdates (User-facing)")
+                self?.ensureStarted()
                 // Standard Sparkle user-facing update check and installation flow
                 self?.updater.checkForUpdates()
                 result(nil)

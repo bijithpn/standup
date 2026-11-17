@@ -662,6 +662,9 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(windowFrame, display: true)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+    // Install before launch completes so clicks on previously delivered update
+    // notifications can also reopen Sparkle after the app was quit.
+    (NSApp.delegate as? AppDelegate)?.installUpdateNotificationDelegate()
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
     BehaviorEngineBridge.shared.setup(binaryMessenger: flutterViewController.engine.binaryMessenger)
     

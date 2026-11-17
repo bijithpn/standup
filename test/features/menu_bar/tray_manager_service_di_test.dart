@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:breakmate/core/services/timer_context_manager.dart';
 import '../../helpers/in_memory_settings_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +55,26 @@ void main() {
     );
     expect(controller, isNotNull);
   });
+
+  test(
+    'macOS tray update action opens the full Sparkle flow',
+    () async {
+      const channel = MethodChannel('com.breakmate/sparkle');
+      final methods = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            methods.add(call.method);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      await MenuBarController().handleAction('check_for_updates');
+      expect(methods, ['startUpdate']);
+    },
+    skip: !Platform.isMacOS,
+  );
 
   test(
     'TrayManagerService accepts dependencies via constructor injection',

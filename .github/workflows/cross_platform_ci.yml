@@ -98,6 +98,9 @@ jobs:
           fi
           exit $fail
 
+      - name: Test platform appcast publishing
+        run: python3 scripts/test_patch_appcast.py
+
       # Secrets are not exposed to PRs from forks, so skip the check there.
       - name: Check release secrets
         if: github.event.pull_request.head.repo.fork != true

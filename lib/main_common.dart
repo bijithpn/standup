@@ -17,6 +17,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:breakmate/core/services/daily_reset_service.dart';
+import 'package:breakmate/core/services/desktop_update_notifier.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 
@@ -214,6 +215,9 @@ Future<void> _gracefulShutdown(
   }
 
   try {
+    if (sl.isRegistered<DesktopUpdateNotifier>()) {
+      sl<DesktopUpdateNotifier>().dispose();
+    }
     if (sl.isRegistered<TimerOrchestrator>()) {
       sl<TimerOrchestrator>().shutdown();
       debugPrint('[Shutdown] TimerOrchestrator shutdown complete.');

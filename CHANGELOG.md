@@ -4,38 +4,75 @@ All notable changes to BreakMate are documented in this file.
 
 ## Tag And Version Index
 
-| Tag | Version | Build | Date | Summary |
-| --- | ---: | ---: | --- | --- |
-| `v1.12.2` | 1.12.2 | 50 | 2026-11-14 | Clear paused state in every menu bar style and a static countdown preview (unreleased) |
-| `v1.12.1` | 1.12.1 | 49 | 2026-11-14 | Reliable idle, lock and sleep pause/resume across macOS, Windows and Linux, and a clearer Smart Detection screen (unreleased) |
-| `v1.12.0` | 1.12.0 | 48 | 2026-11-12 | Custom reminders, focus sessions, quick stretch, per-reminder sounds, accessibility options and idle-time timer fix |
-| `v1.11.1` | 1.11.1 | 44 | 2026-11-12 | Multi-display break overlay fixes, undismissable-overlay recovery and debug key-state hang fix (unreleased) |
-| `v1.11.0` | 1.11.0 | 43 | 2026-10-26 | Gallery Focus slideshow, avatar customizer, companion overlay settings, break appearance sections and break-timer sleep/lock fixes (unreleased) |
-| `v1.10.0` | 1.10.0 | 42 | 2026-10-23 | Break template polish: breathing presets, bundled fonts, light-theme coverage and tips (unreleased) |
-| `v1.8.2` | 1.8.2 | 39 | 2026-10-22 | Release pipeline fixes: ad-hoc signed macOS builds and release readiness checks |
-| `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity charts, smarter break warnings & overlay improvements |
-| `v1.7.0` | 1.7.0 | 36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections |
-| `v1.6.0` | 1.6.0 | 35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes |
-| `v1.5.0` | 1.5.0 | 34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks |
-| `v1.4.0` | 1.4.0 | 33 | 2026-06-16 | Desktop Companion Engine & Environment Builder |
-| `v1.3.0` | 1.3.0 | 32 | 2026-06-02 | Enhanced Dashboard and Settings Experience |
-| `v1.2.1` | 1.2.1 | 31 | 2026-06-01 | Native macOS Calendar and Permission Recovery |
-| `v1.2.0` | 1.2.0 | 30 | 2026-05-31 | Contextual Intelligence and Personal Wellness |
-| `v1.1.4` | 1.1.4 | 29 | 2026-05-31 | Onboarding persistence and macOS storage stability |
-| `v1.1.3` | 1.1.3 | 28 | 2026-05-27 | Startup stability, Sentry dev isolation, and Sparkle version alignment |
-| `v1.1.2` | 1.1.2 | 27 | 2026-05-27 | UX polish, smart notification visuals, and micro-break integration |
-| `v1.1.1` | 1.1.1 | 26 | 2026-05-27 | Minor stability, companion memory, and pet animation fixes |
-| `v1.1.0` | 1.1.0 | 25 | 2026-05-27 | Performance refactoring and Pet Fatigue AI |
-| `v1.0.1` | 1.0.1 | 24 | 2026-05-26 | Performance and stability update |
-| `v1.0.0` | 1.0.0 | 1 | 2026-05-26 | Initial BreakMate release and rebrand |
+| Tag       | Version | Build | Date       | Summary                                                                                                                            |
+| --------- | ------: | ----: | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `v1.13.0` |  1.13.0 |    51 | 2026-11-17 | Six wellness templates, compact tray duration pickers, and desktop update notifications                                            |
+| `v1.12.2` |  1.12.2 |    50 | 2026-11-14 | Clear paused state in every menu bar style and a static countdown preview                                                          |
+| `v1.12.1` |  1.12.1 |    49 | 2026-11-14 | Reliable idle, lock and sleep pause/resume across macOS, Windows and Linux, and a clearer Smart Detection screen                   |
+| `v1.12.0` |  1.12.0 |    48 | 2026-11-12 | Custom reminders, focus sessions, quick stretch, per-reminder sounds, accessibility options and idle-time timer fix                |
+| `v1.11.1` |  1.11.1 |    44 | 2026-11-12 | Multi-display break overlay fixes, undismissable-overlay recovery and debug key-state hang fix                                     |
+| `v1.11.0` |  1.11.0 |    43 | 2026-10-26 | Gallery Focus slideshow, avatar customizer, companion overlay settings, break appearance sections and break-timer sleep/lock fixes |
+| `v1.10.0` |  1.10.0 |    42 | 2026-10-23 | Break template polish: breathing presets, bundled fonts, light-theme coverage and tips                                             |
+| `v1.8.2`  |   1.8.2 |    39 | 2026-10-22 | Release pipeline fixes: ad-hoc signed macOS builds and release readiness checks                                                    |
+| `v1.8.0`  |   1.8.0 |    37 | 2026-10-17 | Companion customization, productivity charts, smarter break warnings & overlay improvements                                        |
+| `v1.7.0`  |   1.7.0 |    36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections                                        |
+| `v1.6.0`  |   1.6.0 |    35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes                                                                  |
+| `v1.5.0`  |   1.5.0 |    34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks                                                                              |
+| `v1.4.0`  |   1.4.0 |    33 | 2026-06-16 | Desktop Companion Engine & Environment Builder                                                                                     |
+| `v1.3.0`  |   1.3.0 |    32 | 2026-06-02 | Enhanced Dashboard and Settings Experience                                                                                         |
+| `v1.2.1`  |   1.2.1 |    31 | 2026-06-01 | Native macOS Calendar and Permission Recovery                                                                                      |
+| `v1.2.0`  |   1.2.0 |    30 | 2026-05-31 | Contextual Intelligence and Personal Wellness                                                                                      |
+| `v1.1.4`  |   1.1.4 |    29 | 2026-05-31 | Onboarding persistence and macOS storage stability                                                                                 |
+| `v1.1.3`  |   1.1.3 |    28 | 2026-05-27 | Startup stability, Sentry dev isolation, and Sparkle version alignment                                                             |
+| `v1.1.2`  |   1.1.2 |    27 | 2026-05-27 | UX polish, smart notification visuals, and micro-break integration                                                                 |
+| `v1.1.1`  |   1.1.1 |    26 | 2026-05-27 | Minor stability, companion memory, and pet animation fixes                                                                         |
+| `v1.1.0`  |   1.1.0 |    25 | 2026-05-27 | Performance refactoring and Pet Fatigue AI                                                                                         |
+| `v1.0.1`  |   1.0.1 |    24 | 2026-05-26 | Performance and stability update                                                                                                   |
+| `v1.0.0`  |   1.0.0 |     1 | 2026-05-26 | Initial BreakMate release and rebrand                                                                                              |
 
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
 
-## [1.12.2] - 2026-11-14 (unreleased)
+## [1.13.0] - 2026-11-17
 
-Tags: `v1.12.2` (not yet tagged)
+Tags: `v1.13.0` (not yet tagged)
+
+Build: `51`
+
+Release title: Calmer Breaks & Easier Desktop Updates
+
+Changes compared with `v1.12.2` (build `50`).
+
+### Added
+
+- Six wellness break templates: Balance, Zen ink, Flowline, Aurora Flow, Midnight Drift and Liquid Harmony, with compact and full-screen views.
+- A six-card template gallery with static previews and a live preview of the selected template.
+- Optional rain, ocean and forest soundscapes, with volume and motion-intensity controls. Soundscapes are off by default.
+- Display controls for compact, immersive or automatic breaks, compact-window corner selection and time-of-day color adaptation.
+- Local update notifications on macOS through Sparkle and on Windows/Linux through scheduled release-feed checks. Notifications are suppressed after the same build has already been announced.
+- **Check for Updates…** in the system tray. macOS opens Sparkle's release notes, download, install and relaunch flow; Windows/Linux open the available platform download.
+- Windows and Linux release-feed publication after their build artifacts are uploaded to GitHub.
+
+### Changed
+
+- Replaced the long list of Focus and Snooze durations in the tray with **Focus Mode** and **Snooze**. Each opens an independent native hours-and-minutes dialog with Cancel and Start buttons, even when the dashboard is closed or hidden; an active focus session retains its End Focus Session action.
+- Existing retired break-template choices migrate to one of the six wellness templates.
+- Break motion shares the session clock between compact and immersive views and respects reduced-motion settings.
+
+### Fixed
+
+- macOS Focus Mode and Snooze use a smaller independent panel with numeric fields and steppers, avoiding dropdown menus that stretch to the screen edges.
+- Refreshing a break overlay after dismissal no longer recreates a closed overlay.
+- Opening companion or break-overlay engines no longer takes notification handling away from the main macOS app.
+- Release-feed updates match both platform and version, preserving other platforms' signatures and file sizes when a release is rebuilt.
+- Invalid or non-HTTPS Windows/Linux update download links are ignored; background checks time out and recover on later checks.
+
+Release validation: live notification delivery and installer interaction on installed Windows/Linux apps still require testing on those systems.
+
+## [1.12.2] - 2026-11-14
+
+Tags: `v1.12.2`
 
 Build: `50`
 
@@ -50,7 +87,7 @@ Release title: Paused State in the Menu Bar
 - Extra space between the menu bar icon and the countdown text.
 - The Countdown timer tile in Menu Bar Display settings shows a fixed 1:00 instead of animating.
 
-## [1.12.1] - 2026-11-14 (unreleased)
+## [1.12.1] - 2026-11-14
 
 Tags: `v1.12.1` (not yet tagged)
 
@@ -109,7 +146,7 @@ Release title: Focus, Custom Reminders & Accessibility
 - The break countdown no longer loses the minutes spent idle before idle detection pauses it; the idle time is given back when the timer pauses.
 - CI: moved macOS jobs to the macos-15 runner, installed Linux build dependencies with apt, upgraded paths-filter to v4 and fixed a formatting failure.
 
-## [1.11.1] - 2026-11-12 (unreleased)
+## [1.11.1] - 2026-11-12
 
 Tags: `v1.11.1` (not yet tagged)
 
@@ -126,7 +163,7 @@ Release title: Multi-Display Overlay Fixes
 - A stale pressed-key state no longer floods the log and freezes the app in debug builds.
 - Windows display bridge channels now have an explicit, process-long lifetime.
 
-## [1.10.0] - 2026-10-23 (unreleased)
+## [1.10.0] - 2026-10-23
 
 Tags: `v1.10.0` (not yet tagged)
 

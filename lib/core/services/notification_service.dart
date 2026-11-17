@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:breakmate/core/services/feed_update_checker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
@@ -16,6 +18,12 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 
 /// Shows system notifications for reminders, breaks and insights; each helper maps to a fixed notification id/copy.
 class NotificationService {
+  NotificationService({Future<bool> Function(Uri)? launchUpdateDownload})
+    : _launchUpdateDownload =
+          launchUpdateDownload ??
+          ((url) => launchUrl(url, mode: LaunchMode.externalApplication));
+
+  final Future<bool> Function(Uri) _launchUpdateDownload;
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   final ErrorHandler _errorHandler = ErrorHandler();
@@ -23,6 +31,9 @@ class NotificationService {
 
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
+  bool _initialized = false;
+  static const _updateNotificationId = 90;
+  static const _updatePayloadPrefix = 'breakmate-update:';
 
   // Permission is requested without awaiting so startup is not blocked on the system prompt.
   Future<void> init() async {
@@ -37,8 +48,25 @@ class NotificationService {
         appUserModelId: 'com.bijith.breakmate',
         guid: 'd49b0314-ee68-4b06-9a59-9a4a6f91c2e5',
       );
-      const settings = InitializationSettings(macOS: macOS, windows: windows);
-      await _plugin.initialize(settings: settings);
+      const settings = InitializationSettings(
+        macOS: macOS,
+        windows: windows,
+        linux: LinuxInitializationSettings(defaultActionName: 'Open'),
+      );
+      _initialized =
+          await _plugin.initialize(
+            settings: settings,
+            onDidReceiveNotificationResponse: handleNotificationResponse,
+          ) ??
+          false;
+
+      if (Platform.isWindows) {
+        final launch = await _plugin.getNotificationAppLaunchDetails();
+        if (launch?.didNotificationLaunchApp == true &&
+            launch?.notificationResponse != null) {
+          handleNotificationResponse(launch!.notificationResponse!);
+        }
+      }
 
       unawaited(_checkAndRequestPermission());
 
@@ -88,7 +116,7 @@ class NotificationService {
 
   Future<bool> requestNotificationPermission() async {
     // Windows toasts need no runtime permission.
-    if (Platform.isWindows) return true;
+    if (Platform.isWindows || Platform.isLinux) return true;
     try {
       final granted = await _plugin
           .resolvePlatformSpecificImplementation<
@@ -112,6 +140,47 @@ class NotificationService {
 
   void setSoundEnabled(bool enabled) {
     _soundEnabled = enabled;
+  }
+
+  /// Returns false when disabled or unavailable so a later check can retry.
+  Future<bool> showUpdateAvailable(FeedUpdate update) async {
+    if (!_initialized ||
+        !_notificationsEnabled ||
+        !(Platform.isWindows || Platform.isLinux)) {
+      return false;
+    }
+    await _plugin.show(
+      id: _updateNotificationId,
+      title: 'BreakMate update available',
+      body: 'Version ${update.version} is ready. Click to download the update.',
+      notificationDetails: NotificationDetails(
+        windows: WindowsNotificationDetails(
+          audio: WindowsNotificationAudio.silent(),
+        ),
+        linux: const LinuxNotificationDetails(suppressSound: true),
+      ),
+      payload: '$_updatePayloadPrefix${update.downloadUrl}',
+    );
+    return true;
+  }
+
+  void handleNotificationResponse(NotificationResponse response) {
+    final payload = response.payload;
+    // Windows activation callbacks do not include the notification id.
+    if (payload == null || !payload.startsWith(_updatePayloadPrefix)) return;
+    final url = Uri.tryParse(payload.substring(_updatePayloadPrefix.length));
+    if (url == null || url.scheme != 'https' || url.host.isEmpty) return;
+    unawaited(_openUpdateDownload(url));
+  }
+
+  Future<void> _openUpdateDownload(Uri url) async {
+    try {
+      if (!await _launchUpdateDownload(url)) {
+        _logger.error('Unable to open update download: $url');
+      }
+    } catch (error, stackTrace) {
+      _logger.error('Unable to open update download', stackTrace: stackTrace);
+    }
   }
 
   Future<void> showEyeRestReminder() async {
@@ -215,6 +284,10 @@ class NotificationService {
         if (Platform.isWindows) {
           notificationDetails = const NotificationDetails(
             windows: WindowsNotificationDetails(),
+          );
+        } else if (Platform.isLinux) {
+          notificationDetails = NotificationDetails(
+            linux: LinuxNotificationDetails(suppressSound: !_soundEnabled),
           );
         } else {
           final settingsRepo = sl<SettingsRepository>();
