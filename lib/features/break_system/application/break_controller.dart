@@ -106,11 +106,18 @@ class BreakController extends ChangeNotifier {
     final settings = _settingsRepo.currentSettings;
 
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
-    bool shouldShowWarning = _timerEngine.isPreBreak;
     final isMeetingActive = _timerEngine.contextManager.isMeetingActive();
     final isPresenting = _timerEngine.contextManager.isPresentationActive();
+    // The quiet reminder at break time already covers meetings; a long warning toast over a screen share would not be quiet.
+    final shouldShowWarning =
+        _timerEngine.isPreBreak && !isMeetingActive && !isPresenting;
 
     if (!shouldShowWarning) {
+      if (_hasShownPreBreakWarning &&
+          !shouldShowBreak &&
+          overlayService.currentOverlayType == OverlayType.preBreakWarning) {
+        overlayService.hideOverlay();
+      }
       _hasShownPreBreakWarning = false;
     }
 
@@ -154,7 +161,7 @@ class BreakController extends ChangeNotifier {
     } else if (shouldShowWarning &&
         !_hasShownPreBreakWarning &&
         !overlayService.isOverlayVisible) {
-      if (_timerEngine.countdownSeconds <= 3) {
+      if (_timerEngine.countdownSeconds > 0) {
         _hasShownPreBreakWarning = true;
         overlayService.showOverlay(
           type: OverlayType.preBreakWarning,

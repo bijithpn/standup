@@ -75,7 +75,6 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
         durationSeconds: durationSeconds,
         isPreBreak: overlayType == 'preBreakWarning',
         remainingSecondsNotifier: remainingSecondsNotifier,
-        onSkip: onSkip,
       );
     }
 

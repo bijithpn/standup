@@ -140,10 +140,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       final end = targetEndTime;
       remainingSeconds = end == null
           ? config.remainingSeconds
-          : end
-                .difference(DateTime.now())
-                .inSeconds
-                .clamp(0, config.durationSeconds);
+          : secondsUntil(end);
       remainingSecondsNotifier.value = remainingSeconds;
       if (config.reminderType != null &&
           config.reminderType != _config.reminderType) {
@@ -210,8 +207,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     });
   }
 
-  void _completeBreak() =>
-      completeBreak(_config.isPreview, _config.overlayType, _fadeController);
+  // The warning never self-dismisses: its delayed hideOverlay would close the break screen that replaces it. BreakController owns its lifetime.
+  void _completeBreak() {
+    if (_config.overlayType == 'preBreakWarning') return;
+    completeBreak(_config.isPreview, _config.overlayType, _fadeController);
+  }
   void _skipBreak() =>
       skipBreak(_config.isPreview, _config.overlayType, _fadeController);
   void _quitApp() => _bridge.invokeMethod('quitApp');

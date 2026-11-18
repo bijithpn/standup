@@ -25,6 +25,13 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
 
   final ValueNotifier<bool> completing = ValueNotifier<bool>(false);
 
+  // Ceil, not Duration.inSeconds: a 1s warning (0.99s left on arrival) must read 1, or it starts at 0 and never "completes".
+  int secondsUntil(DateTime end) =>
+      (end.difference(DateTime.now()).inMilliseconds / 1000).ceil().clamp(
+        0,
+        durationSeconds,
+      );
+
   // Derived from targetEndTime each second (not decremented) so it stays accurate across missed ticks.
   void startLocalTimer(VoidCallback onComplete) {
     localTimer?.cancel();
@@ -34,10 +41,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
         return;
       }
       if (targetEndTime != null) {
-        final newRemaining = targetEndTime!
-            .difference(DateTime.now())
-            .inSeconds
-            .clamp(0, durationSeconds);
+        final newRemaining = secondsUntil(targetEndTime!);
 
         if (newRemaining != remainingSeconds) {
           if (newRemaining == 0 && remainingSeconds > 0) {

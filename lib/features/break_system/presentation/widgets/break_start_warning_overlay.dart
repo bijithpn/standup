@@ -8,7 +8,6 @@ class BreakStartWarningOverlay extends StatelessWidget {
   final int durationSeconds;
   final bool isPreBreak;
   final ValueNotifier<int>? remainingSecondsNotifier;
-  final VoidCallback? onSkip;
 
   const BreakStartWarningOverlay({
     super.key,
@@ -17,7 +16,6 @@ class BreakStartWarningOverlay extends StatelessWidget {
     required this.durationSeconds,
     this.isPreBreak = false,
     this.remainingSecondsNotifier,
-    this.onSkip,
   });
 
   @override
@@ -111,34 +109,6 @@ class BreakStartWarningOverlay extends StatelessWidget {
                       );
                     },
                   ),
-                  if (onSkip != null) ...[
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: onSkip,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: Text(
-                          'Skip',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.72),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
