@@ -29,7 +29,7 @@ class CalendarEventRow extends StatelessWidget {
       badgeColor = AppTheme.warning;
     } else if (isUpcoming && minutesUntil <= 60) {
       badge = 'In ${minutesUntil}m';
-      badgeColor = const Color(0xFF6366F1);
+      badgeColor = AppTheme.accent;
     }
 
     final meetingPlatform = event.getMeetingPlatform();
@@ -44,7 +44,7 @@ class CalendarEventRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: isHappeningNow
                   ? AppTheme.error.withValues(alpha: 0.1)
-                  : const Color(0xFF6366F1).withValues(alpha: 0.08),
+                  : AppTheme.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -52,7 +52,7 @@ class CalendarEventRow extends StatelessWidget {
                   ? Icons.fiber_manual_record_rounded
                   : Icons.event_rounded,
               size: 20,
-              color: isHappeningNow ? AppTheme.error : const Color(0xFF6366F1),
+              color: isHappeningNow ? AppTheme.error : AppTheme.accent,
             ),
           ),
           const SizedBox(width: 12),
@@ -91,10 +91,10 @@ class CalendarEventRow extends StatelessWidget {
                         ),
                         child: Text(
                           meetingPlatform,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF6366F1),
+                            color: AppTheme.accent,
                             letterSpacing: 0.5,
                           ),
                         ),

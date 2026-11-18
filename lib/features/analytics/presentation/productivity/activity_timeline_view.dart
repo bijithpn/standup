@@ -655,9 +655,9 @@ class _TimelinePainter extends CustomPainter {
       }
 
       if (isActive && width > 56) {
-        _paintLabel(canvas, entry.appName, left + 8, width - 16);
+        _paintLabel(canvas, entry.appName, left + 8, width - 16, base);
       } else if (entry.kind == ActivityKind.onBreak && width > 44) {
-        _paintLabel(canvas, 'Break', left + 8, width - 16);
+        _paintLabel(canvas, 'Break', left + 8, width - 16, base);
       }
     }
     canvas.restore();
@@ -726,29 +726,27 @@ class _TimelinePainter extends CustomPainter {
     }
   }
 
-  void _paintLabel(Canvas canvas, String text, double left, double maxWidth) {
+  void _paintLabel(
+    Canvas canvas,
+    String text,
+    double left,
+    double maxWidth,
+    Color bg,
+  ) {
     if (maxWidth <= 8) return;
     final painter = TextPainter(
-      text: const TextSpan(
-        text: '',
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 11.5,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
+      text: const TextSpan(),
       maxLines: 1,
       ellipsis: '…',
       textDirection: TextDirection.ltr,
     );
     painter.text = TextSpan(
       text: text,
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Inter',
         fontSize: 11.5,
         fontWeight: FontWeight.w600,
-        color: Colors.white,
+        color: AppTheme.onColor(Color.alphaBlend(bg, AppTheme.surfaceCard)),
       ),
     );
     painter.layout(maxWidth: maxWidth);

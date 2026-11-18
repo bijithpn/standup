@@ -1,6 +1,5 @@
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:breakmate/core/config/flavor_config.dart';
@@ -68,8 +67,8 @@ class _AboutSectionState extends State<AboutSection> {
               const ThemedAppIcon.badge(size: 72, showDevBadge: true),
               const SizedBox(height: 16),
               ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Colors.white, Color(0xFFE0E0E0)],
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [AppTheme.textPrimary, AppTheme.textSecondary],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ).createShader(bounds),
@@ -186,7 +185,7 @@ class _AboutSectionState extends State<AboutSection> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.02),
+            color: AppTheme.textPrimary.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppTheme.border),
           ),

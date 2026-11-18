@@ -514,9 +514,7 @@ class TimerOrchestrator {
             timerEngine.state == TimerState.running) {
           timerEngine.pauseTimers(isManual: true);
         } else if (timerEngine.state == TimerState.running) {
-          notificationService.showReminder(
-            message: 'Timer resumed',
-          );
+          notificationService.showReminder(message: 'Timer resumed');
         }
       },
     );
@@ -533,9 +531,7 @@ class TimerOrchestrator {
           timerEngine.requestReturnDecision();
         } else if (settingsRepository.currentSettings.autoResumeOnActivity) {
           timerEngine.resumeTimers(isManual: false);
-          notificationService.showReminder(
-            message: 'Timer resumed',
-          );
+          notificationService.showReminder(message: 'Timer resumed');
         }
       } else if (!isActive && state == TimerState.running) {
         _longIdlePending = false;

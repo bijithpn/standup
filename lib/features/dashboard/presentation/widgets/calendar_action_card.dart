@@ -25,17 +25,15 @@ class CalendarActionCard extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+            color: AppTheme.accent.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.16),
-            ),
+            border: Border.all(color: AppTheme.accent.withValues(alpha: 0.16)),
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.event_available_rounded,
-                color: Color(0xFF6366F1),
+                color: AppTheme.accent,
                 size: 18,
               ),
               const SizedBox(width: 10),
@@ -98,10 +96,10 @@ class _SmallActionButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: AppTheme.onAccent,
           ),
         ),
       ),

@@ -311,16 +311,16 @@ class _UpdateSectionState extends State<UpdateSection> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.08),
+                      color: AppTheme.error.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.redAccent.withValues(alpha: 0.15),
+                        color: AppTheme.error.withValues(alpha: 0.15),
                       ),
                     ),
                     child: Text(
                       _errorMessage,
                       style: const TextStyle(
-                        color: Colors.redAccent,
+                        color: AppTheme.error,
                         fontSize: 13,
                         fontFamily: 'Inter',
                       ),
@@ -348,19 +348,19 @@ class _UpdateSectionState extends State<UpdateSection> {
                       backgroundColor: AppTheme.accentColor,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       borderRadius: BorderRadius.circular(14),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             CupertinoIcons.arrow_down_doc_fill,
-                            color: Colors.white,
+                            color: AppTheme.onAccent,
                             size: 18,
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Text(
                             'Install and Restart Now',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppTheme.onAccent,
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               fontFamily: 'Inter',
@@ -382,7 +382,7 @@ class _UpdateSectionState extends State<UpdateSection> {
 
   Color _getStatusColor() {
     if (_errorMessage.isNotEmpty) {
-      return Colors.redAccent;
+      return AppTheme.error;
     }
     if (_hasUpdate) {
       return AppTheme.accentColor;

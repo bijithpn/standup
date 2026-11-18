@@ -76,12 +76,12 @@ class AppUsageSection extends StatelessWidget {
             backgroundColor: AppTheme.accentColor,
             borderRadius: BorderRadius.circular(8),
             onPressed: onEnable,
-            child: const Text(
+            child: Text(
               'Enable',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppTheme.onAccent,
                 fontFamily: 'Inter',
               ),
             ),

@@ -41,7 +41,7 @@ Widget _labelledDropdown(
           style: TextStyle(
             fontWeight: FontWeight.w500,
             fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.9),
+            color: AppTheme.textPrimary.withValues(alpha: 0.9),
           ),
         ),
       ),
@@ -131,7 +131,7 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: AppTheme.textPrimary.withValues(alpha: 0.9),
                 ),
               ),
               const SizedBox(height: 12),

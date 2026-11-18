@@ -303,12 +303,12 @@ class FocusScoreCard extends StatelessWidget {
     );
   }
 
-  static const _palette = [
-    Color(0xFF38BDF8),
-    Color(0xFF4ADE80),
-    Color(0xFFF59E0B),
-    Color(0xFFA78BFA),
-    Color(0xFFF472B6),
+  static List<Color> get _palette => [
+    AppTheme.accent,
+    AppTheme.success,
+    AppTheme.warning,
+    AppTheme.info,
+    AppTheme.error,
   ];
 
   Widget _pie(List<_Slice> items) {
@@ -335,10 +335,10 @@ class FocusScoreCard extends StatelessWidget {
                         radius: 30,
                         showTitle: total > 0 && c.seconds * 100 / total >= 8,
                         title: '${(c.seconds * 100 / total).round()}%',
-                        titleStyle: const TextStyle(
+                        titleStyle: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: AppTheme.onColor(c.color),
                         ),
                       ),
                   ],

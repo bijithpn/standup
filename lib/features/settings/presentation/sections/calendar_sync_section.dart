@@ -141,9 +141,9 @@ class _StatusCard extends StatelessWidget {
 
     ButtonStyle filled() => FilledButton.styleFrom(
       backgroundColor: AppTheme.accentColor,
-      foregroundColor: Colors.white,
+      foregroundColor: AppTheme.onAccent,
       disabledBackgroundColor: AppTheme.accentColor.withValues(alpha: 0.5),
-      disabledForegroundColor: Colors.white70,
+      disabledForegroundColor: AppTheme.onAccent.withValues(alpha: 0.7),
     );
     ButtonStyle outlined() => OutlinedButton.styleFrom(
       foregroundColor: AppTheme.textPrimary,
@@ -157,7 +157,7 @@ class _StatusCard extends StatelessWidget {
           style: filled(),
           onPressed: c.isRequesting ? null : c.connect,
           child: c.isRequesting
-              ? const Row(
+              ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
@@ -165,11 +165,11 @@ class _StatusCard extends StatelessWidget {
                       height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppTheme.onAccent,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Text('Requesting…'),
+                    const SizedBox(width: 8),
+                    const Text('Requesting…'),
                   ],
                 )
               : const Text('Connect'),

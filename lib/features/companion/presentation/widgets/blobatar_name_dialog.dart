@@ -257,7 +257,7 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
                       onPressed: _save,
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.accentColor,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppTheme.onAccent,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

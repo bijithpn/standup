@@ -34,8 +34,9 @@ class AppTheme {
   static Color get primaryDark => _activePreset.primaryDark;
 
   static Color get accent => _customAccent ?? _activePreset.accent;
-  static Color get onAccent =>
-      accent.computeLuminance() > 0.179 ? Colors.black : Colors.white;
+  static Color onColor(Color bg) =>
+      bg.computeLuminance() > 0.179 ? Colors.black : Colors.white;
+  static Color get onAccent => onColor(accent);
   static Color get selectedSurface => Color.alphaBlend(
     accent.withValues(alpha: highContrast ? 0.20 : 0.12),
     surfaceCard,

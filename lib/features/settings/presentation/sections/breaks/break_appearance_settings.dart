@@ -147,7 +147,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                 child: Text(
                   'Apply',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: hasChanges ? 1 : 0.5),
+                    color: AppTheme.onAccent.withValues(
+                      alpha: hasChanges ? 1 : 0.5,
+                    ),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

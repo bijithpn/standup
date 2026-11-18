@@ -190,7 +190,7 @@ Widget sliderRow(
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: isSmallScreen ? 13 : 14,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: AppTheme.textPrimary.withValues(alpha: 0.9),
                     ),
                   ),
                 ),
@@ -240,7 +240,7 @@ Widget dropdownRow(
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: isSmallScreen ? 13 : 14,
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: AppTheme.textPrimary.withValues(alpha: 0.9),
                 ),
               ),
             ),
@@ -297,12 +297,12 @@ Widget textFieldRow(
           child: CupertinoTextField(
             placeholder: value,
             placeholderStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
+              color: AppTheme.textPrimary.withValues(alpha: 0.3),
               fontSize: 13,
             ),
             style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: AppTheme.textPrimary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppTheme.border),
             ),
