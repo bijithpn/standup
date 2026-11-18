@@ -169,12 +169,11 @@ void main() {
         async.elapse(const Duration(minutes: 14, seconds: 43));
         engine.handleSystemSleep();
         async.elapse(const Duration(minutes: 45));
-        engine.handleSystemWake();
         when(() => detection.isVideoPlaying).thenReturn(true);
-        engine.resolveReturnDecision(startOver: false);
+        engine.handleSystemWake();
         expect(engine.awaitingReturnDecision, isFalse);
         expect(engine.state, TimerState.paused);
-        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+        expect(engine.timeUntilNextShortBreak.inMinutes, 20);
         when(() => detection.isVideoPlaying).thenReturn(false);
         async.elapse(const Duration(seconds: 1));
         expect(engine.state, TimerState.running);
@@ -183,41 +182,37 @@ void main() {
     });
 
     test(
-      'a long tick gap without a native sleep event also asks before resetting',
+      'a long tick gap without a native sleep event also starts a fresh cycle',
       () {
         fakeAsync((async) {
           final engine = newEngine()..startTimers();
           async.elapse(const Duration(minutes: 14, seconds: 43));
           async.elapseBlocking(const Duration(minutes: 45));
           async.elapse(const Duration(seconds: 1));
-          expect(engine.awaitingReturnDecision, isTrue);
-          expect(engine.state, TimerState.paused);
-          expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+          expect(engine.awaitingReturnDecision, isFalse);
+          expect(engine.state, TimerState.running);
+          expect(
+            engine.timeUntilNextShortBreak.inSeconds,
+            inInclusiveRange(1198, 1200),
+          );
           engine.dispose();
         });
       },
     );
-    test('5:17 remains frozen after long sleep until Continue is chosen', () {
+    test('a long sleep counts as a break and starts a fresh cycle', () {
       fakeAsync((async) {
         final engine = newEngine()..startTimers();
         async.elapse(const Duration(minutes: 14, seconds: 43));
         final totalWork = engine.totalWorkToday;
-        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
         engine.handleSystemSleep();
         async.elapse(const Duration(minutes: 45));
         engine.handleSystemWake();
-        expect(engine.awaitingReturnDecision, isTrue);
-        expect(engine.state, TimerState.paused);
-        engine.resumeTimers(isManual: false);
-        engine.startTimers();
-        async.elapse(const Duration(minutes: 2));
-        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
-        expect(engine.totalWorkToday, totalWork);
-        engine.resolveReturnDecision(startOver: false);
+        expect(engine.awaitingReturnDecision, isFalse);
         expect(engine.state, TimerState.running);
-        expect(engine.timeUntilNextShortBreak.inSeconds, 317);
+        expect(engine.timeUntilNextShortBreak.inMinutes, 20);
+        expect(engine.totalWorkToday, totalWork);
         async.elapse(const Duration(seconds: 1));
-        expect(engine.timeUntilNextShortBreak.inSeconds, 316);
+        expect(engine.timeUntilNextShortBreak.inSeconds, 1199);
         engine.dispose();
       });
     });

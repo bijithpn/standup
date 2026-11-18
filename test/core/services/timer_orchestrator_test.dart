@@ -492,7 +492,7 @@ void main() {
       });
     });
 
-    test('dismissing a return dialog leaves the preserved timer paused', () {
+    test('a long absence resets the cycle without prompting', () {
       fakeAsync((async) {
         returnChoice = Completer<TimerReturnChoice?>();
         timerEngine.startTimers();
@@ -502,13 +502,10 @@ void main() {
         );
         fakeActivityMonitor.onBack?.call();
         async.flushMicrotasks();
-        expect(returnPrompts, hasLength(1));
-        returnChoice.complete(null);
-        async.flushMicrotasks();
-        async.elapse(const Duration(minutes: 1));
-        expect(timerEngine.state, TimerState.paused);
-        expect(timerEngine.timeUntilNextShortBreak.inSeconds, 317);
-        expect(timerEngine.awaitingReturnDecision, isTrue);
+        expect(returnPrompts, isEmpty);
+        expect(timerEngine.state, TimerState.running);
+        expect(timerEngine.timeUntilNextShortBreak.inMinutes, 20);
+        expect(timerEngine.awaitingReturnDecision, isFalse);
         timerEngine.dispose();
       });
     });

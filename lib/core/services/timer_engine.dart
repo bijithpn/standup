@@ -1155,9 +1155,10 @@ class TimerEngine extends ChangeNotifier {
     if (state != TimerState.windDown &&
         durationAway.inMinutes >= _shortBreakIntervalMinutes) {
       _logger.info(
-        'Away for ${durationAway.inMinutes}m. Waiting for return choice.',
+        'Away for ${durationAway.inMinutes}m. Counting it as a break; starting a fresh cycle.',
       );
-      requestReturnDecision();
+      resetCycleOnIdle();
+      resumeTimers(isManual: false);
     } else if (state == TimerState.running || state == TimerState.paused) {
       _stateData.lastTickTime = clock.now();
       resumeTimers(isManual: false);

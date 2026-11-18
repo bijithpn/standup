@@ -52,7 +52,7 @@ class ActivitySegmentBuilder {
     return finished;
   }
 
-  // Gap: close at last seen + one poll (not now) so sleep/pause time isn't counted. Midnight: split at start of day.
+  // Gap in an active/break segment: close at last seen + one poll so sleep isn't counted as work. Idle segments span the gap: sleeping is away time. Midnight: split at start of day.
   ActivitySegment? _observe({
     required DateTime now,
     required ActivityKind kind,
@@ -66,6 +66,7 @@ class ActivitySegmentBuilder {
     _lastObservedAt = now;
 
     if (open != null &&
+        open.kind != ActivityKind.idle &&
         lastObservedAt != null &&
         now.difference(lastObservedAt) > _maxGap) {
       final finished = _finish(open, lastObservedAt.add(_pollInterval));

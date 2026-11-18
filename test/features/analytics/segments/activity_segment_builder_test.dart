@@ -185,6 +185,17 @@ void main() {
       expect(next.seconds, 10);
     });
 
+    test('idle time spans a sleep gap', () {
+      final builder = newBuilder();
+      builder.onIdle(day);
+      builder.onIdle(day.add(poll));
+      builder.onIdle(day.add(const Duration(minutes: 30)));
+
+      final finished = builder.close(day.add(const Duration(minutes: 30)));
+
+      expect(finished!.seconds, 30 * 60);
+    });
+
     test('a late poll within tolerance still accumulates', () {
       final builder = newBuilder();
       active(builder, 'code', day);
