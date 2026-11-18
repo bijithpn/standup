@@ -331,7 +331,7 @@ class _MainLayoutState extends State<MainLayout> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
+                            color: AppTheme.textPrimary.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Icon(

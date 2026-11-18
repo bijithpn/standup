@@ -697,8 +697,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4CAF50),
+                      decoration: BoxDecoration(
+                        color: AppTheme.success,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -743,7 +743,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     label: const Text('Name & Morph Blob'),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.accentColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppTheme.onAccent,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,

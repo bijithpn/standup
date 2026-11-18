@@ -172,7 +172,7 @@ class ProductivityTrendChart extends StatelessWidget {
             if (skipped > 0)
               PieChartSectionData(
                 value: skipped.toDouble(),
-                color: const Color(0xFFF43F5E),
+                color: AppTheme.error,
                 radius: 20,
                 showTitle: false,
               ),
@@ -242,10 +242,8 @@ class ProductivityTrendChart extends StatelessWidget {
               const SizedBox(height: 9),
               _TodayMetricTile(
                 icon: Icons.cancel_rounded,
-                iconColor: const Color(0xFFF43F5E),
-                backgroundColor: const Color(
-                  0xFFF43F5E,
-                ).withValues(alpha: 0.08),
+                iconColor: AppTheme.error,
+                backgroundColor: AppTheme.error.withValues(alpha: 0.08),
                 label: 'Skipped',
                 value: '$skipped',
                 unit: skipped == 1 ? 'break' : 'breaks',
@@ -253,10 +251,8 @@ class ProductivityTrendChart extends StatelessWidget {
               const SizedBox(height: 9),
               _TodayMetricTile(
                 icon: Icons.schedule_rounded,
-                iconColor: const Color(0xFFF59E0B),
-                backgroundColor: const Color(
-                  0xFFF59E0B,
-                ).withValues(alpha: 0.08),
+                iconColor: AppTheme.warning,
+                backgroundColor: AppTheme.warning.withValues(alpha: 0.08),
                 label: 'Active time',
                 value: _formatMinutes(d.usageMinutes),
               ),
@@ -353,7 +349,7 @@ class ProductivityTrendChart extends StatelessWidget {
         borderData: FlBorderData(show: false),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => const Color(0xFF1E293B),
+            getTooltipColor: (_) => AppTheme.surfaceElevated,
             tooltipPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 8,
@@ -370,8 +366,8 @@ class ProductivityTrendChart extends StatelessWidget {
                   : slot.label;
               return BarTooltipItem(
                 '$title\n',
-                const TextStyle(
-                  color: Color(0xFF94A3B8),
+                TextStyle(
+                  color: AppTheme.textSecondary,
                   fontSize: 11,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
@@ -380,8 +376,8 @@ class ProductivityTrendChart extends StatelessWidget {
                   TextSpan(
                     text:
                         '${rod.toY.toInt()} ${rod.toY.toInt() == 1 ? 'break' : 'breaks'} completed',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
                       fontSize: 12.5,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
@@ -390,8 +386,8 @@ class ProductivityTrendChart extends StatelessWidget {
                   if (slot.breaksSkipped > 0)
                     TextSpan(
                       text: '\n${slot.breaksSkipped} skipped',
-                      style: const TextStyle(
-                        color: Color(0xFFF87171),
+                      style: TextStyle(
+                        color: AppTheme.error,
                         fontSize: 11,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,
@@ -400,8 +396,8 @@ class ProductivityTrendChart extends StatelessWidget {
                   if (slot.usageMinutes > 0)
                     TextSpan(
                       text: '\n${_formatMinutes(slot.usageMinutes)} active',
-                      style: const TextStyle(
-                        color: Color(0xFF38BDF8),
+                      style: TextStyle(
+                        color: AppTheme.info,
                         fontSize: 11,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,

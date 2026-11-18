@@ -59,7 +59,9 @@ class BreakProfileSelector extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? AppTheme.accentColor.withValues(alpha: 0.15)
-                                  : Colors.white.withValues(alpha: 0.05),
+                                  : AppTheme.textPrimary.withValues(
+                                      alpha: 0.05,
+                                    ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -112,10 +114,10 @@ class BreakProfileSelector extends StatelessWidget {
                                 color: AppTheme.accentColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'ACTIVE',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppTheme.onAccent,
                                   fontSize: 9,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.5,

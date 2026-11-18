@@ -180,14 +180,20 @@ class BreakStatisticsSection extends StatelessWidget {
 }
 
 enum _HeatLevel {
-  none(Color(0x0FFFFFFF), 'No breaks recorded'),
-  mostlySkipped(Color(0xFFEF4444), 'Mostly skipped (under half taken)'),
-  mixed(Color(0xFFF59E0B), 'Some skipped (half to 85% taken)'),
-  good(Color(0xFF4ADE80), 'Took nearly all (85%+)');
+  none('No breaks recorded'),
+  mostlySkipped('Mostly skipped (under half taken)'),
+  mixed('Some skipped (half to 85% taken)'),
+  good('Took nearly all (85%+)');
 
-  const _HeatLevel(this.color, this.meaning);
-  final Color color;
+  const _HeatLevel(this.meaning);
   final String meaning;
+
+  Color get color => switch (this) {
+    none => AppTheme.textPrimary.withValues(alpha: 0.06),
+    mostlySkipped => AppTheme.error,
+    mixed => AppTheme.warning,
+    good => AppTheme.success,
+  };
 
   static _HeatLevel of(DailyStats? stat) {
     final total = (stat?.breaksCompleted ?? 0) + (stat?.breaksSkipped ?? 0);

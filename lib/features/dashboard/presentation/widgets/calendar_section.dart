@@ -42,13 +42,13 @@ class CalendarSection extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                      color: AppTheme.accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.calendar_today_rounded,
                       size: 16,
-                      color: Color(0xFF6366F1),
+                      color: AppTheme.accent,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -284,19 +284,19 @@ class CalendarSection extends StatelessWidget {
                     ).withValues(alpha: isRequestingPermission ? 0.05 : 0.12),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                      color: AppTheme.accent.withValues(alpha: 0.25),
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isRequestingPermission) ...[
-                        const SizedBox(
+                        SizedBox(
                           width: 12,
                           height: 12,
                           child: CircularProgressIndicator(
                             strokeWidth: 1.5,
-                            color: Color(0xFF6366F1),
+                            color: AppTheme.accent,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -305,10 +305,10 @@ class CalendarSection extends StatelessWidget {
                         isRequestingPermission
                             ? 'Requesting...'
                             : (permissionDenied ? 'Try Again' : 'Grant Access'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF6366F1),
+                          color: AppTheme.accent,
                           fontFamily: 'Inter',
                         ),
                       ),

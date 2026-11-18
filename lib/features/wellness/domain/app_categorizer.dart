@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/cupertino.dart';
 
 enum AppCategory { coding, writing, browsing, meeting, design, general }
@@ -86,17 +87,17 @@ extension AppCategoryUi on AppCategory {
   Color get color {
     switch (this) {
       case AppCategory.coding:
-        return const Color(0xFF3B82F6);
+        return AppTheme.info;
       case AppCategory.writing:
-        return const Color(0xFF14B8A6);
+        return AppTheme.accent;
       case AppCategory.browsing:
-        return const Color(0xFFF59E0B);
+        return AppTheme.warning;
       case AppCategory.meeting:
-        return const Color(0xFF10B981);
+        return AppTheme.success;
       case AppCategory.design:
-        return const Color(0xFF8B5CF6);
+        return AppTheme.primaryLight;
       case AppCategory.general:
-        return const Color(0xFF71717A);
+        return AppTheme.textMuted;
     }
   }
 }
