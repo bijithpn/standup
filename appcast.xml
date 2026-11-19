@@ -3,7 +3,37 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                                                                      <item>
+        <language>en</language>                                                                                                                                      <item>
+            <title>Version 1.13.1</title>
+            <pubDate>Thu, 19 Nov 2026 04:00:44 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.13.1</h3>
+                <p>Bug fixes and performance improvements.</p>
+                
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.13.1/BreakMate-1.13.1-linux-x64.tar.gz" sparkle:os="linux"
+                       sparkle:version="52"
+                       sparkle:shortVersionString="1.13.1"
+                       sparkle:edSignature=""
+                       length="33157717"
+                       type="application/octet-stream" />
+        </item>
+<item>
+            <title>Version 1.13.1</title>
+            <pubDate>Thu, 19 Nov 2026 04:00:44 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.13.1</h3>
+                <p>Bug fixes and performance improvements.</p>
+                
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.13.1/BreakMate-Setup-1.13.1.exe" sparkle:os="windows"
+                       sparkle:version="52"
+                       sparkle:shortVersionString="1.13.1"
+                       sparkle:edSignature=""
+                       length="21423736"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.13.1</title>
             <pubDate>Thu, 19 Nov 2026 03:59:10 +0000</pubDate>
             <description><![CDATA[
