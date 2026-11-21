@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,7 +55,7 @@ void main() {
     await sl.reset();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {double scale = 1}) async {
     tester.view.physicalSize = const Size(900, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -68,8 +69,14 @@ void main() {
             create: (_) => ContextSwitchTracker(),
           ),
         ],
-        child: const MaterialApp(
-          home: Scaffold(
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: const Scaffold(
             body: SingleChildScrollView(child: DailySummarySection()),
           ),
         ),
@@ -103,10 +110,17 @@ void main() {
 
     await pump(tester);
     expect(find.text('Timeline'), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.checkmark_circle), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.xmark_circle), findsOneWidget);
     expect(find.text('00:05'), findsOneWidget);
     expect(find.text('2 / 4 breaks'), findsOneWidget);
+  });
+
+  testWidgets('lays out without overflow at 150 percent text', (tester) async {
+    stats.recordCompletedBreak();
+    stats.flush();
+    await pump(tester, scale: 1.5);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('reaching the goal is celebrated', (tester) async {

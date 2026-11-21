@@ -1,4 +1,6 @@
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/wellness/wellness_template.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import '../../domain/break_model.dart';
 import '../../../settings/settings_model.dart';
@@ -39,7 +41,7 @@ class AccessibleBreakView extends StatelessWidget {
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(32, 100, 32, 140),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 96),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
               child: DefaultTextStyle(
@@ -52,25 +54,26 @@ class AccessibleBreakView extends StatelessWidget {
                       child: Text(
                         settings.experience.hasExerciseRestrictions
                             ? (settings.showExercisesInBreak
-                                  ? exerciseTitle ?? 'A comfortable pause'
-                                  : 'A comfortable pause')
+                                  ? exerciseTitle ?? 'Rest'
+                                  : 'Rest')
                             : breakInfo.title,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 32,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      '$remaining seconds remaining',
+                      '${spokenRemaining(remaining)} remaining',
                       textAlign: TextAlign.center,
+                      style: const TextStyle(fontFeatures: AppTheme.tabular),
                     ),
                     const SizedBox(height: 24),
                     Text(
                       settings.experience.hasExerciseRestrictions
-                          ? 'Take a comfortable pause. You can rest quietly.'
+                          ? 'Rest for ${spokenRemaining(remaining)}.'
                           : breakInfo.tip,
                       textAlign: TextAlign.center,
                     ),

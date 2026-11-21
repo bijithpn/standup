@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -33,10 +34,10 @@ class ActivityTrackingIntro extends StatelessWidget {
               Text(
                 'Understand where your time goes',
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontFamily: 'Inter',
                   fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.3,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
@@ -46,8 +47,9 @@ class ActivityTrackingIntro extends StatelessWidget {
                 'for how long, then turn that into a picture of your working '
                 'day.',
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontFamily: 'Inter',
-                  fontSize: 12.5,
+                  fontSize: 12,
                   height: 1.6,
                   color: AppTheme.textSecondary,
                 ),
@@ -56,19 +58,17 @@ class ActivityTrackingIntro extends StatelessWidget {
 
               _Group(
                 title: 'What is recorded',
-                tone: AppTheme.accent,
-                icon: Icons.check_rounded,
+                icon: CupertinoIcons.checkmark,
                 items: const <String>[
                   'The application name',
                   'When it was in front, and for how long',
                   'Idle periods and your breaks',
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               _Group(
                 title: 'What is never read',
-                tone: AppTheme.success,
-                icon: Icons.block_rounded,
+                icon: CupertinoIcons.nosign,
                 items: const <String>[
                   'Window titles, documents or messages',
                   'What you type, copy or browse',
@@ -76,7 +76,7 @@ class ActivityTrackingIntro extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -88,19 +88,20 @@ class ActivityTrackingIntro extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Icon(
-                      Icons.lock_outline_rounded,
-                      size: 15,
+                      CupertinoIcons.lock,
+                      size: 16,
                       color: AppTheme.textMuted,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'This stays on your computer. Nothing is uploaded, and '
                         'you can turn it off or delete the history at any time '
                         'in Privacy.',
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           fontFamily: 'Inter',
-                          fontSize: 11.5,
+                          fontSize: 12,
                           height: 1.55,
                           color: AppTheme.textMuted,
                         ),
@@ -119,8 +120,9 @@ class ActivityTrackingIntro extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: AppTheme.textSecondary,
                       textStyle: const TextStyle(
+                        fontFeatures: AppTheme.tabular,
                         fontFamily: 'Inter',
-                        fontSize: 12.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -137,9 +139,10 @@ class ActivityTrackingIntro extends StatelessWidget {
                         vertical: 14,
                       ),
                       textStyle: const TextStyle(
+                        fontFeatures: AppTheme.tabular,
                         fontFamily: 'Inter',
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     child: const Text('Start tracking'),
@@ -155,17 +158,11 @@ class ActivityTrackingIntro extends StatelessWidget {
 }
 
 class _Group extends StatelessWidget {
-  const _Group({
-    required this.title,
-    required this.items,
-    required this.icon,
-    required this.tone,
-  });
+  const _Group({required this.title, required this.items, required this.icon});
 
   final String title;
   final List<String> items;
   final IconData icon;
-  final Color tone;
 
   @override
   Widget build(BuildContext context) {
@@ -173,28 +170,29 @@ class _Group extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          title.toUpperCase(),
+          title,
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 9.5,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-            color: AppTheme.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textSecondary,
           ),
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 8),
         for (final item in items)
           Padding(
-            padding: const EdgeInsets.only(bottom: 5),
+            padding: const EdgeInsets.only(bottom: 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Icon(icon, size: 13, color: tone),
+                Icon(icon, size: 16, color: AppTheme.textSecondary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     item,
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontFamily: 'Inter',
                       fontSize: 12,
                       height: 1.45,
@@ -238,9 +236,10 @@ class ClearActivityHistoryDialog extends StatelessWidget {
       title: Text(
         'Clear activity history?',
         style: TextStyle(
+          fontFeatures: AppTheme.tabular,
           fontFamily: 'Inter',
           fontSize: 15,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: AppTheme.textPrimary,
         ),
       ),
@@ -255,8 +254,9 @@ class ClearActivityHistoryDialog extends StatelessWidget {
                     'Your settings and break history are not affected.\n\n'
                     'This cannot be undone.',
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 12.5,
+            fontSize: 12,
             height: 1.6,
             color: AppTheme.textSecondary,
           ),
@@ -274,7 +274,7 @@ class ClearActivityHistoryDialog extends StatelessWidget {
               : () => Navigator.of(context).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor: AppTheme.error,
-            foregroundColor: Colors.white,
+            foregroundColor: AppTheme.onColor(AppTheme.error),
           ),
           child: const Text('Delete history'),
         ),

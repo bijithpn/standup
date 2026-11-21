@@ -108,7 +108,6 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
                               child: _buildBarItem(
                                 day: widget.days[i],
                                 peakSeconds: peak,
-                                goalSeconds: goal,
                                 isToday: widget.days[i].date == todayStr,
                                 isHovered:
                                     _hoveredDay?.date == widget.days[i].date,
@@ -130,21 +129,14 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
           ),
           if (goal != null) ...[
             const SizedBox(height: 10),
-            Row(
-              children: [
-                _LegendDot(color: AppTheme.success, label: 'Reached goal'),
-                const SizedBox(width: 14),
-                _LegendDot(color: AppTheme.accent, label: 'Below goal'),
-                const SizedBox(width: 14),
-                Text(
-                  'Dashed line = daily goal',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10.5,
-                    color: AppTheme.textMuted,
-                  ),
-                ),
-              ],
+            Text(
+              'Dashed line is your daily goal',
+              style: TextStyle(
+                fontFeatures: AppTheme.tabular,
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: AppTheme.textMuted,
+              ),
             ),
           ],
         ],
@@ -191,9 +183,10 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
                 Text(
                   dateLabel,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.accent,
                   ),
                 ),
@@ -204,9 +197,10 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
           Text(
             '${formatDuration(day.activeSeconds)} active',
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
               fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: AppTheme.textPrimary,
             ),
           ),
@@ -214,14 +208,19 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
             const SizedBox(width: 8),
             Text(
               '•',
-              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+              style: TextStyle(
+                fontFeatures: AppTheme.tabular,
+                fontSize: 12,
+                color: AppTheme.textMuted,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
               '${formatDuration(day.breakSeconds)} breaks',
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.success,
               ),
@@ -231,14 +230,19 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
             const SizedBox(width: 8),
             Text(
               '•',
-              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+              style: TextStyle(
+                fontFeatures: AppTheme.tabular,
+                fontSize: 12,
+                color: AppTheme.textMuted,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
               '${day.contextSwitches} switches',
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.warning,
               ),
@@ -266,17 +270,19 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
             Text(
               'Daily average: ',
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 11.5,
+                fontSize: 12,
                 color: AppTheme.textMuted,
               ),
             ),
             Text(
               formatDuration(avgActiveSeconds),
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 color: AppTheme.textPrimary,
               ),
             ),
@@ -286,8 +292,9 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
           Text(
             'Peak: ${formatDuration(peakDay.activeSeconds)} (${shortWeekday(peakDay.date)})',
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               color: AppTheme.textMuted,
             ),
@@ -318,8 +325,9 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
           Text(
             topLabel,
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
-              fontSize: 9.5,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               color: AppTheme.textMuted.withValues(alpha: 0.65),
             ),
@@ -328,8 +336,9 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
             Text(
               midLabel,
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 9.5,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textMuted.withValues(alpha: 0.5),
               ),
@@ -366,15 +375,15 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
   Widget _buildBarItem({
     required DailyProductivitySummary day,
     required int peakSeconds,
-    required int? goalSeconds,
     required bool isToday,
     required bool isHovered,
     required bool showLabel,
     required bool isSparseLabels,
   }) {
     final fraction = peakSeconds == 0 ? 0.0 : day.activeSeconds / peakSeconds;
-    final reachedGoal = goalSeconds != null && day.activeSeconds >= goalSeconds;
-    final barColor = reachedGoal ? AppTheme.success : AppTheme.accent;
+    final barColor = isToday || isHovered
+        ? AppTheme.accent
+        : AppTheme.textMuted.withValues(alpha: 0.5);
     final parsed = DateTime.tryParse(day.date);
     final bottomLabel = isSparseLabels
         ? (isToday
@@ -398,15 +407,6 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppTheme.accent.withValues(alpha: 0.04),
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(4),
-                      ),
-                    ),
-                  ),
                   FractionallySizedBox(
                     alignment: Alignment.bottomCenter,
                     heightFactor: day.activeSeconds == 0
@@ -414,38 +414,10 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
                         : fraction.clamp(0.05, 1.0),
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: isHovered
-                              ? [
-                                  barColor,
-                                  Color.lerp(barColor, Colors.white, 0.35) ??
-                                      barColor,
-                                ]
-                              : isToday
-                              ? [
-                                  barColor,
-                                  Color.lerp(barColor, Colors.white, 0.2) ??
-                                      barColor,
-                                ]
-                              : [
-                                  barColor.withValues(alpha: 0.55),
-                                  barColor.withValues(alpha: 0.9),
-                                ],
-                        ),
+                        color: barColor,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4),
                         ),
-                        boxShadow: isHovered
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.accent.withValues(alpha: 0.4),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, -1),
-                                ),
-                              ]
-                            : null,
                       ),
                     ),
                   ),
@@ -459,12 +431,11 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
                   ? Text(
                       bottomLabel,
                       style: TextStyle(
+                        fontFeatures: AppTheme.tabular,
                         fontFamily: 'Inter',
-                        fontSize: isSparseLabels ? 9 : 10,
-                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                        color: isToday
-                            ? AppTheme.accent
-                            : AppTheme.textMuted.withValues(alpha: 0.8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isToday ? AppTheme.accent : AppTheme.textMuted,
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -507,43 +478,11 @@ class _GoalLine extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 9.5,
-            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
             color: AppTheme.success,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 10.5,
-            color: AppTheme.textMuted,
           ),
         ),
       ],

@@ -1,24 +1,26 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 class Toast {
   static OverlayEntry? _current;
   static Timer? _timer;
+  static String? _message;
 
   static void showError(BuildContext context, String message) => showOn(
     Overlay.of(context),
     message,
     AppTheme.error,
-    Icons.error_outline_rounded,
+    CupertinoIcons.exclamationmark_circle,
   );
 
   static void showSuccess(BuildContext context, String message) => showOn(
     Overlay.of(context),
     message,
     AppTheme.success,
-    Icons.check_circle_rounded,
+    CupertinoIcons.checkmark_circle,
   );
 
   static void showOn(
@@ -28,7 +30,10 @@ class Toast {
     IconData icon, {
     Duration duration = const Duration(seconds: 3),
   }) {
+    // A repeating error must not keep replacing the toast and resetting its timer.
+    if (_current != null && _message == message) return;
     _dismiss();
+    _message = message;
     final entry = OverlayEntry(
       builder: (_) => Positioned(
         right: 24,
@@ -46,39 +51,45 @@ class Toast {
           ),
           child: Material(
             color: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 360),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceElevated,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: tone.withValues(alpha: 0.45)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: tone, size: 18),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      message,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+            child: GestureDetector(
+              onTap: _dismiss,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 360),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceElevated,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: tone.withValues(alpha: 0.45)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, color: tone, size: 18),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        message,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -94,6 +105,7 @@ class Toast {
     _timer?.cancel();
     final entry = _current;
     _current = null;
+    _message = null;
     if (entry != null && entry.mounted) entry.remove();
   }
 }

@@ -34,7 +34,7 @@ class AdvancedSettings extends StatelessWidget {
         title,
         style: TextStyle(
           fontSize: 14,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: Theme.of(context).colorScheme.onSurface,
         ),
       ),

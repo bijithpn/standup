@@ -5,6 +5,7 @@ import '../../weekly_actionable_insight.dart';
 import '../../stats_service.dart' show DailyStats;
 import '../../../settings/settings_model.dart';
 import '../../../feedback/timing_suggestion_dialog.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class WeeklyActionableInsightCard extends StatelessWidget {
   final List<DailyStats> days;
@@ -33,15 +34,16 @@ class WeeklyActionableInsightCard extends StatelessWidget {
           child: Text(
             insight.observation,
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontSize: 13,
               height: 1.6,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: AppTheme.textSecondary,
             ),
           ),
         ),
         if (insight.suggestion != null)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: OutlinedButton(
               onPressed: () => showTimingSuggestion(
                 context,
@@ -49,7 +51,7 @@ class WeeklyActionableInsightCard extends StatelessWidget {
                 currentSettings: currentSettings,
                 onApply: onApply,
               ),
-              child: const Text('Review suggested adjustment'),
+              child: const Text('Review adjustment'),
             ),
           ),
       ],

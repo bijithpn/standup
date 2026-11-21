@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -304,7 +305,7 @@ void main() {
           evidenceDayCount: 1,
         ),
       );
-      expect(find.byIcon(Icons.lightbulb_outline_rounded), findsNothing);
+      expect(find.byIcon(CupertinoIcons.lightbulb), findsNothing);
     });
   });
 }

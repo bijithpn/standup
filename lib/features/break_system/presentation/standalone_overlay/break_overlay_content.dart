@@ -98,7 +98,7 @@ class BreakOverlayContent extends StatelessWidget {
           ),
           if (handler != null && !_compact)
             Positioned(
-              top: 28,
+              top: 32,
               left: 0,
               right: 0,
               child: Center(
@@ -114,16 +114,7 @@ class BreakOverlayContent extends StatelessWidget {
       );
     }
 
-    return GestureDetector(
-      // Swipe up to dismiss, only when dismissing is allowed and the surface is full screen.
-      onVerticalDragUpdate: (details) {
-        if (canDismiss && !_compact && details.delta.dy < -10) {
-          onSkip();
-        }
-      },
-      onHorizontalDragUpdate: (_) {},
-      child: content,
-    );
+    return content;
   }
 
   VoidCallback? get _lookedAwayHandler =>

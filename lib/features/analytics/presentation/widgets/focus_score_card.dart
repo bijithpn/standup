@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
@@ -76,7 +75,7 @@ class FocusScoreCard extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: AppTheme.textMuted.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
           ),
           child: Icon(icon, size: 18, color: AppTheme.textMuted),
         ),
@@ -88,15 +87,20 @@ class FocusScoreCard extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 body,
-                style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
+                style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
               ),
             ],
           ),
@@ -124,7 +128,7 @@ class FocusScoreCard extends StatelessWidget {
     if (focusApps.isNotEmpty) {
       for (var i = 0; i < focusApps.length && i < 5; i++) {
         final a = focusApps[i];
-        slices.add(_Slice(a.name, a.seconds, _palette[i], a.category.icon));
+        slices.add(_Slice(a.name, a.seconds, a.category.icon));
       }
       final rest = focusApps.skip(5).fold<int>(0, (t, a) => t + a.seconds);
       if (rest > 0) {
@@ -132,7 +136,6 @@ class FocusScoreCard extends StatelessWidget {
           _Slice(
             '${focusApps.length - 5} other apps',
             rest,
-            AppTheme.textMuted,
             CupertinoIcons.ellipsis,
           ),
         );
@@ -146,7 +149,7 @@ class FocusScoreCard extends StatelessWidget {
       final entries = byCategory.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
       for (final e in entries) {
-        slices.add(_Slice(e.key.label, e.value, e.key.color, e.key.icon));
+        slices.add(_Slice(e.key.label, e.value, e.key.icon));
       }
     }
 
@@ -179,16 +182,17 @@ class FocusScoreCard extends StatelessWidget {
                         '$percent%',
                         style: TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
+                          fontWeight: FontWeight.w500,
+                          fontFeatures: AppTheme.tabular,
                           color: AppTheme.textPrimary,
                         ),
                       ),
                       Text(
                         'focus',
                         style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.textMuted,
+                          fontFeatures: AppTheme.tabular,
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
                         ),
                       ),
                     ],
@@ -196,241 +200,134 @@ class FocusScoreCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 20),
+            const SizedBox(width: 24),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
                     children: [
                       Text(
                         'Deep work',
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: AppTheme.textSecondary,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          verdict,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
+                      Text(
+                        verdict,
+                        style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: color,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
+                  // TODO(no-data): comparison baseline needs previous-period stats
                   Text(
                     formatUsageDuration(total),
                     style: TextStyle(
                       fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.8,
+                      fontWeight: FontWeight.w500,
+                      fontFeatures: AppTheme.tabular,
                       height: 1.1,
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      _chip(
-                        CupertinoIcons.layers,
-                        '${sessions.length} ${sessions.length == 1 ? 'session' : 'sessions'}',
-                      ),
-                      const SizedBox(width: 8),
-                      _chip(
-                        CupertinoIcons.flame,
-                        'longest ${formatUsageDuration(longest)}',
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '${sessions.length} ${sessions.length == 1 ? 'session' : 'sessions'} · longest ${formatUsageDuration(longest)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFeatures: AppTheme.tabular,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 22),
-        _label('Time in focus apps'),
-        _pie(slices),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Time in focus apps',
+            style: TextStyle(
+              fontFeatures: AppTheme.tabular,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ),
+        _ranked(slices),
       ],
     );
   }
 
-  Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Text(
-      text.toUpperCase(),
-      style: TextStyle(
-        fontSize: 10.5,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
-        color: AppTheme.textMuted,
-      ),
-    ),
-  );
-
-  Widget _chip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.textPrimary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: AppTheme.textSecondary),
-          const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static List<Color> get _palette => [
-    AppTheme.accent,
-    AppTheme.success,
-    AppTheme.warning,
-    AppTheme.info,
-    AppTheme.error,
-  ];
-
-  Widget _pie(List<_Slice> items) {
+  Widget _ranked(List<_Slice> items) {
     final total = items.fold<int>(0, (t, e) => t + e.seconds);
-    return LayoutBuilder(
-      builder: (context, box) {
-        final chart = SizedBox(
-          width: 150,
-          height: 150,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              PieChart(
-                PieChartData(
-                  sectionsSpace: 3,
-                  centerSpaceRadius: 42,
-                  startDegreeOffset: -90,
-                  pieTouchData: PieTouchData(enabled: false),
-                  sections: [
-                    for (final c in items)
-                      PieChartSectionData(
-                        value: c.seconds.toDouble(),
-                        color: c.color,
-                        radius: 30,
-                        showTitle: total > 0 && c.seconds * 100 / total >= 8,
-                        title: '${(c.seconds * 100 / total).round()}%',
-                        titleStyle: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.onColor(c.color),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    formatUsageDuration(total),
+    final top = items.isEmpty ? 1 : items.first.seconds;
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Icon(items[i].icon, size: 16, color: AppTheme.textSecondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    items[i].label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontFeatures: AppTheme.tabular,
+                      fontSize: 13,
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  Text(
-                    'total',
-                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-
-        final legend = Column(
-          children: [
-            for (final c in items)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: c.color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Icon(c.icon, size: 13, color: AppTheme.textMuted),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        c.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      formatUsageDuration(c.seconds),
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        '${total == 0 ? 0 : (c.seconds * 100 / total).round()}%',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textMuted,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-          ],
-        );
-
-        if (box.maxWidth < 420) {
-          return Column(children: [chart, const SizedBox(height: 14), legend]);
-        }
-        return Row(
-          children: [
-            chart,
-            const SizedBox(width: 28),
-            Expanded(child: legend),
-          ],
-        );
-      },
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: top == 0 ? 0 : items[i].seconds / top,
+                      minHeight: 4,
+                      color: i == 0 ? AppTheme.accent : AppTheme.textMuted,
+                      backgroundColor: AppTheme.border,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    '${formatUsageDuration(items[i].seconds)} · ${total == 0 ? 0 : (items[i].seconds * 100 / total).round()}%',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFeatures: AppTheme.tabular,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -438,8 +335,7 @@ class FocusScoreCard extends StatelessWidget {
 class _Slice {
   final String label;
   final int seconds;
-  final Color color;
   final IconData icon;
 
-  const _Slice(this.label, this.seconds, this.color, this.icon);
+  const _Slice(this.label, this.seconds, this.icon);
 }

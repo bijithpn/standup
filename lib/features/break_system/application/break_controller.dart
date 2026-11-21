@@ -555,7 +555,7 @@ class BreakController extends ChangeNotifier {
   }
 
   /// Delays the upcoming break by [minutes]; the warning shows again once timers resume.
-  void snoozeUpcomingBreak({int minutes = 5}) {
+  void snoozeUpcomingBreak({int minutes = SkipPolicy.snoozeMinutes}) {
     SkipPolicy.recordSnooze(DateTime.now());
     _hasShownPreBreakWarning = false;
     snooze(minutes: minutes);

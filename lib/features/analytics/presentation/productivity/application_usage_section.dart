@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/core/storage/models/activity_segment.dart';
@@ -52,6 +53,7 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
         child: Text(
           'No application activity recorded',
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
             fontSize: 12,
             color: AppTheme.textMuted,
@@ -72,7 +74,12 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
         : widget.totalActiveSeconds;
 
     final colours = <Color>[
-      for (var i = 0; i < shown.length; i++) _sliceColour(shown[i], i),
+      for (var i = 0; i < shown.length; i++)
+        i == 0
+            ? AppTheme.accent
+            : AppTheme.textMuted.withValues(
+                alpha: (0.7 - i * 0.08).clamp(0.2, 0.7),
+              ),
     ];
 
     final sections = <PieChartSectionData>[
@@ -86,7 +93,7 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
       if (restSeconds > 0)
         PieChartSectionData(
           value: restSeconds.toDouble(),
-          color: AppTheme.gray600,
+          color: AppTheme.border,
           radius: _touched == shown.length ? 30 : 24,
           showTitle: false,
         ),
@@ -141,16 +148,16 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
               SizedBox(
                 width: 120,
                 child: Text(
-                  focused?.appName ?? 'Total active',
+                  focused?.appName ?? 'Active time',
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.6,
-                    color: AppTheme.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ),
@@ -158,10 +165,10 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
               Text(
                 formatDuration(focused?.seconds ?? total),
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontFamily: 'Inter',
                   fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
@@ -171,8 +178,9 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
                     ? '${_percent(focused.seconds, total)}% of time'
                     : '${apps.length} ${apps.length == 1 ? 'app' : 'apps'}',
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontFamily: 'Inter',
-                  fontSize: 11,
+                  fontSize: 12,
                   color: AppTheme.textSecondary,
                 ),
               ),
@@ -195,7 +203,7 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
             final inChart = i < shown.length;
             return _ApplicationRow(
               app: apps[i],
-              colour: inChart ? colours[i] : AppTheme.gray600,
+              colour: inChart ? colours[i] : AppTheme.border,
               totalActiveSeconds: total,
               highlighted: _touched == i,
               onHover: inChart
@@ -211,7 +219,7 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
     );
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -245,30 +253,14 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
           Text(
             'By category',
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: AppTheme.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              height: 8,
-              child: Row(
-                children: <Widget>[
-                  for (final c in categories)
-                    Expanded(
-                      flex: c.value <= 0 ? 1 : c.value,
-                      child: Container(color: categoryColor(c.key)),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
           Wrap(
             spacing: 16,
             runSpacing: 6,
@@ -277,21 +269,12 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: categoryColor(c.key),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
                     Text(
-                      '${categoryLabel(c.key)} · ${formatDuration(c.value)} '
-                      '(${_percent(c.value, total)}%)',
+                      '${categoryLabel(c.key)} · ${formatDuration(c.value)}',
                       style: TextStyle(
+                        fontFeatures: AppTheme.tabular,
                         fontFamily: 'Inter',
-                        fontSize: 11,
+                        fontSize: 12,
                         color: AppTheme.textSecondary,
                       ),
                     ),
@@ -307,12 +290,6 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
 
 int _percent(int seconds, int total) =>
     total == 0 ? 0 : (seconds * 100 / total).round();
-
-Color _sliceColour(AppTotal app, int rank) {
-  final hsl = HSLColor.fromColor(categoryColor(app.categoryName));
-  final shift = ((rank % 4) - 1.5) * 0.08;
-  return hsl.withLightness((hsl.lightness + shift).clamp(0.25, 0.75)).toColor();
-}
 
 class _ApplicationRow extends StatelessWidget {
   const _ApplicationRow({
@@ -368,8 +345,9 @@ class _ApplicationRow extends StatelessWidget {
                     app.appName,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontFamily: 'Inter',
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: AppTheme.textPrimary,
                     ),
@@ -379,8 +357,9 @@ class _ApplicationRow extends StatelessWidget {
                     detail,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontFamily: 'Inter',
-                      fontSize: 10.5,
+                      fontSize: 12,
                       color: AppTheme.textMuted,
                     ),
                   ),
@@ -394,9 +373,10 @@ class _ApplicationRow extends StatelessWidget {
                 Text(
                   formatDuration(app.seconds),
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontFamily: 'Inter',
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
                   ),
                 ),
@@ -404,8 +384,9 @@ class _ApplicationRow extends StatelessWidget {
                 Text(
                   '${_percent(app.seconds, totalActiveSeconds)}%',
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontFamily: 'Inter',
-                    fontSize: 10.5,
+                    fontSize: 12,
                     color: AppTheme.textMuted,
                   ),
                 ),
@@ -414,7 +395,7 @@ class _ApplicationRow extends StatelessWidget {
             if (onTap != null) ...<Widget>[
               const SizedBox(width: 6),
               Icon(
-                Icons.chevron_right_rounded,
+                CupertinoIcons.chevron_right,
                 size: 16,
                 color: AppTheme.textMuted,
               ),
@@ -455,7 +436,9 @@ class ApplicationDetailSheet extends StatelessWidget {
       constraints: const BoxConstraints(maxHeight: 560),
       decoration: BoxDecoration(
         color: AppTheme.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusMd),
+        ),
         border: Border.all(color: AppTheme.border),
       ),
       child: Column(
@@ -482,17 +465,19 @@ class ApplicationDetailSheet extends StatelessWidget {
                       Text(
                         app.appName,
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           fontFamily: 'Inter',
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: AppTheme.textPrimary,
                         ),
                       ),
                       Text(
                         '${categoryLabel(app.categoryName)} · $dateLabel',
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           fontFamily: 'Inter',
-                          fontSize: 11.5,
+                          fontSize: 12,
                           color: AppTheme.textMuted,
                         ),
                       ),
@@ -501,7 +486,7 @@ class ApplicationDetailSheet extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close_rounded, size: 18),
+                  icon: const Icon(CupertinoIcons.xmark, size: 18),
                   color: AppTheme.textSecondary,
                 ),
               ],
@@ -565,8 +550,9 @@ class ApplicationDetailSheet extends StatelessWidget {
                             '${formatClock(segment.startedAt)}'
                             '–${formatClock(segment.endedAt)}',
                             style: TextStyle(
+                              fontFeatures: AppTheme.tabular,
                               fontFamily: 'monospace',
-                              fontSize: 11.5,
+                              fontSize: 12,
                               color: AppTheme.textSecondary,
                             ),
                           ),
@@ -574,8 +560,9 @@ class ApplicationDetailSheet extends StatelessWidget {
                           Text(
                             formatDuration(segment.seconds),
                             style: TextStyle(
+                              fontFeatures: AppTheme.tabular,
                               fontFamily: 'Inter',
-                              fontSize: 11.5,
+                              fontSize: 12,
                               color: AppTheme.textMuted,
                             ),
                           ),
@@ -600,13 +587,13 @@ class _SubHeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      text.toUpperCase(),
+      text,
       style: TextStyle(
+        fontFeatures: AppTheme.tabular,
         fontFamily: 'Inter',
-        fontSize: 9.5,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
-        color: AppTheme.textMuted,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppTheme.textSecondary,
       ),
     );
   }
@@ -627,8 +614,9 @@ class _DetailStat extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 10.5,
+            fontSize: 12,
             color: AppTheme.textMuted,
           ),
         ),
@@ -636,9 +624,10 @@ class _DetailStat extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
             fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             color: AppTheme.textPrimary,
           ),
         ),
@@ -671,8 +660,9 @@ class _HistoryRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 11,
+                fontSize: 12,
                 color: AppTheme.textMuted,
               ),
             ),
@@ -695,8 +685,9 @@ class _HistoryRow extends StatelessWidget {
               formatDuration(seconds),
               textAlign: TextAlign.right,
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 11.5,
+                fontSize: 12,
                 color: AppTheme.textSecondary,
               ),
             ),

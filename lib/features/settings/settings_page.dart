@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
@@ -127,9 +128,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _sectionDisplayName(widget.section),
               style: TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 color: AppTheme.textPrimary,
-                letterSpacing: -0.2,
               ),
             ),
             titleWidth: 260,
@@ -251,11 +251,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSettingsWarnings() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.warning.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.warning.withValues(alpha: 0.18)),
+        color: AppTheme.surfaceCard,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,17 +263,17 @@ class _SettingsPageState extends State<SettingsPage> {
           Row(
             children: [
               Icon(
-                Icons.warning_amber_rounded,
+                CupertinoIcons.exclamationmark_triangle,
                 size: 16,
                 color: AppTheme.warning,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 'Settings need attention',
                 style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

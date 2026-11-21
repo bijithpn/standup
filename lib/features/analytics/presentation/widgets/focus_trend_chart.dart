@@ -69,7 +69,11 @@ class FocusTrendChart extends StatelessWidget {
                 meta: meta,
                 child: Text(
                   '${v.toInt()}%',
-                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                  style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
+                    fontSize: 12,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
               ),
             ),
@@ -94,8 +98,9 @@ class FocusTrendChart extends StatelessWidget {
                   child: Text(
                     today ? 'Today' : label(i),
                     style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: today ? FontWeight.w700 : FontWeight.w500,
+                      fontFeatures: AppTheme.tabular,
+                      fontSize: 12,
+                      fontWeight: today ? FontWeight.w500 : FontWeight.w500,
                       color: today ? accent : AppTheme.textMuted,
                     ),
                   ),
@@ -128,13 +133,18 @@ class FocusTrendChart extends StatelessWidget {
                 LineTooltipItem(
                   '${points[s.x.toInt()].date.day} '
                   '${_months[points[s.x.toInt()].date.month - 1]}\n',
-                  TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                  TextStyle(
+                    fontFeatures: AppTheme.tabular,
+                    fontSize: 12,
+                    color: AppTheme.textMuted,
+                  ),
                   children: [
                     TextSpan(
                       text: '${s.y.round()}% focus',
                       style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
+                        fontFeatures: AppTheme.tabular,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
                     ),
@@ -146,7 +156,7 @@ class FocusTrendChart extends StatelessWidget {
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: true,
+            isCurved: false,
             curveSmoothness: 0.25,
             preventCurveOverShooting: true,
             color: accent,
@@ -164,14 +174,7 @@ class FocusTrendChart extends StatelessWidget {
             ),
             belowBarData: BarAreaData(
               show: true,
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  accent.withValues(alpha: 0.28),
-                  accent.withValues(alpha: 0.0),
-                ],
-              ),
+              color: accent.withValues(alpha: 0.08),
             ),
           ),
         ],

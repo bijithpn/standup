@@ -50,6 +50,23 @@ abstract class WellnessTemplate {
   }
 }
 
+/// Text layer shared by every immersive template: a small label, then one instruction line.
+abstract final class WellnessType {
+  static TextStyle label(BreakPalette p) => TextStyle(
+    fontFamily: BreakOverlayTheme.fontFamily,
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: p.textSecondary,
+  );
+
+  static TextStyle instruction(BreakPalette p) => TextStyle(
+    fontFamily: BreakOverlayTheme.fontFamily,
+    fontSize: 22,
+    height: 1.4,
+    color: p.textPrimary,
+  );
+}
+
 String formatRemaining(int seconds) {
   final s = seconds < 0 ? 0 : seconds;
   return '${(s ~/ 60).toString().padLeft(2, '0')}:'
@@ -158,8 +175,9 @@ class CompactBreakCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
                   children: [
                     if (onOpenImmersive != null)
                       _CardAction('Open full view', onOpenImmersive!, p),
@@ -186,7 +204,7 @@ class _CardAction extends StatelessWidget {
     onPressed: onTap,
     style: TextButton.styleFrom(
       foregroundColor: p.textSecondary,
-      minimumSize: const Size(48, 32),
+      minimumSize: const Size(48, 40),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       textStyle: const TextStyle(
         fontFamily: BreakOverlayTheme.fontFamily,

@@ -26,12 +26,12 @@ class CustomIntervalsEditor extends StatelessWidget {
         ),
         buildCard([
           inputRow(
-            'Short Break Every',
+            'Short break every',
             '${settings.shortBreakIntervalMinutes} min',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Short Break Interval',
+                title: 'Short break interval',
                 options: List.generate(180, (i) => '${i + 1}'),
                 suffix: ' min',
                 onSelected: (v) => onSave(
@@ -42,12 +42,12 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Short Break Duration',
+            'Short break duration',
             '${settings.shortBreakDurationSeconds} sec',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Short Break Duration',
+                title: 'Short break duration',
                 options: [
                   ...List.generate(12, (i) => '${(i + 1) * 5}'),
                   '75',
@@ -65,7 +65,7 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Preparation Warning',
+            'Preparation warning',
             '${settings.preBreakWarningSeconds} sec',
             onTap: () {
               showPicker(
@@ -81,12 +81,12 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Long Break Every',
+            'Long break every',
             '${settings.longBreakIntervalMinutes} min',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Long Break Interval',
+                title: 'Long break interval',
                 options: List.generate(46, (i) => '${15 + (i * 5)}'),
                 suffix: ' min',
                 onSelected: (v) => onSave(
@@ -97,12 +97,12 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Long Break Duration',
+            'Long break duration',
             '${settings.longBreakDurationMinutes} min',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Long Break Duration',
+                title: 'Long break duration',
                 options: List.generate(30, (i) => '${i + 1}'),
                 suffix: ' min',
                 onSelected: (v) => onSave(

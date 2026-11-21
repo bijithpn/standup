@@ -1,12 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/looked_away_button.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_skip_button.dart';
 
-/// Shared frame around a break template: context pill, preview badge, skip button, and swipe/strict-mode hints.
+/// Shared frame around a break template: context pill, preview label, skip button, and strict-mode note.
 class OverlayChrome extends StatelessWidget {
   final Widget child;
   final bool templateOwnsChrome;
@@ -46,8 +45,8 @@ class OverlayChrome extends StatelessWidget {
         child,
         if (!templateOwnsChrome)
           Positioned(
-            top: 28,
-            left: 28,
+            top: 32,
+            left: 32,
             child: SafeArea(
               child: BreakContextPill(
                 breakInfo: breakInfo,
@@ -57,7 +56,7 @@ class OverlayChrome extends StatelessWidget {
           ),
         if (onLookedAway != null && !templateOwnsChrome)
           Positioned(
-            top: 28,
+            top: 32,
             left: 0,
             right: 0,
             child: Center(
@@ -78,39 +77,24 @@ class OverlayChrome extends StatelessWidget {
               child: SafeArea(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: 12,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentColor.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    color: palette.surface,
+                    borderRadius: BorderRadius.circular(
+                      BreakOverlayTheme.radiusSm,
+                    ),
+                    border: Border.all(color: palette.border),
                   ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CupertinoIcons.eye_fill,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'PREVIEW MODE',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Preview',
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: BreakOverlayTheme.fontFamily,
+                    ),
                   ),
                 ),
               ),
@@ -118,33 +102,9 @@ class OverlayChrome extends StatelessWidget {
           ),
         if (canDismiss && !compactControls)
           Positioned(
-            top: 28,
-            right: 28,
-            child: SafeArea(
-              child: IconButton(
-                tooltip: 'Skip break',
-                onPressed: onSkip,
-                icon: const Icon(CupertinoIcons.xmark),
-                color: palette.textSecondary,
-                style: IconButton.styleFrom(
-                  backgroundColor: palette.isDark
-                      ? Colors.black.withValues(alpha: 0.24)
-                      : Colors.white.withValues(alpha: 0.6),
-                  fixedSize: const Size.square(42),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: palette.border),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (canDismiss && !compactControls)
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: const IgnorePointer(child: SwipeToDismissHint()),
+            bottom: BreakOverlayTheme.skipBottom,
+            right: BreakOverlayTheme.skipRight,
+            child: BreakSkipButton(onPressed: onSkip),
           ),
         if (!canDismiss && !compactControls)
           Positioned(

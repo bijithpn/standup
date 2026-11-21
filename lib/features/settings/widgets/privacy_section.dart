@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/activity_tracking_intro.dart';
@@ -14,8 +15,8 @@ import 'package:breakmate/features/settings/local_data_wiper.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 /// Settings > Privacy: tracking toggles, crash reporting, OS permission status and a summary of what data is stored locally.
@@ -78,8 +79,8 @@ class _PrivacySectionState extends State<PrivacySection> {
                 status: _calendarStatus(c),
                 actionLabel:
                     c.state == CalendarConnectionState.permissionBlocked
-                    ? 'Open System Settings'
-                    : 'Manage in Calendar Sync',
+                    ? 'Open system settings'
+                    : 'Manage calendar sync',
                 onAction: c.state == CalendarConnectionState.permissionBlocked
                     ? c.openSystemSettings
                     : () => sl<AppNavigationService>().openSection(
@@ -242,11 +243,13 @@ class _PrivacySectionState extends State<PrivacySection> {
           'This cannot be undone.',
         ),
         actions: [
-          TextButton(
+          MinimalButton(
+            isGhost: true,
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          MinimalButton(
+            isGhost: true,
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -285,53 +288,53 @@ class _DataTransparencyPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(LucideIcons.shieldCheck, size: 16, color: AppTheme.success),
+              Icon(CupertinoIcons.shield, size: 16, color: AppTheme.success),
               const SizedBox(width: 8),
               Text(
                 'What exactly is stored',
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           _TransparencyRow(
-            icon: LucideIcons.checkCircle2,
+            icon: CupertinoIcons.checkmark_circle,
             iconColor: AppTheme.success,
             text: 'App name and category (e.g. "Xcode" — Development)',
           ),
           _TransparencyRow(
-            icon: LucideIcons.checkCircle2,
+            icon: CupertinoIcons.checkmark_circle,
             iconColor: AppTheme.success,
             text: 'Seconds spent per app, per day',
           ),
           _TransparencyRow(
-            icon: LucideIcons.xCircle,
+            icon: CupertinoIcons.xmark_circle,
             iconColor: AppTheme.error,
             text: 'Window titles — never recorded',
           ),
           _TransparencyRow(
-            icon: LucideIcons.xCircle,
+            icon: CupertinoIcons.xmark_circle,
             iconColor: AppTheme.error,
             text: 'URLs, documents, or file names — never recorded',
           ),
           _TransparencyRow(
-            icon: LucideIcons.xCircle,
+            icon: CupertinoIcons.xmark_circle,
             iconColor: AppTheme.error,
             text: 'Activity data is never sent off this device',
           ),
           _TransparencyRow(
-            icon: LucideIcons.info,
+            icon: CupertinoIcons.info,
             iconColor: AppTheme.info,
             text:
                 'The window title and browser tab address are read only for a '
                 'moment to recognise meetings, then discarded',
           ),
           _TransparencyRow(
-            icon: LucideIcons.info,
+            icon: CupertinoIcons.info,
             iconColor: AppTheme.info,
             text:
                 'Exported backups include your activity history — keep them private',
@@ -363,16 +366,16 @@ class _TransparencyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 15, color: iconColor),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
           ),
         ],
@@ -408,7 +411,7 @@ class _PermissionRow extends StatelessWidget {
       _PermissionStatus.denied => ('Denied', AppTheme.error),
     };
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
           Expanded(
@@ -421,7 +424,7 @@ class _PermissionRow extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
                     ),
@@ -430,25 +433,26 @@ class _PermissionRow extends StatelessWidget {
                       label,
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: color,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   detail,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: AppTheme.textSecondary,
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          OutlinedButton(onPressed: onAction, child: Text(actionLabel)),
+          MinimalButton(
+            isSecondary: true,
+            onPressed: onAction,
+            child: Text(actionLabel),
+          ),
         ],
       ),
     );

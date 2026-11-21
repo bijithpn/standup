@@ -15,9 +15,8 @@ Widget sectionHeader(String title, {String? subtitle}) {
           title,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             color: AppTheme.textPrimary,
-            letterSpacing: -0.1,
             fontFamily: 'Inter',
           ),
         ),
@@ -26,7 +25,7 @@ Widget sectionHeader(String title, {String? subtitle}) {
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               color: AppTheme.textSecondary,
               fontFamily: 'Inter',
             ),
@@ -61,7 +60,7 @@ Widget toggleRow(
 ) {
   return MergeSemantics(
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
       child: Row(
         children: [
           Expanded(
@@ -71,35 +70,30 @@ Widget toggleRow(
                 Text(
                   label,
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     fontSize: 14,
                     color: AppTheme.textPrimary,
                     fontFamily: 'Inter',
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 12,
-                    letterSpacing: 0,
                     fontFamily: 'Inter',
                   ),
                 ),
               ],
             ),
           ),
-          Transform.scale(
-            scale: 0.8,
-            alignment: Alignment.centerRight,
-            child: CupertinoSwitch(
-              value: value,
-              activeTrackColor: AppTheme.accentColor,
-              inactiveTrackColor: AppTheme.border,
-              thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
-              onChanged: onChanged,
-            ),
+          CupertinoSwitch(
+            value: value,
+            activeTrackColor: AppTheme.accentColor,
+            inactiveTrackColor: AppTheme.border,
+            thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
+            onChanged: onChanged,
           ),
         ],
       ),
@@ -114,7 +108,7 @@ Widget inputRow(
   Widget? trailing,
 }) {
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -122,7 +116,7 @@ Widget inputRow(
           child: Text(
             label,
             style: TextStyle(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               fontSize: 14,
               color: AppTheme.textPrimary,
               fontFamily: 'Inter',
@@ -133,10 +127,10 @@ Widget inputRow(
           trailing
         else
           MinimalButton(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             onPressed: onTap,
             isSecondary: true,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -145,7 +139,7 @@ Widget inputRow(
                   style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -195,18 +189,14 @@ Widget sliderRow(
                   ),
                 ),
                 SizedBox(
-                  width: isSmallScreen ? 120 : 180,
-                  child: Transform.scale(
-                    scale: 0.85,
-                    alignment: Alignment.centerRight,
-                    child: MinimalSlider(
-                      value: value.clamp(min, max),
-                      min: min,
-                      max: max,
-                      onChanged: onChanged,
-                      onChangeEnd: onChangeEnd,
-                      activeColor: AppTheme.accentColor,
-                    ),
+                  width: isSmallScreen ? 120 : 176,
+                  child: MinimalSlider(
+                    value: value.clamp(min, max),
+                    min: min,
+                    max: max,
+                    onChanged: onChanged,
+                    onChangeEnd: onChangeEnd,
+                    activeColor: AppTheme.accentColor,
                   ),
                 ),
               ],
@@ -253,16 +243,7 @@ Widget dropdownRow(
                   .map(
                     (option) => AppDropdownItem<String>(
                       value: option,
-                      label: option.contains('_')
-                          ? option
-                                .split('_')
-                                .map(
-                                  (word) => word.isNotEmpty
-                                      ? '${word[0].toUpperCase()}${word.substring(1)}'
-                                      : '',
-                                )
-                                .join(' ')
-                          : '${option[0].toUpperCase()}${option.substring(1)}',
+                      label: _optionLabel(option),
                     ),
                   )
                   .toList(),
@@ -329,7 +310,7 @@ Widget buildListRow(
     child: Row(
       children: [
         Icon(icon, color: AppTheme.textSecondary, size: 18),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -338,32 +319,32 @@ Widget buildListRow(
               Text(
                 label,
                 style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
                   color: AppTheme.textPrimary,
-                  letterSpacing: -0.2,
+                  fontFamily: 'Inter',
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                  fontFamily: 'Inter',
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(width: 8),
         if (value != null)
-          Transform.scale(
-            scale: 0.8,
-            alignment: Alignment.centerRight,
-            child: CupertinoSwitch(
-              value: value,
-              onChanged: onChanged,
-              activeTrackColor: AppTheme.accentColor,
-              inactiveTrackColor: AppTheme.border,
-              thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
-            ),
+          CupertinoSwitch(
+            value: value,
+            onChanged: onChanged,
+            activeTrackColor: AppTheme.accentColor,
+            inactiveTrackColor: AppTheme.border,
+            thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
           ),
         ?trailing,
       ],
@@ -396,16 +377,7 @@ Widget inlineDropdown(
         .map(
           (option) => AppDropdownItem<String>(
             value: option,
-            label: option.contains('_')
-                ? option
-                      .split('_')
-                      .map(
-                        (word) => word.isNotEmpty
-                            ? '${word[0].toUpperCase()}${word.substring(1)}'
-                            : '',
-                      )
-                      .join(' ')
-                : '${option[0].toUpperCase()}${option.substring(1)}',
+            label: _optionLabel(option),
           ),
         )
         .toList(),
@@ -423,26 +395,18 @@ void showPicker({
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Dismiss',
-    barrierColor: Colors.black.withValues(alpha: 0.6),
-    transitionDuration: const Duration(milliseconds: 250),
+    barrierColor: AppTheme.scrim,
+    transitionDuration: const Duration(milliseconds: 150),
     pageBuilder: (context, anim1, anim2) {
       return Center(
         child: Material(
           type: MaterialType.transparency,
           child: Container(
-            width: 320,
-            constraints: const BoxConstraints(maxHeight: 400),
+            constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
             decoration: BoxDecoration(
               color: AppTheme.surfaceElevated,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -454,7 +418,7 @@ void showPicker({
                     style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       fontFamily: 'Inter',
                     ),
                   ),
@@ -478,7 +442,7 @@ void showPicker({
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
-                            vertical: 14,
+                            vertical: 16,
                           ),
                           child: Center(
                             child: Text(
@@ -518,9 +482,9 @@ void showPicker({
         opacity: anim1,
         child: ScaleTransition(
           scale: Tween<double>(
-            begin: 0.95,
+            begin: 0.97,
             end: 1.0,
-          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutBack)),
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic)),
           child: child,
         ),
       );
@@ -559,7 +523,7 @@ Widget segmentedControl(
                 onTap: () => onSelected(entry.key),
                 child: Container(
                   margin: const EdgeInsets.only(right: 24),
-                  padding: EdgeInsets.symmetric(vertical: isSmall ? 8 : 10),
+                  padding: EdgeInsets.symmetric(vertical: isSmall ? 8 : 12),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
@@ -577,9 +541,7 @@ Widget segmentedControl(
                           ? AppTheme.textPrimary
                           : AppTheme.textMuted,
                       fontSize: isSmall ? 12 : 13,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -617,11 +579,11 @@ Widget actionRow({
                 style: TextStyle(
                   color: isDestructive ? AppTheme.error : AppTheme.textPrimary,
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   fontFamily: 'Inter',
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: TextStyle(
@@ -644,7 +606,7 @@ Widget actionRow({
             style: TextStyle(
               color: onPressed == null ? color.withValues(alpha: 0.5) : color,
               fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               fontFamily: 'Inter',
             ),
           ),
@@ -663,7 +625,7 @@ Widget colorRow(String label, Color color) {
         Text(
           label,
           style: TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             fontSize: 14,
             color: AppTheme.textPrimary,
             fontFamily: 'Inter',
@@ -674,7 +636,7 @@ Widget colorRow(String label, Color color) {
           height: 24,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXs),
             border: Border.all(color: AppTheme.border),
           ),
         ),
@@ -689,4 +651,9 @@ List<String> timeOptions() {
       for (final minute in const [0, 30])
         '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
   ];
+}
+
+String _optionLabel(String option) {
+  final text = option.replaceAll('_', ' ');
+  return text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
 }

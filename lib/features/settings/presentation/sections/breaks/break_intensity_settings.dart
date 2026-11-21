@@ -22,7 +22,7 @@ class BreakIntensitySettings extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Display Options'),
+        sectionHeader('Display options'),
         buildCard([
           toggleRow(
             'Show on All Displays',
@@ -34,7 +34,7 @@ class BreakIntensitySettings extends StatelessWidget {
           ),
           divider(),
           toggleRow(
-            'Show Wellness Notes',
+            'Show wellness notes',
             'Display tips and exercise notes on break templates.',
             settings.showExercisesInBreak,
             (val) {
@@ -43,7 +43,7 @@ class BreakIntensitySettings extends StatelessWidget {
           ),
           divider(),
           toggleRow(
-            'Play LoFi Music During Break',
+            'Play lo-fi music during break',
             'Play relaxing LoFi music when on break.',
             settings.playMusicDuringBreak,
             (val) {
@@ -52,7 +52,7 @@ class BreakIntensitySettings extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 16),
-        sectionHeader('Connected Displays'),
+        sectionHeader('Connected displays'),
         ListenableBuilder(
           listenable: sl<DisplayController>(),
           builder: (context, _) {
@@ -89,11 +89,11 @@ class BreakIntensitySettings extends StatelessWidget {
                               style: TextStyle(
                                 color: AppTheme.textPrimary,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                                 fontFamily: 'Inter',
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
                               'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
                               style: TextStyle(
@@ -120,7 +120,7 @@ class BreakIntensitySettings extends StatelessWidget {
                           style: TextStyle(
                             color: AppTheme.accentColor,
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             fontFamily: 'Inter',
                           ),
                         ),

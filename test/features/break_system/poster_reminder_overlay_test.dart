@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
@@ -19,7 +20,7 @@ void main() {
           home: Material(
             color: Colors.transparent,
             child: PosterReminderOverlay(
-              icon: Icons.accessibility_new_rounded,
+              icon: CupertinoIcons.person_crop_circle,
               text: 'Watch your posture!',
               fadeAnimation: controller,
             ),
@@ -29,7 +30,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Watch your posture!'), findsOneWidget);
-      expect(find.byIcon(Icons.accessibility_new_rounded), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.person_crop_circle), findsOneWidget);
       expect(find.byType(BackdropFilter), findsNothing);
       expect(tester.takeException(), isNull);
     },

@@ -23,7 +23,7 @@ class BreakProfileSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionHeader(
-          'Recommended Presets',
+          'Recommended presets',
           subtitle: 'Choose a scientifically-backed rhythm for your work day.',
         ),
         buildCard(
@@ -54,25 +54,14 @@ class BreakProfileSelector extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppTheme.accentColor.withValues(alpha: 0.15)
-                                  : AppTheme.textPrimary.withValues(
-                                      alpha: 0.05,
-                                    ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isSelected
-                                  ? CupertinoIcons.checkmark_alt
-                                  : _getProfileIcon(p.id),
-                              color: isSelected
-                                  ? AppTheme.accentColor
-                                  : AppTheme.textMuted,
-                              size: 16,
-                            ),
+                          Icon(
+                            isSelected
+                                ? CupertinoIcons.checkmark_alt
+                                : _getProfileIcon(p.id),
+                            color: isSelected
+                                ? AppTheme.accentColor
+                                : AppTheme.textMuted,
+                            size: 20,
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -82,8 +71,8 @@ class BreakProfileSelector extends StatelessWidget {
                                 Text(
                                   p.name,
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
                                     color: isSelected
                                         ? AppTheme.textPrimary
                                         : AppTheme.textSecondary,
@@ -91,39 +80,18 @@ class BreakProfileSelector extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${p.shortIntervalMinutes}m interval • ${p.shortDurationSeconds}s duration',
+                                  'Every ${p.shortIntervalMinutes} min · ${p.shortDurationSeconds} s',
                                   style: TextStyle(
                                     color: isSelected
-                                        ? AppTheme.textSecondary.withValues(
-                                            alpha: 0.7,
-                                          )
+                                        ? AppTheme.textSecondary
                                         : AppTheme.textMuted,
                                     fontSize: 12,
+                                    fontFeatures: AppTheme.tabular,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          if (isSelected)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentColor,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'ACTIVE',
-                                style: TextStyle(
-                                  color: AppTheme.onAccent,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ),

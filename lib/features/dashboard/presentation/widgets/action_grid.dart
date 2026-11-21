@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
@@ -23,7 +24,7 @@ class ActionGrid extends StatelessWidget {
                         ? 'Active and watching'
                         : 'Resting')
                   : 'Disabled in settings',
-              icon: Icons.pets_rounded,
+              icon: CupertinoIcons.paw,
               isActive: companionActive,
               onTap: () => controller.toggleCompanion(),
               semanticsLabel: 'Toggle desktop companion',
@@ -33,7 +34,7 @@ class ActionGrid extends StatelessWidget {
               subtitle: controller.quietModeEnabled
                   ? 'All alerts silenced'
                   : 'Notifications on',
-              icon: Icons.do_not_disturb_on_rounded,
+              icon: CupertinoIcons.minus_circle,
               isActive: controller.quietModeEnabled,
               onTap: () => controller.toggleQuietMode(),
               semanticsLabel: 'Toggle quiet mode',
@@ -82,7 +83,7 @@ class _ActionCard extends StatelessWidget {
                     color: isActive ? AppTheme.textPrimary : AppTheme.textMuted,
                     size: 18,
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

@@ -208,7 +208,7 @@ class _UpdateSectionState extends State<UpdateSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Software Update'),
+        sectionHeader('Software update'),
         const SizedBox(height: 8),
 
         buildCard([
@@ -223,7 +223,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _getStatusColor().withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         _getStatusIcon(),
@@ -231,27 +231,26 @@ class _UpdateSectionState extends State<UpdateSection> {
                         size: 22,
                       ),
                     ),
-                    const SizedBox(width: 18),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             _errorMessage.isNotEmpty
-                                ? 'Update Check Failed'
+                                ? 'Update check failed'
                                 : (_hasUpdate
-                                      ? 'Version $_updateVersion Available'
+                                      ? 'Version $_updateVersion available'
                                       : (_isChecking
-                                            ? 'Checking for Updates...'
+                                            ? 'Checking for updates'
                                             : (_checked
-                                                  ? 'BreakMate is Up to Date'
-                                                  : 'Software Update'))),
+                                                  ? 'BreakMate is up to date'
+                                                  : 'Software update'))),
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               color: AppTheme.textPrimary,
                               fontFamily: 'Inter',
-                              letterSpacing: -0.3,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -282,19 +281,19 @@ class _UpdateSectionState extends State<UpdateSection> {
                           horizontal: 16,
                           vertical: 10,
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                         child: const Text(
-                          'Check Now',
+                          'Check now',
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       )
                     else if (_isChecking)
                       SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(
@@ -347,7 +346,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                       onPressed: _startUpdate,
                       backgroundColor: AppTheme.accentColor,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -356,13 +355,13 @@ class _UpdateSectionState extends State<UpdateSection> {
                             color: AppTheme.onAccent,
                             size: 18,
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Text(
-                            'Install and Restart Now',
+                            'Install and restart',
                             style: TextStyle(
                               color: AppTheme.onAccent,
                               fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               fontFamily: 'Inter',
                             ),
                           ),

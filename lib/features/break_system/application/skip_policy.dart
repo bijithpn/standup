@@ -12,6 +12,7 @@ class SkipPolicy {
   static const _maxLogEntries = 200;
 
   static const maxSnoozesPerDay = 3;
+  static const snoozeMinutes = 5;
   static const _snoozeDayKey = 'snooze_day';
   static const _snoozeCountKey = 'snooze_count';
 

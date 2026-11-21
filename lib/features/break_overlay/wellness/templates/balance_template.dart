@@ -51,14 +51,14 @@ class BalanceTemplate extends WellnessTemplate {
             ),
           ),
           Align(
-            alignment: Alignment.bottomLeft,
+            alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(64, 0, 64, 56),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 360),
+                constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Semantics(
                       label: spokenRemaining(s.remainingSeconds),
@@ -67,7 +67,7 @@ class BalanceTemplate extends WellnessTemplate {
                           formatRemaining(s.remainingSeconds),
                           style: TextStyle(
                             fontFamily: BreakOverlayTheme.monoFamily,
-                            fontSize: 28,
+                            fontSize: 56,
                             color: p.textPrimary,
                             fontFeatures: BreakOverlayTheme.tabular,
                           ),
@@ -75,37 +75,13 @@ class BalanceTemplate extends WellnessTemplate {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      s.title,
-                      style: TextStyle(
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: p.textPrimary,
-                      ),
-                    ),
+                    Text(s.title, style: WellnessType.label(p)),
                     const SizedBox(height: 4),
                     Text(
                       s.instruction,
-                      style: TextStyle(
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        fontSize: 14,
-                        height: 1.5,
-                        color: p.textSecondary,
-                      ),
+                      textAlign: TextAlign.center,
+                      style: WellnessType.instruction(p),
                     ),
-                    if (s.focus == BreakFocus.eyes) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Look away from the screen, at something far off.',
-                        style: TextStyle(
-                          fontFamily: BreakOverlayTheme.fontFamily,
-                          fontSize: 13,
-                          height: 1.4,
-                          color: p.textMuted,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -213,17 +189,6 @@ class _SculpturePainter extends CustomPainter {
     c.drawLine(a3, b3, thin);
     c.drawCircle(b3, u * 0.028, _fill(_charcoal));
     c.drawCircle(b3, u * 0.06, _stroke(1, _charcoal.withValues(alpha: 0.4)));
-
-    c.drawCircle(
-      Offset(w * 0.22, h * 0.4) + Motion.float(t, 11, u * 0.015 * k),
-      u * 0.04,
-      _fill(_sand),
-    );
-    c.drawCircle(
-      Offset(w * 0.78, h * 0.84) + Motion.float(t, 14, u * 0.012 * k, 0.5),
-      u * 0.018,
-      _stroke(1.5, _terracotta),
-    );
   }
 
   @override

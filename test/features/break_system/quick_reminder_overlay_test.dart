@@ -1,6 +1,7 @@
 // Regression coverage: reminders render a compact card with short copy, never the full break template.
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/services/health_reminder_messages.dart';
@@ -96,7 +97,7 @@ void main() {
 
     expect(find.text('Sit up'), findsOneWidget);
     // Icon names what the reminder is about, not the app's own logo.
-    expect(find.byIcon(Icons.accessibility_new_rounded), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.person), findsOneWidget);
     expect(find.byType(PosterReminderOverlay), findsOneWidget);
   });
 
@@ -115,9 +116,9 @@ void main() {
   );
 
   for (final entry in {
-    'hydration': Icons.water_drop_rounded,
-    'stretch': Icons.self_improvement_rounded,
-    'standup': Icons.directions_walk_rounded,
+    'hydration': CupertinoIcons.drop,
+    'stretch': CupertinoIcons.person_crop_circle,
+    'standup': CupertinoIcons.person_2,
   }.entries) {
     testWidgets('${entry.key} reminder shows its own wording', (tester) async {
       await pumpReminder(tester, reminderType: entry.key);

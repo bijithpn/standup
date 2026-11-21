@@ -1,4 +1,5 @@
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -46,17 +47,17 @@ class CalendarSection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.calendar_today_rounded,
+                      CupertinoIcons.calendar,
                       size: 16,
                       color: AppTheme.accent,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Upcoming Events',
+                    'Upcoming events',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: AppTheme.textPrimary,
                     ),
                   ),
@@ -72,13 +73,19 @@ class CalendarSection extends StatelessWidget {
                   ),
                 )
               else
-                TapTarget(
-                  semanticLabel: 'Refresh calendar events',
-                  onTap: onLoadEvents,
-                  child: Icon(
-                    Icons.refresh_rounded,
-                    size: 18,
-                    color: AppTheme.textMuted,
+                Tooltip(
+                  message: 'Refresh calendar events',
+                  child: TapTarget(
+                    semanticLabel: 'Refresh calendar events',
+                    onTap: onLoadEvents,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        CupertinoIcons.refresh,
+                        size: 16,
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -107,11 +114,11 @@ class CalendarSection extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              Icons.check_circle_outline_rounded,
+              CupertinoIcons.checkmark_circle,
               size: 18,
               color: AppTheme.textMuted,
             ),
-            SizedBox(width: 10),
+            SizedBox(width: 8),
             Text(
               'No events in the next 8 hours — focus time!',
               style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
@@ -148,9 +155,8 @@ class CalendarSection extends StatelessWidget {
               _formatDate(date),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 color: AppTheme.textSecondary,
-                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -192,8 +198,8 @@ class CalendarSection extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
 
-    if (date == today) return 'TODAY';
-    if (date == tomorrow) return 'TOMORROW';
+    if (date == today) return 'Today';
+    if (date == tomorrow) return 'Tomorrow';
 
     final months = [
       'JAN',
@@ -220,16 +226,16 @@ class CalendarSection extends StatelessWidget {
         ? 'Please enable calendar access in System Settings to see your events. If already enabled, toggle it OFF and ON again to refresh the system cache.'
         : 'Calendar access required to show upcoming events and avoid interrupting your meetings.';
     final icon = permissionDenied
-        ? Icons.error_outline_rounded
-        : Icons.lock_outline_rounded;
+        ? CupertinoIcons.exclamationmark_circle
+        : CupertinoIcons.lock;
     final color = permissionDenied ? AppTheme.error : AppTheme.warning;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Column(
@@ -248,7 +254,7 @@ class CalendarSection extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: color,
                         fontFamily: 'Inter',
                       ),
@@ -299,7 +305,7 @@ class CalendarSection extends StatelessWidget {
                             color: AppTheme.accent,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                       ],
                       Text(
                         isRequestingPermission
@@ -307,7 +313,7 @@ class CalendarSection extends StatelessWidget {
                             : (permissionDenied ? 'Try Again' : 'Grant Access'),
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: AppTheme.accent,
                           fontFamily: 'Inter',
                         ),
@@ -336,7 +342,7 @@ class CalendarSection extends StatelessWidget {
                       'Open Settings',
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.textSecondary,
                         fontFamily: 'Inter',
                       ),
@@ -365,9 +371,9 @@ class CalendarSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SkeletonBox(width: double.infinity, height: 14, radius: 4),
-                    SizedBox(height: 6),
-                    _SkeletonBox(width: 120, height: 11, radius: 4),
+                    _SkeletonBox(width: double.infinity, height: 16, radius: 4),
+                    SizedBox(height: 8),
+                    _SkeletonBox(width: 120, height: 12, radius: 4),
                   ],
                 ),
               ),

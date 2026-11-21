@@ -310,7 +310,12 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     );
     _lastFrameCount = frameCount;
 
-    if (widget.isStatic) {
+    if (widget.isStatic ||
+        (context
+                .getInheritedWidgetOfExactType<MediaQuery>()
+                ?.data
+                .disableAnimations ??
+            false)) {
       _animationController.value = 0.0;
       _frameIndexNotifier.value = 0;
     } else if (frameCount > 1) {
@@ -496,30 +501,37 @@ class _SpritePainter extends CustomPainter {
   EnvironmentThemeConfig get config =>
       EnvironmentThemeConfig.getByPath(backgroundImagePath ?? '');
 
+  static const _night = Color(0xFF16182C);
+  static const _dawn = Color(0xFFFF8A65);
+  static const _morning = Color(0xFFFFECB3);
+  static const _day = Color(0xFFFFFFFF);
+  static const _dusk = Color(0xFFE57373);
+  static const _evening = Color(0xFF3F3D56);
+
   // Tints the scene by local time of day.
   Color _getAmbientTint() {
     final now = DateTime.now();
     final double hour = now.hour + now.minute / 60.0;
 
     if (hour < 4.0) {
-      return const Color(0xFF16182C);
+      return _night;
     } else if (hour < 6.0) {
       final double t = (hour - 4.0) / 2.0;
-      return Color.lerp(const Color(0xFF16182C), const Color(0xFFFF8A65), t)!;
+      return Color.lerp(_night, _dawn, t)!;
     } else if (hour < 8.0) {
       final double t = (hour - 6.0) / 2.0;
-      return Color.lerp(const Color(0xFFFF8A65), const Color(0xFFFFECB3), t)!;
+      return Color.lerp(_dawn, _morning, t)!;
     } else if (hour < 16.0) {
-      return const Color(0xFFFFFFFF);
+      return _day;
     } else if (hour < 18.0) {
       final double t = (hour - 16.0) / 2.0;
-      return Color.lerp(const Color(0xFFFFFFFF), const Color(0xFFE57373), t)!;
+      return Color.lerp(_day, _dusk, t)!;
     } else if (hour < 20.0) {
       final double t = (hour - 18.0) / 2.0;
-      return Color.lerp(const Color(0xFFE57373), const Color(0xFF3F3D56), t)!;
+      return Color.lerp(_dusk, _evening, t)!;
     } else {
       final double t = (hour - 20.0) / 4.0;
-      return Color.lerp(const Color(0xFF3F3D56), const Color(0xFF16182C), t)!;
+      return Color.lerp(_evening, _night, t)!;
     }
   }
 

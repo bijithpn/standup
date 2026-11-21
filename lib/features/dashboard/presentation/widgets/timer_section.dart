@@ -1,6 +1,8 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:intl/intl.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
@@ -86,7 +88,7 @@ class TimerSection extends StatelessWidget {
                     statusText,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: AppTheme.textPrimary,
                     ),
                   ),
@@ -104,7 +106,7 @@ class TimerSection extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               ValueListenableBuilder<int>(
                 valueListenable: engine.countdownNotifier,
                 builder: (context, seconds, _) {
@@ -133,7 +135,6 @@ class TimerSection extends StatelessWidget {
                               color: isPaused
                                   ? AppTheme.textMuted
                                   : AppTheme.textPrimary,
-                              letterSpacing: -2,
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),
                               ],
@@ -151,7 +152,7 @@ class TimerSection extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(2),
                         child: LinearProgressIndicator(
@@ -193,24 +194,25 @@ class TimerSection extends StatelessWidget {
                   ),
                 ),
               if (isPaused || engine.contextManager.isMeetingActive())
-                TextButton(
+                MinimalButton(
+                  isGhost: true,
                   onPressed: () => sl<AppNavigationService>().openSection(
                     engine.contextManager.isWithinWorkingHours()
                         ? 'Intelligent Detection'
                         : 'General',
                   ),
-                  child: const Text('Check schedule or detection settings'),
+                  child: const Text('Open detection settings'),
                 ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 24),
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   if (isBreak)
                     _PrimaryButton(
                       onTap: () => controller.skipCurrentBreak(),
                       label: 'Skip break',
-                      icon: Icons.skip_next_rounded,
+                      icon: CupertinoIcons.forward_end,
                       isPrimary: true,
                     )
                   else ...[
@@ -218,8 +220,8 @@ class TimerSection extends StatelessWidget {
                       onTap: () => controller.togglePause(),
                       label: isPaused ? AppStrings.resume : AppStrings.pause,
                       icon: isPaused
-                          ? Icons.play_arrow_rounded
-                          : Icons.pause_rounded,
+                          ? CupertinoIcons.play_fill
+                          : CupertinoIcons.pause_fill,
                       isPrimary: true,
                       semanticsLabel: isPaused
                           ? 'Resume focus timer'
@@ -228,7 +230,7 @@ class TimerSection extends StatelessWidget {
                     _SecondaryButton(
                       onTap: () => controller.takeBreakNow(),
                       label: AppStrings.takeBreakNow,
-                      icon: Icons.coffee_rounded,
+                      icon: CupertinoIcons.hourglass,
                       semanticsLabel: 'Start break immediately',
                     ),
                   ],
@@ -258,12 +260,35 @@ class TimerSection extends StatelessWidget {
                             ),
                           ),
                       ],
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
                           vertical: 12,
                         ),
-                        child: Text('Snooze ▾'),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceElevated,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppTheme.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Snooze',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              CupertinoIcons.chevron_down,
+                              size: 16,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

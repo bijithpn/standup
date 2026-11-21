@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -61,7 +62,7 @@ class DailySummarySection extends StatelessWidget {
                           'Break activity',
                           style: TextStyle(
                             fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                             color: AppTheme.textPrimary,
                           ),
                         ),
@@ -97,7 +98,7 @@ class DailySummarySection extends StatelessWidget {
                     backgroundColor: AppTheme.border,
                   ),
                 ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 24),
               if (!hasData)
                 Center(
                   child: Padding(
@@ -140,16 +141,16 @@ class DailySummarySection extends StatelessWidget {
                   },
                 ),
                 if (events.isNotEmpty) ...[
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 24),
                   Text(
                     'Timeline',
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: AppTheme.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -160,7 +161,7 @@ class DailySummarySection extends StatelessWidget {
                     ],
                   ),
                 ],
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 _RecommendationChip(stats: stats),
               ],
             ],
@@ -223,16 +224,17 @@ class _EventChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            ok ? Icons.check_circle_rounded : Icons.cancel_rounded,
-            size: 13,
+            ok ? CupertinoIcons.checkmark_circle : CupertinoIcons.xmark_circle,
+            size: 16,
             color: color,
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Text(
             '$h:$m',
             style: TextStyle(
               fontFamilyFallback: const ['Menlo', 'monospace'],
               fontSize: 12,
+              fontFeatures: AppTheme.tabular,
               color: AppTheme.textPrimary,
             ),
           ),
@@ -295,10 +297,11 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontFamilyFallback: const ['Georgia', 'Times New Roman'],
-            fontSize: 34,
+            fontFamily: 'Inter',
+            fontSize: 28,
+            fontWeight: FontWeight.w400,
             color: AppTheme.textPrimary,
-            letterSpacing: -1,
+            fontFeatures: AppTheme.tabular,
           ),
         ),
         const SizedBox(height: 4),

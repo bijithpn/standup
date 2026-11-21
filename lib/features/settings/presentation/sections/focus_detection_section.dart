@@ -2,7 +2,6 @@ import 'package:breakmate/features/settings/widgets/settings_group.dart';
 import 'package:breakmate/features/settings/widgets/detection_health_panel.dart';
 import 'package:breakmate/features/settings/widgets/status_pill.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
@@ -11,6 +10,7 @@ import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
 /// Settings > Smart Detection: detector toggles with live state, then permission status.
 class FocusDetectionSection extends StatelessWidget {
@@ -29,7 +29,7 @@ class FocusDetectionSection extends StatelessWidget {
       builder: (context, live) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          sectionHeader('Smart Detection'),
+          sectionHeader('Smart detection'),
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 20),
             child: Text(
@@ -68,7 +68,7 @@ class FocusDetectionSection extends StatelessWidget {
                 activeNow: live.meeting,
                 activeLabel: 'In a meeting',
                 action: _TileButton(
-                  'Open Calendar Sync',
+                  'Open calendar sync',
                   () => sl<AppNavigationService>().openSection('Calendar Sync'),
                 ),
               ),
@@ -168,124 +168,12 @@ class _GroupLabel extends StatelessWidget {
       text,
       style: TextStyle(
         fontSize: 15,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w500,
         color: AppTheme.textPrimary,
       ),
     ),
   );
 }
-
-// class _StatusCard extends StatelessWidget {
-//   final SettingsModel settings;
-//   final _Live live;
-//   const _StatusCard({required this.settings, required this.live});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final anyEnabled =
-//         settings.detectVideoCalls ||
-//         (settings.detectMeetings && settings.calendarEnabled) ||
-//         settings.presentationPauseEnabled;
-//     final (tone, title, body) = !anyEnabled
-//         ? (
-//             PillTone.off,
-//             'Detection is off',
-//             'Turn on a detector below and breaks will adapt when you are busy.',
-//           )
-//         : live.presenting
-//         ? (
-//             PillTone.active,
-//             'Presenting: timer paused',
-//             'The timer resumes when the slideshow ends.',
-//           )
-//         : live.any
-//         ? (
-//             PillTone.active,
-//             'Quiet mode is on',
-//             'Breaks show a small reminder instead of the full screen until this ends.',
-//           )
-//         : (
-//             PillTone.ok,
-//             'Watching, nothing detected',
-//             'Your breaks will appear normally.',
-//           );
-//     final color = StatusPill.colorFor(tone);
-//     final signals = <(String, bool)>[
-//       ('Call', live.call),
-//       ('Meeting', live.meeting),
-//       ('Camera', live.camera),
-//       ('Microphone', live.mic),
-//       ('Video', live.video),
-//       ('Presentation', live.presenting),
-//     ];
-//     return Container(
-//       width: double.infinity,
-//       padding: const EdgeInsets.all(20),
-//       decoration: BoxDecoration(
-//         color: color.withValues(alpha: 0.08),
-//         border: Border.all(color: color.withValues(alpha: 0.35)),
-//         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Semantics(
-//             liveRegion: true,
-//             child: Row(
-//               children: [
-//                 Icon(
-//                   anyEnabled
-//                       ? (live.any
-//                             ? CupertinoIcons.bell_slash_fill
-//                             : CupertinoIcons.eye_fill)
-//                       : CupertinoIcons.eye_slash,
-//                   color: color,
-//                   size: 22,
-//                 ),
-//                 const SizedBox(width: 14),
-//                 Expanded(
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         title,
-//                         style: TextStyle(
-//                           fontSize: 16,
-//                           fontWeight: FontWeight.w700,
-//                           color: AppTheme.textPrimary,
-//                         ),
-//                       ),
-//                       const SizedBox(height: 4),
-//                       Text(
-//                         body,
-//                         style: TextStyle(
-//                           fontSize: 13,
-//                           height: 1.5,
-//                           color: AppTheme.textSecondary,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           if (anyEnabled) ...[
-//             const SizedBox(height: 16),
-//             Wrap(
-//               spacing: 8,
-//               runSpacing: 8,
-//               children: [
-//                 for (final (name, on) in signals)
-//                   StatusPill(name, tone: on ? PillTone.active : PillTone.off),
-//               ],
-//             ),
-//           ],
-//         ],
-//       ),
-//     );
-//   }
-// }
 
 class _DetectorTile extends StatelessWidget {
   final IconData icon;
@@ -327,22 +215,22 @@ class _DetectorTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Wrap(
-                  spacing: 10,
-                  runSpacing: 6,
+                  spacing: 8,
+                  runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       title,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
                     ),
                     pill,
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -383,14 +271,9 @@ class _TileButton extends StatelessWidget {
   const _TileButton(this.label, this.onPressed);
 
   @override
-  Widget build(BuildContext context) => OutlinedButton(
+  Widget build(BuildContext context) => MinimalButton(
     onPressed: onPressed,
-    style: OutlinedButton.styleFrom(
-      foregroundColor: AppTheme.accentColor,
-      side: BorderSide(color: AppTheme.accentColor.withValues(alpha: 0.5)),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-    child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+    isSecondary: true,
+    child: Text(label),
   );
 }

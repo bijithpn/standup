@@ -1,6 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
+
+const _ballColor = Color(0xFFFF7A3D);
+const _crumbColor = Color(0xFFC98B4B);
+const _cookieColor = Color(0xFFD9A066);
+const _cookieEdgeColor = Color(0xFFB27A3E);
+const _chipColor = Color(0xFF5A3A22);
+const _starColor = Color(0xFFFFD84D);
 
 /// Visual interaction effects (hearts, ball, cookie); hops lists when the pet should jump during the effect.
 enum PetInteractionKind {
@@ -108,7 +116,7 @@ class _EffectPainter extends CustomPainter {
         canvas,
         Offset(x, y),
         scale,
-        const Color(0xFFFF6B8B).withValues(alpha: fade.clamp(0.0, 1.0)),
+        AppTheme.accent.withValues(alpha: fade.clamp(0.0, 1.0)),
       );
     }
   }
@@ -171,7 +179,7 @@ class _EffectPainter extends CustomPainter {
     canvas.save();
     canvas.translate(c.dx, c.dy);
     canvas.rotate(spin);
-    canvas.drawCircle(Offset.zero, r, Paint()..color = const Color(0xFFFF7A3D));
+    canvas.drawCircle(Offset.zero, r, Paint()..color = _ballColor);
     canvas.drawArc(
       Rect.fromCircle(center: Offset.zero, radius: r * 0.78),
       0.5,
@@ -207,8 +215,7 @@ class _EffectPainter extends CustomPainter {
 
     final crumbs = ((t - 0.4) / 0.5).clamp(0.0, 1.0);
     if (crumbs > 0 && crumbs < 1) {
-      final paint = Paint()
-        ..color = const Color(0xFFC98B4B).withValues(alpha: 1 - crumbs);
+      final paint = Paint()..color = _crumbColor.withValues(alpha: 1 - crumbs);
       for (var i = 0; i < 6; i++) {
         final a = -math.pi * (0.15 + 0.7 * i / 5);
         final d = r * (0.8 + crumbs * 2.2);
@@ -236,16 +243,16 @@ class _EffectPainter extends CustomPainter {
   }
 
   void _cookieAt(Canvas canvas, Offset c, double r) {
-    canvas.drawCircle(c, r, Paint()..color = const Color(0xFFD9A066));
+    canvas.drawCircle(c, r, Paint()..color = _cookieColor);
     canvas.drawCircle(
       c,
       r,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = r * 0.12
-        ..color = const Color(0xFFB27A3E),
+        ..color = _cookieEdgeColor,
     );
-    final chip = Paint()..color = const Color(0xFF5A3A22);
+    final chip = Paint()..color = _chipColor;
     for (final o in const [
       Offset(-0.35, -0.25),
       Offset(0.3, -0.35),
@@ -265,7 +272,7 @@ class _EffectPainter extends CustomPainter {
       ..quadraticBezierTo(c.dx, c.dy, c.dx, c.dy + r)
       ..quadraticBezierTo(c.dx, c.dy, c.dx - r, c.dy)
       ..quadraticBezierTo(c.dx, c.dy, c.dx, c.dy - r);
-    canvas.drawPath(path, Paint()..color = const Color(0xFFFFD84D));
+    canvas.drawPath(path, Paint()..color = _starColor);
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'settings_group.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -63,7 +64,8 @@ class RestDaySettings extends StatelessWidget {
             ),
             SettingsField(
               title: 'Today',
-              child: OutlinedButton(
+              child: MinimalButton(
+                isSecondary: true,
                 onPressed: () => onSave(
                   settings.copyWith(
                     experience: preferences.copyWith(

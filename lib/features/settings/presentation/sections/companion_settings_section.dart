@@ -198,7 +198,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
-                      vertical: 14,
+                      vertical: 16,
                     ),
                     child: Row(
                       children: [
@@ -207,7 +207,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           size: 18,
                           color: AppTheme.textSecondary,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             widget.controller.companionStateExplanation,
@@ -259,7 +259,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   const SizedBox(height: 32),
 
                   if (!FlavorConfig.instance.isDev) ...[
-                    sectionHeader('Streak Recognition'),
+                    sectionHeader('Streak recognition'),
                     _buildStreakCard(),
                     const SizedBox(height: 32),
                   ],
@@ -283,7 +283,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   ]),
 
                   const SizedBox(height: 32),
-                  sectionHeader('Floating Window'),
+                  sectionHeader('Floating window'),
                   buildCard([
                     dropdownRow(
                       'Backdrop',
@@ -322,7 +322,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   ]),
 
                   const SizedBox(height: 32),
-                  sectionHeader('Looking & Motion'),
+                  sectionHeader('Looking and motion'),
                   buildCard([
                     toggleRow(
                       'Follow Cursor',
@@ -395,7 +395,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
                   const SizedBox(height: 32),
 
-                  sectionHeader('Interaction Features'),
+                  sectionHeader('Interaction features'),
                   buildCard([
                     toggleRow(
                       'Petting & Affection',
@@ -429,12 +429,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               Positioned.fill(
                 child: AbsorbPointer(
                   child: Container(
-                    color: Colors.black.withValues(alpha: 0.15),
-
+                    color: AppTheme.surface.withValues(alpha: 0.4),
                     child: Align(
-                      alignment: Alignment.topCenter,
+                      alignment: Alignment.center,
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 120),
+                        padding: EdgeInsets.zero,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -444,15 +443,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             color: AppTheme.surfaceElevated.withValues(
                               alpha: 0.9,
                             ),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusMd,
+                            ),
                             border: Border.all(color: AppTheme.border),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -463,11 +457,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Starting your companion...',
+                                'Starting your companion',
                                 style: TextStyle(
                                   color: AppTheme.textPrimary,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -523,7 +517,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
         return buildCard([
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
                 Icon(
@@ -531,7 +525,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   size: 18,
                   color: current > 0 ? AppTheme.accent : AppTheme.textMuted,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,7 +544,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       if (next != null &&
                           daysToNext != null &&
                           daysToNext > 0) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           '$daysToNext day${daysToNext == 1 ? '' : 's'} to '
                           '"${next.label}"',
@@ -579,21 +573,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
     return Container(
       margin: const EdgeInsets.only(top: 16, bottom: 20),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceElevated,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.accentColor.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.accentColor.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.border),
       ),
       child: Row(
         children: [
@@ -646,7 +630,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   )
                 else
                   Icon(
-                    Icons.pets_rounded,
+                    CupertinoIcons.paw,
                     size: 64,
                     color: AppTheme.accentColor,
                   ),
@@ -660,21 +644,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       horizontal: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          width: 0.5,
-                        ),
-                      ),
+                      color: AppTheme.surfaceElevated.withValues(alpha: 0.92),
+                      border: Border(top: BorderSide(color: AppTheme.border)),
                     ),
                     child: Text(
                       theme.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -692,43 +670,28 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppTheme.success,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'ACTIVE COMPANION',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.accentColor,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Active companion',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   widget.controller.companionPetName,
                   style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
-                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   isBlobatar
-                      ? 'Blobatar · GENERATIVE DYNAMIC PET'
-                      : '${theme.name} · ${theme.species.name.toUpperCase()}',
+                      ? 'Blobatar · generative pet'
+                      : '${theme.name} · ${theme.species.name}',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -737,20 +700,16 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 ),
                 const SizedBox(height: 16),
                 if (isBlobatar)
-                  FilledButton.icon(
+                  MinimalButton(
                     onPressed: _openBlobatarRenameDialog,
-                    icon: const Icon(Icons.edit_rounded, size: 16),
-                    label: const Text('Name & Morph Blob'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.accentColor,
-                      foregroundColor: AppTheme.onAccent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                    backgroundColor: AppTheme.accentColor,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(CupertinoIcons.pencil, size: 16),
+                        SizedBox(width: 8),
+                        Text('Name & Morph Blob'),
+                      ],
                     ),
                   ),
               ],
@@ -787,7 +746,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
         filterQuality: FilterQuality.medium,
         isAntiAlias: true,
         errorBuilder: (_, _, _) => Center(
-          child: Icon(Icons.pets_rounded, size: 34, color: AppTheme.textMuted),
+          child: Icon(CupertinoIcons.paw, size: 34, color: AppTheme.textMuted),
         ),
       ),
     );
@@ -850,37 +809,14 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   curve: Curves.easeInOut,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isSelected
-                          ? [
-                              AppTheme.accentColor.withValues(alpha: 0.22),
-                              AppTheme.accentColor.withValues(alpha: 0.08),
-                            ]
-                          : [
-                              AppTheme.surfaceElevated,
-                              AppTheme.accentColor.withValues(alpha: 0.05),
-                            ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
+                    color: AppTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                     border: Border.all(
                       color: isSelected
                           ? AppTheme.accentColor
                           : AppTheme.border,
-                      width: isSelected ? 2.5 : 1,
+                      width: isSelected ? 2 : 1,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withValues(
-                                alpha: 0.25,
-                              ),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : null,
                   ),
                   child: Stack(
                     fit: StackFit.expand,
@@ -900,7 +836,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       else
                         Center(
                           child: Icon(
-                            Icons.pets_rounded,
+                            CupertinoIcons.paw,
                             size: 40,
                             color: isSelected
                                 ? AppTheme.accentColor
@@ -918,12 +854,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             horizontal: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.28),
+                            color: AppTheme.surfaceElevated.withValues(
+                              alpha: 0.92,
+                            ),
                             border: Border(
-                              top: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                width: 0.5,
-                              ),
+                              top: BorderSide(color: AppTheme.border),
                             ),
                           ),
                           child: Row(
@@ -931,8 +866,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             children: [
                               if (isSelected) ...[
                                 Container(
-                                  width: 5,
-                                  height: 5,
+                                  width: 4,
+                                  height: 4,
                                   margin: const EdgeInsets.only(right: 4),
                                   decoration: BoxDecoration(
                                     color: AppTheme.accentColor,
@@ -944,14 +879,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                                 child: Text(
                                   theme.name,
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                    color: isSelected
-                                        ? AppTheme.accentColor
-                                        : Colors.white,
-                                    letterSpacing: 0.2,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -966,37 +896,39 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       if (isLocked) ...[
                         Positioned.fill(
                           child: ColoredBox(
-                            color: Colors.black.withValues(alpha: 0.16),
+                            color: AppTheme.surface.withValues(alpha: 0.4),
                           ),
                         ),
                         Center(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
+                              horizontal: 8,
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.42),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.22),
+                              color: AppTheme.surfaceElevated.withValues(
+                                alpha: 0.85,
                               ),
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusSm,
+                              ),
+                              border: Border.all(color: AppTheme.border),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  CupertinoIcons.lock_fill,
-                                  size: 18,
-                                  color: Colors.white,
+                                Icon(
+                                  CupertinoIcons.lock,
+                                  size: 16,
+                                  color: AppTheme.textPrimary,
                                 ),
-                                const SizedBox(height: 3),
+                                const SizedBox(height: 4),
                                 Text(
                                   '${theme.requiredConsistencyDays} days',
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.textPrimary,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],

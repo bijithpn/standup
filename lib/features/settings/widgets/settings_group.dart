@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -64,7 +65,7 @@ class SettingsField extends StatelessWidget {
           title,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
@@ -89,20 +90,16 @@ class SettingsField extends StatelessWidget {
 class SettingsNote extends StatelessWidget {
   final String text;
   final IconData icon;
-  const SettingsNote(
-    this.text, {
-    super.key,
-    this.icon = Icons.info_outline_rounded,
-  });
+  const SettingsNote(this.text, {super.key, this.icon = CupertinoIcons.info});
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 14),
+    padding: const EdgeInsets.symmetric(vertical: 16),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 16, color: AppTheme.textSecondary),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,

@@ -1,5 +1,6 @@
 import 'settings_group.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../settings_model.dart';
 import '../notification_intensity.dart';
@@ -24,7 +25,7 @@ class NotificationIntensityPicker extends StatelessWidget {
             preset.label,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: AppTheme.textPrimary,
             ),
           ),
@@ -38,8 +39,8 @@ class NotificationIntensityPicker extends StatelessWidget {
           ),
           leading: Icon(
             preset.matches(settings)
-                ? Icons.radio_button_checked
-                : Icons.radio_button_off,
+                ? CupertinoIcons.largecircle_fill_circle
+                : CupertinoIcons.circle,
             color: preset.matches(settings)
                 ? AppTheme.accent
                 : AppTheme.textMuted,

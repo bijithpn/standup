@@ -157,14 +157,14 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                     total == 0 ? '–' : '$rate%',
                     style: TextStyle(
                       fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
+                      fontWeight: FontWeight.w500,
+                      fontFeatures: AppTheme.tabular,
                       color: AppTheme.textPrimary,
                     ),
                   ),
                   Text(
                     'breaks taken',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                   ),
                 ],
               ),
@@ -172,19 +172,12 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: ringColor.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Text(
-            verdict,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: ringColor,
-            ),
+        Text(
+          verdict,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: ringColor,
           ),
         ),
       ],
@@ -239,8 +232,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   title,
                   style: TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
                   ),
                 ),
@@ -379,13 +371,14 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               value,
               style: TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
+                fontFeatures: AppTheme.tabular,
                 color: AppTheme.textPrimary,
               ),
             ),
             Text(
               label,
-              style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+              style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),
           ],
         );
@@ -403,7 +396,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                         'Trend',
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: AppTheme.textPrimary,
                         ),
                       ),
@@ -444,17 +437,10 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppTheme.accentColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          ),
-          child: Icon(
-            CupertinoIcons.chart_bar_alt_fill,
-            size: 18,
-            color: AppTheme.accentColor,
-          ),
+        Icon(
+          CupertinoIcons.chart_bar_alt_fill,
+          size: 20,
+          color: AppTheme.textSecondary,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -466,12 +452,11 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                 AppStrings.analytics,
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
-                  letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 AppStrings.analyticsSubtitle,
                 style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
@@ -519,7 +504,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                       chartTitle,
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
                     ),
@@ -621,28 +606,24 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         '${m.breaksCompleted}',
         total == 0 ? 'none offered $_periodLabel' : 'of $total offered',
         CupertinoIcons.checkmark_seal,
-        AppTheme.success,
       ),
       _buildStatCard(
         'Breaks skipped',
         '${m.breaksSkipped}',
         total == 0 ? 'nothing skipped' : '$skipShare% of offered',
         CupertinoIcons.arrow_uturn_left,
-        m.breaksSkipped == 0 ? AppTheme.textMuted : AppTheme.warning,
       ),
       _buildStatCard(
         'Active time',
         _formatMinutes(m.usageMinutes),
         'at the computer $_periodLabel',
         CupertinoIcons.stopwatch,
-        AppTheme.accent,
       ),
       _buildStatCard(
         streakLabel,
         '${m.streak}',
         m.streak == 1 ? 'day in a row' : 'days in a row',
         CupertinoIcons.flame,
-        m.streak > 0 ? AppTheme.warning : AppTheme.textMuted,
       ),
     ];
 
@@ -670,10 +651,9 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     String value,
     String hint,
     IconData icon,
-    Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -681,14 +661,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
+          Icon(icon, size: 16, color: AppTheme.textSecondary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -699,26 +672,26 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   value,
                   style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
+                    fontFeatures: AppTheme.tabular,
                     color: AppTheme.textPrimary,
-                    letterSpacing: -0.5,
                   ),
                 ),
                 Text(
                   hint,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
               ],
             ),

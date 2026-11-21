@@ -88,7 +88,7 @@ class _TemplateCardState extends State<_TemplateCard> {
                       style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -173,13 +173,15 @@ extension _TemplateGallery on _BreakAppearanceSettingsState {
             tier: tier,
             builder: (c, clock) => _compactPreview
                 ? Align(
-                    child: SizedBox(
-                      width: 340,
-                      height: 244,
-                      child: CompactBreakCard(
-                        template: t,
-                        session: session,
-                        clock: clock,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 340),
+                      child: AspectRatio(
+                        aspectRatio: 340 / 244,
+                        child: CompactBreakCard(
+                          template: t,
+                          session: session,
+                          clock: clock,
+                        ),
                       ),
                     ),
                   )

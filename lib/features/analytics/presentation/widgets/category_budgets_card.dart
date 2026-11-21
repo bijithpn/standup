@@ -51,6 +51,7 @@ class CategoryBudgetsCard extends StatelessWidget {
                 child: Text(
                   category.label,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
@@ -72,6 +73,7 @@ class CategoryBudgetsCard extends StatelessWidget {
                   isSet ? formatUsageDuration(minutes * 60) : 'Off',
                   textAlign: TextAlign.center,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontFamilyFallback: const ['Menlo', 'monospace'],
                     fontSize: 13,
                     color: isSet ? AppTheme.textPrimary : AppTheme.textMuted,

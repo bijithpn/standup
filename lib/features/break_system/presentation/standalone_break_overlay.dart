@@ -216,6 +216,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _askingReason = false;
 
   void _skipBreak() {
+    if (_askingReason) return;
     final isRealBreak =
         !_config.isPreview && _config.overlayType == 'breakScreen';
     if (_config.askSkipReason && isRealBreak) {
@@ -292,7 +293,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                         ? Colors.black.withValues(alpha: 0.25)
                         : palette.canvas),
               child: BreakOverlayKeyboardHandler(
-                canDismiss: _canDismiss,
+                canDismiss: _canDismiss && !_askingReason,
                 onSkip: _skipBreak,
                 onQuitApp: _quitApp,
                 child: RepaintBoundary(

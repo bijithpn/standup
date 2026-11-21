@@ -92,7 +92,7 @@ void main() {
     for (final heading in [
       'One thing from this week',
       'Focus',
-      'Break Statistics',
+      'Break statistics',
     ]) {
       expect(find.text(heading), findsOneWidget, reason: heading);
     }
@@ -104,7 +104,7 @@ void main() {
     await tester.tap(find.text('Focus details'));
     await tester.pumpAndSettle();
     expect(find.text('App tracking is off'), findsOneWidget);
-    expect(find.text('Break Statistics'), findsOneWidget);
+    expect(find.text('Break statistics'), findsOneWidget);
     expect(find.text('Current streak'), findsWidgets);
     // One period selector for the whole page.
     expect(find.text('This Week'), findsOneWidget);

@@ -86,7 +86,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<({String path, String content})?> _pickFile(List<String> exts) async {
     final result = await FilePicker.pickFiles(
-      dialogTitle: 'Import Data',
+      dialogTitle: 'Import data',
       type: FileType.custom,
       allowedExtensions: exts,
     );
@@ -98,7 +98,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
   Future<void> _exportBackupJson() async {
     try {
       final saved = await _saveText(
-        'Export Backup',
+        'Export backup',
         'breakmate_backup_${_stamp()}.json',
         'json',
         const JsonEncoder.withIndent('  ').convert(_backups.build()),
@@ -140,7 +140,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       final saved = await _saveText(
-        'Export Stats (${ext.toUpperCase()})',
+        'Export stats (${ext.toUpperCase()})',
         'breakmate_stats_${_stamp()}.$ext',
         ext,
         buffer.toString(),
@@ -150,7 +150,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
     } catch (e) {
       if (mounted) {
-        Toast.showError(context, 'Failed to export ${ext.toUpperCase()}: $e');
+        Toast.showError(context, 'Could not export ${ext.toUpperCase()}');
       }
     }
   }
@@ -170,7 +170,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         buffer.writeln('${r.$1.toIso8601String()},${r.$2},${r.$3}');
       }
       final saved = await _saveText(
-        'Export History',
+        'Export history',
         'breakmate_history_${_stamp()}.csv',
         'csv',
         buffer.toString(),
@@ -273,7 +273,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         await sl<StatsService>().initialize();
       }
       await _loadStats();
-      if (mounted) Toast.showSuccess(context, 'Backup restored successfully!');
+      if (mounted) Toast.showSuccess(context, 'Backup restored');
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to import backup: $e');
     }
@@ -447,7 +447,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       await _loadStats();
 
       if (mounted) {
-        Toast.showSuccess(context, 'Stats imported from CSV successfully!');
+        Toast.showSuccess(context, 'Stats imported from CSV');
       }
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to import table: $e');
@@ -458,7 +458,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        title: const Text('Reset All Data'),
+        title: const Text('Reset all data'),
         content: const Text(
           'Are you sure you want to delete all settings, companion preferences, and statistics? This action is permanent and cannot be undone.',
         ),
@@ -515,19 +515,19 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         const SizedBox(height: 12),
         buildCard([
           _infoRow(
-            'Database Size',
+            'Database size',
             '$sizeMb MB',
             CupertinoIcons.circle_grid_hex,
           ),
           divider(),
           _infoRow(
-            'Schema Version',
+            'Schema version',
             'v1.1 (Production)',
             CupertinoIcons.doc_text_viewfinder,
           ),
           divider(),
           _infoRow(
-            'Last Migration',
+            'Last migration',
             migrationTime == 0 ? 'N/A' : '${migrationTime}ms',
             CupertinoIcons.arrow_right_arrow_left_circle,
           ),
@@ -548,7 +548,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                     onPressed: _showExportOptions,
                     isSecondary: true,
                     borderRadius: BorderRadius.circular(10),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -562,7 +562,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                           'Export',
                           style: TextStyle(
                             color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -575,7 +575,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                     onPressed: _importData,
                     isSecondary: true,
                     borderRadius: BorderRadius.circular(10),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -589,7 +589,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                           'Import',
                           style: TextStyle(
                             color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -627,10 +627,10 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           ],
         ]),
 
-        sectionHeader('Danger Zone', subtitle: 'Irreversible data actions.'),
+        sectionHeader('Danger zone', subtitle: 'Irreversible data actions'),
         buildCard([
           actionRow(
-            label: 'Clear All Data',
+            label: 'Clear all data',
             subtitle: 'Delete all settings and local analytics history.',
             buttonText: 'Reset',
             onPressed: _showResetConfirmation,
@@ -643,7 +643,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Widget _infoRow(String label, String value, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
           Icon(icon, size: 16, color: AppTheme.textMuted),
@@ -663,7 +663,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
             style: TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               fontFamily: 'Inter',
             ),
           ),

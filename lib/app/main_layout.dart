@@ -77,7 +77,7 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Intelligent Detection',
     ),
     _NavItem(
-      label: 'Calendar Sync',
+      label: 'Calendar sync',
       icon: CupertinoIcons.calendar,
       section: 'Calendar Sync',
     ),
@@ -346,7 +346,7 @@ class _MainLayoutState extends State<MainLayout> {
                         _allItems[_pageIndex].label,
                         style: AppTheme.headerStyle.copyWith(
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -547,9 +547,9 @@ class _SidebarContent extends StatelessWidget {
                   text: 'Break',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
-                    letterSpacing: -0.3,
+                    letterSpacing: 0,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -557,9 +557,9 @@ class _SidebarContent extends StatelessWidget {
                   text: 'Mate',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.accentColor,
-                    letterSpacing: -0.3,
+                    letterSpacing: 0,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -568,9 +568,9 @@ class _SidebarContent extends StatelessWidget {
                     text: ' DEV',
                     style: TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: AppTheme.error,
-                      letterSpacing: -0.3,
+                      letterSpacing: 0,
                       fontFamily: 'Inter',
                     ),
                   ),
@@ -657,7 +657,7 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
                     color: isSelected
                         ? AppTheme.textPrimary
                         : AppTheme.textSecondary,
-                    letterSpacing: -0.1,
+                    letterSpacing: 0,
                     fontFamily: 'Inter',
                   ),
                 ),

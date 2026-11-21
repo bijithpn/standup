@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../domain/app_theme_preset.dart';
@@ -37,35 +38,18 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppTheme.space16),
           decoration: BoxDecoration(
             color: p.surfaceCard,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             border: Border.all(
               color: widget.isSelected
                   ? p.accent
                   : _isHovered
-                  ? p.accent.withValues(alpha: 0.5)
+                  ? Color.lerp(p.border, p.textPrimary, 0.25)!
                   : p.border,
-              width: widget.isSelected ? 2 : 1,
+              width: 2,
             ),
-            boxShadow: widget.isSelected
-                ? [
-                    BoxShadow(
-                      color: p.accent.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : _isHovered
-                ? [
-                    BoxShadow(
-                      color: p.accent.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,8 +67,8 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                     ),
                     child: Center(
                       child: Container(
-                        width: 14,
-                        height: 14,
+                        width: 16,
+                        height: 16,
                         decoration: BoxDecoration(
                           color: p.accent,
                           shape: BoxShape.circle,
@@ -92,16 +76,14 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: AppTheme.space8),
                   Expanded(
                     child: Text(
                       p.name,
                       style: TextStyle(
                         color: p.textPrimary,
                         fontSize: 13,
-                        fontWeight: widget.isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         fontFamily: 'Inter',
                       ),
                       maxLines: 1,
@@ -112,10 +94,10 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                     Icon(LucideIcons.circleCheck, size: 16, color: p.accent),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppTheme.space8),
 
               ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 child: SizedBox(
                   height: 12,
                   child: Row(
@@ -129,13 +111,13 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppTheme.space8),
 
               Text(
                 p.description,
                 style: TextStyle(
                   color: p.textSecondary,
-                  fontSize: 11,
+                  fontSize: 12,
                   height: 1.3,
                   fontFamily: 'Inter',
                 ),

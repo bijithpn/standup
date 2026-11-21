@@ -80,10 +80,12 @@ class _ProductivityPageState extends State<ProductivityPage> {
     _settings?.addListener(_onSettingsChanged);
     _repository?.refreshToday();
 
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _repository?.refreshToday(),
-    );
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        return;
+      }
+      _repository?.refreshToday();
+    });
     _load();
   }
 
@@ -377,20 +379,20 @@ class _NotEnoughInsights extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         border: Border.all(color: AppTheme.border),
       ),
       child: Text(
-        'Keep using BreakMate for a few days and patterns in how you work '
-        'will start to appear here.',
+        'Patterns appear after a few days of data.',
         style: TextStyle(
+          fontFeatures: AppTheme.tabular,
           fontFamily: 'Inter',
           fontSize: 12,
           height: 1.5,
-          color: AppTheme.textMuted,
+          color: AppTheme.textSecondary,
         ),
       ),
     );
@@ -411,7 +413,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceElevated,
         border: Border(bottom: BorderSide(color: AppTheme.border)),
@@ -425,17 +427,18 @@ class _Header extends StatelessWidget {
                 Text(
                   'Productivity',
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontFamily: 'Inter',
-                    fontSize: 19,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.4,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontFamily: 'Inter',
                     fontSize: 12,
                     color: AppTheme.textMuted,
@@ -445,7 +448,7 @@ class _Header extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: AppTheme.surfaceCard,
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
@@ -484,23 +487,23 @@ class _RangeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(4),
+      hoverColor: AppTheme.hoverOverlay,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.accent.withValues(alpha: 0.14)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          color: isSelected ? AppTheme.surfaceElevated : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
           label,
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? AppTheme.accent : AppTheme.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isSelected ? AppTheme.textPrimary : AppTheme.textMuted,
           ),
         ),
       ),

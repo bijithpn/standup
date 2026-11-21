@@ -40,8 +40,8 @@ class DashboardPage extends StatelessWidget {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 10),
-                          DashboardHeader(),
+                          const SizedBox(height: 12),
+                          const DashboardHeader(),
                           const SizedBox(height: 40),
                           TimerSection(
                             calendarEvents: dashboardCtrl.calendarEvents,
@@ -71,19 +71,19 @@ class DashboardPage extends StatelessWidget {
                                   if (granted) {
                                     Toast.showSuccess(
                                       context,
-                                      'Calendar access granted!',
+                                      'Calendar access granted',
                                     );
                                   } else {
                                     Toast.showError(
                                       context,
-                                      'Calendar access denied. Please enable it in System Settings.',
+                                      'Calendar access denied. Enable it in System Settings.',
                                     );
                                   }
                                 }
                               },
                             ),
                           ],
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 24),
                         ],
                       );
                     },
@@ -111,9 +111,8 @@ class DashboardPage extends StatelessWidget {
                 AppStrings.today,
                 style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
-                  letterSpacing: -0.2,
                 ),
               ),
               titleWidth: 260,

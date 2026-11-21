@@ -64,20 +64,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Break Templates'),
+        sectionHeader('Break templates'),
         const SizedBox(height: 8),
         Text(
-          'Make room for a better break.',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose one of six scenes and how it appears.',
+          'Choose a scene and how it appears.',
           style: TextStyle(
             color: AppTheme.textSecondary,
             fontSize: 13,
@@ -119,7 +109,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   style: TextStyle(
                     color: AppTheme.accentColor,
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -151,7 +141,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                       alpha: hasChanges ? 1 : 0.5,
                     ),
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),

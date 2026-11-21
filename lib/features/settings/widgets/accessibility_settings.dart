@@ -1,4 +1,5 @@
 import 'settings_group.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import '../settings_model.dart';
 import 'settings_widgets.dart';
@@ -66,7 +67,7 @@ class AccessibilitySettings extends StatelessWidget {
           ),
           const SettingsNote(
             'Keyboard: Tab and Shift+Tab move between controls. Enter or Space activates a focused control. Escape dismisses a skippable break.',
-            icon: Icons.keyboard_outlined,
+            icon: CupertinoIcons.keyboard,
           ),
         ],
       ),

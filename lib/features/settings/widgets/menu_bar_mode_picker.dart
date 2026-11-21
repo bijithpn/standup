@@ -76,8 +76,8 @@ class _MenuBarModePickerState extends State<MenuBarModePicker>
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
+        spacing: 8,
+        runSpacing: 8,
         children: [
           for (final e in widget.modes.entries)
             _Tile(
@@ -135,7 +135,7 @@ class _Tile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? colors.primary : colors.outlineVariant,
-            width: 1.5,
+            width: 1,
           ),
         ),
         child: Column(
@@ -146,7 +146,7 @@ class _Tile extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: colors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: child,
             ),
@@ -155,8 +155,8 @@ class _Tile extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: selected ? AppTheme.textPrimary : AppTheme.textSecondary,
               ),
             ),
@@ -247,7 +247,7 @@ class _PreviewPainter extends CustomPainter {
               fontFamily: 'Inter',
               color: foreground,
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
@@ -258,19 +258,19 @@ class _PreviewPainter extends CustomPainter {
         final badge = 22.0 + breathe * 2;
         final rr = RRect.fromRectAndRadius(
           Rect.fromCenter(center: c, width: badge, height: badge),
-          const Radius.circular(7),
+          const Radius.circular(8),
         );
         canvas.drawRRect(rr, Paint()..color = color);
         canvas.drawCircle(c, 4, Paint()..color = onAccent);
       default:
         final bob = math.sin(t * 6 * math.pi * 2) * 1.2;
         final f = c.translate(0, bob);
-        final body = Paint()..color = const Color(0xFFFFB86B);
+        final body = Paint()..color = color;
         canvas.drawCircle(f.translate(-8, -9), 4, body);
         canvas.drawCircle(f.translate(8, -9), 4, body);
         canvas.drawCircle(f, 12, body);
         final blink = (t * 6) % 1.0 > 0.9;
-        final eye = Paint()..color = const Color(0xFF3A2A1A);
+        final eye = Paint()..color = onAccent;
         for (final dx in [-4.5, 4.5]) {
           if (blink) {
             canvas.drawLine(

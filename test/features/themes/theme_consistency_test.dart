@@ -1,3 +1,4 @@
+import 'package:macos_ui/macos_ui.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -178,6 +179,38 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('settings page lays out without overflow at 150 percent text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final settings = InMemorySettingsRepository();
+    addTearDown(settings.dispose);
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<SettingsRepository>.value(value: settings),
+          ChangeNotifierProvider<BreakController>(
+            create: (_) => _BreakController(),
+          ),
+        ],
+        child: MacosApp(
+          theme: AppTheme.macosTheme,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: Theme(data: AppTheme.materialTheme, child: child!),
+          ),
+          home: const Material(child: SettingsPage(section: 'General')),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('dropdown menus use the selected light surface', (tester) async {
     AppTheme.applyPreset(AppThemePreset.softLight);

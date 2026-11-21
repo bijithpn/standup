@@ -43,7 +43,7 @@ void main() {
     expect(find.text('Breaks offered'), findsOneWidget);
     expect(find.text('Skip rate'), findsOneWidget);
     expect(find.text('Breaks taken per day'), findsOneWidget);
-    expect(find.text('Break Activity'), findsOneWidget);
+    expect(find.text('Break activity'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -60,7 +60,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Break Activity'), findsOneWidget);
+    expect(find.text('Break activity'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

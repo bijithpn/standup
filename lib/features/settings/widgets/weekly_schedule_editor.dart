@@ -1,4 +1,6 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'settings_widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../settings_model.dart';
 import '../work_schedule.dart';
@@ -38,8 +40,8 @@ class WeeklyScheduleEditor extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text('${days[day - 1]} hours'),
-          content: SizedBox(
-            width: 360,
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
             child: SingleChildScrollView(
               child: Form(
                 key: form,
@@ -66,11 +68,11 @@ class WeeklyScheduleEditor extends StatelessWidget {
                             ? 'Enter a valid time as HH:mm.'
                             : null,
                       ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Exclude lunch'),
-                      value: lunch,
-                      onChanged: (value) => setState(() => lunch = value),
+                    toggleRow(
+                      'Exclude lunch',
+                      'Lunch start and end times',
+                      lunch,
+                      (value) => setState(() => lunch = value),
                     ),
                     FormField<bool>(
                       validator: (_) =>
@@ -97,11 +99,12 @@ class WeeklyScheduleEditor extends StatelessWidget {
             ),
           ),
           actions: [
-            TextButton(
+            MinimalButton(
+              isGhost: true,
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            FilledButton(
+            MinimalButton(
               onPressed: () {
                 if (form.currentState!.validate()) {
                   Navigator.pop(
@@ -152,13 +155,13 @@ class WeeklyScheduleEditor extends StatelessWidget {
         ListTile(
           title: Text(
             days[day - 1],
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
           subtitle: Text(
             _summary(day),
             style: const TextStyle(fontSize: 12, height: 1.5),
           ),
-          trailing: const Icon(Icons.edit_outlined),
+          trailing: const Icon(CupertinoIcons.pencil, size: 16),
           contentPadding: const EdgeInsets.symmetric(vertical: 4),
           onTap: () => _edit(context, day),
         ),

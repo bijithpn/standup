@@ -11,13 +11,13 @@ class DashboardHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _getGreeting(),
+          AppStrings.today,
           style: TextStyle(
-            fontFamilyFallback: const ['Georgia', 'Times New Roman'],
-            fontSize: 34,
+            fontFamily: 'Inter',
+            fontSize: 32,
+            fontWeight: FontWeight.w500,
             height: 1.1,
             color: AppTheme.textPrimary,
-            letterSpacing: -1,
           ),
         ),
         const SizedBox(height: 8),
@@ -31,12 +31,5 @@ class DashboardHeader extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return AppStrings.goodMorning;
-    if (hour < 17) return AppStrings.goodAfternoon;
-    return AppStrings.goodEvening;
   }
 }

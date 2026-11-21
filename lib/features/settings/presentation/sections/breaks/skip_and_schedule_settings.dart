@@ -46,7 +46,6 @@ class _SkipAndScheduleSettingsState extends State<SkipAndScheduleSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
         sectionHeader(
           'Skipping',
           subtitle: 'Limit how often breaks can be skipped.',
@@ -75,13 +74,21 @@ class _SkipAndScheduleSettingsState extends State<SkipAndScheduleSettings> {
             divider(),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(
-                counts.entries.map((e) => '${e.key}: ${e.value}').join('  •  '),
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 12,
-                  fontFamily: 'Inter',
-                ),
+              child: Wrap(
+                spacing: 16,
+                runSpacing: 4,
+                children: [
+                  for (final e in counts.entries)
+                    Text(
+                      '${e.key} ${e.value}',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                        fontFamily: 'Inter',
+                        fontFeatures: AppTheme.tabular,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
@@ -94,7 +101,7 @@ class _SkipAndScheduleSettingsState extends State<SkipAndScheduleSettings> {
         buildCard([
           toggleRow(
             'Switch profile by time of day',
-            'Morning 5–12, afternoon 12–17, evening 17–5.',
+            'Morning 5–12, afternoon 12–17, evening 17–5',
             TimeOfDayProfiles.enabled,
             (v) {
               TimeOfDayProfiles.enabled = v;

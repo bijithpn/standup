@@ -37,7 +37,7 @@ class NotificationsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Reminder Intensity'),
+        sectionHeader('Reminder intensity'),
         NotificationIntensityPicker(settings: settings, onChanged: onSave),
         const SizedBox(height: 8),
         sectionHeader('Notifications'),
@@ -45,7 +45,7 @@ class NotificationsSection extends StatelessWidget {
           children: [_buildSoundEnabled(), _buildNotificationsEnabled()],
         ),
         const SizedBox(height: 8),
-        sectionHeader('Health Reminders'),
+        sectionHeader('Health reminders'),
         SettingsGroup(
           children: [
             toggleRow(
@@ -168,24 +168,28 @@ class NotificationsSection extends StatelessWidget {
                       r.title,
                       style: TextStyle(
                         color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     subtitle: Text(
                       'Every ${r.minutes} min',
                       style: TextStyle(color: AppTheme.textSecondary),
                     ),
-                    trailing: IconButton(
-                      tooltip: 'Remove',
-                      icon: Icon(
-                        CupertinoIcons.delete,
-                        size: 16,
-                        color: AppTheme.textSecondary,
-                      ),
-                      onPressed: () => onSave(
-                        settings.copyWith(
-                          customReminders: [...settings.customReminders]
-                            ..remove(r),
+                    trailing: Tooltip(
+                      message: 'Remove',
+                      child: MinimalButton(
+                        isGhost: true,
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          CupertinoIcons.delete,
+                          size: 16,
+                          color: AppTheme.textSecondary,
+                        ),
+                        onPressed: () => onSave(
+                          settings.copyWith(
+                            customReminders: [...settings.customReminders]
+                              ..remove(r),
+                          ),
                         ),
                       ),
                     ),
@@ -312,13 +316,13 @@ class NotificationsSection extends StatelessWidget {
                       size: 14,
                       color: AppTheme.textPrimary,
                     ),
-                    SizedBox(width: 6),
+                    SizedBox(width: 8),
                     Text(
                       'Preview',
                       style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -372,7 +376,7 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
 
   InputDecoration _decoration(String label, {String? hint, String? suffix}) {
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       borderSide: BorderSide(color: AppTheme.border),
     );
     return InputDecoration(
@@ -389,11 +393,11 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
       suffixStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
       filled: true,
       fillColor: AppTheme.surfaceElevated,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: border,
       border: border,
       focusedBorder: border.copyWith(
-        borderSide: BorderSide(color: AppTheme.accentColor, width: 2),
+        borderSide: BorderSide(color: AppTheme.accentColor),
       ),
     );
   }
@@ -428,17 +432,17 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
         onSubmitted: (_) => _add(),
       ),
     );
-    final add = OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppTheme.textPrimary,
-        backgroundColor: AppTheme.surfaceElevated,
-        side: BorderSide(color: AppTheme.border),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      icon: const Icon(CupertinoIcons.add, size: 16),
-      label: const Text('Add reminder'),
+    final add = MinimalButton(
+      isSecondary: true,
       onPressed: _add,
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(CupertinoIcons.add, size: 16),
+          SizedBox(width: 8),
+          Text('Add reminder'),
+        ],
+      ),
     );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
@@ -474,7 +478,7 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
             },
           ),
           if (_error != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Semantics(
               liveRegion: true,
               child: Text(

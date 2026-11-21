@@ -94,22 +94,25 @@ class _WellnessOverlayViewState extends State<WellnessOverlayView> {
               return Padding(
                 padding: const EdgeInsets.all(16),
                 child: Center(
-                  child: SizedBox(
-                    width: 360,
-                    height: 244,
-                    child: _EveningWarmth(
-                      enabled: s.timeOfDay,
-                      radius: 20,
-                      child: CompactBreakCard(
-                        template: template,
-                        session: s,
-                        clock: clock,
-                        onSkip: widget.onSkip,
-                        onOpenImmersive:
-                            widget.onOpenImmersive ??
-                            () => WellnessOverlayView._bridge.invokeMethod(
-                              'openImmersive',
-                            ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 244,
+                      child: _EveningWarmth(
+                        enabled: s.timeOfDay,
+                        radius: 20,
+                        child: CompactBreakCard(
+                          template: template,
+                          session: s,
+                          clock: clock,
+                          onSkip: widget.onSkip,
+                          onOpenImmersive:
+                              widget.onOpenImmersive ??
+                              () => WellnessOverlayView._bridge.invokeMethod(
+                                'openImmersive',
+                              ),
+                        ),
                       ),
                     ),
                   ),

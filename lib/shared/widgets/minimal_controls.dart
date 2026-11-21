@@ -11,6 +11,7 @@ class MinimalButton extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final BorderRadius? borderRadius;
   final bool isSecondary;
+  final bool isGhost;
 
   const MinimalButton({
     super.key,
@@ -21,6 +22,7 @@ class MinimalButton extends StatefulWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.borderRadius,
     this.isSecondary = false,
+    this.isGhost = false,
   });
 
   @override
@@ -48,7 +50,11 @@ class _MinimalButtonState extends State<MinimalButton>
 
     final double baseAlpha = defaultBg.a;
 
-    if (!isDisabled) {
+    if (widget.isGhost) {
+      activeColor = !isDisabled && (_isPressed || _isHovering)
+          ? AppTheme.hoverOverlay
+          : Colors.transparent;
+    } else if (!isDisabled) {
       if (_isPressed) {
         activeColor = activeColor.withValues(
           alpha: widget.isSecondary
@@ -107,6 +113,7 @@ class _MinimalButtonState extends State<MinimalButton>
                 : const Duration(milliseconds: 150),
             curve: Curves.easeOutCubic,
             padding: widget.padding,
+            constraints: const BoxConstraints(minHeight: 32),
             decoration: BoxDecoration(
               color: activeColor,
               borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
@@ -119,15 +126,15 @@ class _MinimalButtonState extends State<MinimalButton>
             child: DefaultTextStyle(
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: widget.isSecondary
+                fontWeight: FontWeight.w500,
+                color: widget.isGhost
+                    ? (isDisabled ? AppTheme.textMuted : AppTheme.accent)
+                    : widget.isSecondary
                     ? colors.onSurface
-                    : ((defaultBg.computeLuminance() > 0.179)
-                          ? Colors.black
-                          : Colors.white),
+                    : AppTheme.onColor(defaultBg),
                 fontFamily: 'Inter',
               ),
-              child: widget.child,
+              child: Center(widthFactor: 1, child: widget.child),
             ),
           ),
         ),
@@ -286,28 +293,18 @@ class _MinimalSliderState extends State<MinimalSlider> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
                               curve: Curves.easeOutCubic,
-                              width: _isHovering || _isDragging || _isFocused
-                                  ? 14
-                                  : 12,
-                              height: _isHovering || _isDragging || _isFocused
-                                  ? 14
-                                  : 12,
+                              width: 14,
+                              height: 14,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppTheme.surfaceElevated,
                                 shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                  if (_isHovering || _isDragging || _isFocused)
-                                    BoxShadow(
-                                      color: activeColor.withValues(alpha: 0.3),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                ],
+                                border: Border.all(
+                                  color:
+                                      _isHovering || _isDragging || _isFocused
+                                      ? activeColor
+                                      : AppTheme.border,
+                                  width: 2,
+                                ),
                               ),
                             ),
                           ),

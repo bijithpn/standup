@@ -75,15 +75,7 @@ Widget _readout(BreakSession s) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              s.title,
-              style: TextStyle(
-                fontFamily: BreakOverlayTheme.fontFamily,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: p.textSecondary,
-              ),
-            ),
+            Text(s.title, style: WellnessType.label(p)),
             const SizedBox(height: 8),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -94,7 +86,6 @@ Widget _readout(BreakSession s) {
                   fontSize: 104,
                   fontWeight: FontWeight.w500,
                   height: 1,
-                  letterSpacing: -2,
                   color: p.textPrimary,
                   fontFeatures: BreakOverlayTheme.tabular,
                 ),
@@ -106,25 +97,9 @@ Widget _readout(BreakSession s) {
               child: Text(
                 s.instruction,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                  fontSize: 16,
-                  height: 1.5,
-                  color: p.textSecondary,
-                ),
+                style: WellnessType.instruction(p),
               ),
             ),
-            if (s.focus == BreakFocus.eyes) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Look at something far away.',
-                style: TextStyle(
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                  fontSize: 13,
-                  color: p.textMuted,
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -143,20 +118,17 @@ class _Blob {
 }
 
 const _blobs = [
-  _Blob(Offset(0.22, 0.30), Offset(0.42, 0.52), 0.22, Color(0xFFF2C4A8), 3),
-  _Blob(Offset(0.78, 0.26), Offset(0.58, 0.50), 0.24, Color(0xFFCFC3E8), 5),
-  _Blob(Offset(0.72, 0.76), Offset(0.55, 0.66), 0.20, Color(0xFFE0A9B3), 8),
-  _Blob(Offset(0.25, 0.78), Offset(0.42, 0.66), 0.19, Color(0xFFAEDDD9), 13),
-  _Blob(Offset(0.50, 0.14), Offset(0.50, 0.58), 0.12, Color(0xFFF0D9B8), 17),
+  _Blob(Offset(0.16, 0.30), Offset(0.20, 0.62), 0.24, Color(0xFFF2C4A8), 3),
+  _Blob(Offset(0.86, 0.72), Offset(0.80, 0.40), 0.20, Color(0xFFF0D9B8), 17),
 ];
 
 const _kindColors = [
-  Color(0xFFAEDDD9),
-  Color(0xFFCFC3E8),
   Color(0xFFF2C4A8),
-  Color(0xFFE0A9B3),
   Color(0xFFF0D9B8),
-  Color(0xFFCFC3E8),
+  Color(0xFFF2C4A8),
+  Color(0xFFF0D9B8),
+  Color(0xFFF2C4A8),
+  Color(0xFFF0D9B8),
 ];
 
 class _LiquidPainter extends CustomPainter {
@@ -227,16 +199,6 @@ class _LiquidPainter extends CustomPainter {
     canvas.save();
     switch (mode) {
       case _Mode.full:
-        for (var i = 0; i < 3; i++) {
-          final f = m > 0 ? (t / 16 + i / 3) % 1 : 0.25 + i * 0.25;
-          ring(
-            Offset(w / 2, h * 0.55),
-            side * 0.1 + side * 0.5 * f,
-            0.16 * (1 - f),
-            const Color(0xFFC98A98),
-            1.2,
-          );
-        }
         final stretch = session?.focus == BreakFocus.stretch;
         for (var i = 0; i < _blobs.length; i++) {
           final b = _blobs[i];
@@ -275,7 +237,7 @@ class _LiquidPainter extends CustomPainter {
           rect,
           Paint()..color = LiquidTemplate._palette.canvasRaised,
         );
-        final a = _blobs[2], b = _blobs[3];
+        final a = _blobs[0], b = _blobs[1];
         blob(
           Offset(w * (0.24 + 0.16 * e), h * 0.52),
           h * 0.5,

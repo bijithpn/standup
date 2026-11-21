@@ -3,6 +3,7 @@ import 'rest_day_settings.dart';
 import 'package:breakmate/features/analytics/weekly_goal_progress.dart';
 import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'package:clock/clock.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -158,8 +159,6 @@ class GoalsSection extends StatelessWidget {
   }
 }
 
-const _serif = ['Georgia', 'Times New Roman'];
-
 Widget _rule() =>
     Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle);
 
@@ -182,15 +181,14 @@ class _Summary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'TODAY',
+            'Today',
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
               color: AppTheme.textMuted,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -198,10 +196,9 @@ class _Summary extends StatelessWidget {
               Text(
                 '$metCount',
                 style: TextStyle(
-                  fontFamilyFallback: _serif,
-                  fontSize: 52,
+                  fontFeatures: AppTheme.tabular,
+                  fontSize: 48,
                   height: 1,
-                  letterSpacing: -1.5,
                   color: AppTheme.textPrimary,
                 ),
               ),
@@ -212,7 +209,7 @@ class _Summary extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: overall.clamp(0.0, 1.0)),
             duration: motionDuration(
@@ -222,12 +219,12 @@ class _Summary extends StatelessWidget {
             curve: Curves.easeOutCubic,
             builder: (context, v, _) => _Hairline(value: v, height: 3),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
             'Targets to aim for. BreakMate tracks your progress but never '
             'blocks you or forces a break when you reach one.',
             style: TextStyle(
-              fontSize: 12.5,
+              fontSize: 12,
               height: 1.5,
               color: AppTheme.textSecondary,
             ),
@@ -309,7 +306,7 @@ class _GoalRow extends StatelessWidget {
                     '0$index',
                     style: TextStyle(
                       fontFamilyFallback: const ['Menlo', 'monospace'],
-                      fontSize: 11,
+                      fontSize: 12,
                       color: AppTheme.textMuted,
                     ),
                   ),
@@ -319,7 +316,7 @@ class _GoalRow extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
                     ),
@@ -329,13 +326,13 @@ class _GoalRow extends StatelessWidget {
                       'Reached',
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.success,
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
@@ -343,10 +340,9 @@ class _GoalRow extends StatelessWidget {
                   Text(
                     current,
                     style: TextStyle(
-                      fontFamilyFallback: _serif,
-                      fontSize: 30,
+                      fontFeatures: AppTheme.tabular,
+                      fontSize: 28,
                       height: 1,
-                      letterSpacing: -0.8,
                       color: AppTheme.textPrimary,
                     ),
                   ),
@@ -360,7 +356,7 @@ class _GoalRow extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
                 duration: motionDuration(
@@ -374,21 +370,21 @@ class _GoalRow extends StatelessWidget {
               Text(
                 effect,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 12,
                   height: 1.5,
                   color: AppTheme.textSecondary,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Text(
                     'Target',
-                    style: TextStyle(fontSize: 12.5, color: AppTheme.textMuted),
+                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                   ),
                   const Spacer(),
                   _StepButton(
-                    icon: Icons.remove,
+                    icon: CupertinoIcons.minus,
                     tooltip: 'Decrease target',
                     onTap: value > min ? () => onChanged(value - 1) : null,
                   ),
@@ -405,7 +401,7 @@ class _GoalRow extends StatelessWidget {
                     ),
                   ),
                   _StepButton(
-                    icon: Icons.add,
+                    icon: CupertinoIcons.add,
                     tooltip: 'Increase target',
                     onTap: value < max ? () => onChanged(value + 1) : null,
                   ),

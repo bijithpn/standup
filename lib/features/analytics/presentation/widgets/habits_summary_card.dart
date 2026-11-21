@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/analytics/habits_summary.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -19,34 +20,38 @@ class HabitsSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _StreakColumn(
-                  icon: CupertinoIcons.flame_fill,
+                  icon: CupertinoIcons.flame,
                   label: 'Break streak',
                   days: summary.breakStreakDays,
                 ),
               ),
-              Container(
-                width: 1,
+              SizedBox(
                 height: 36,
-                color: AppTheme.textMuted.withValues(alpha: 0.15),
+                child: VerticalDivider(
+                  width: 1,
+                  thickness: 0.5,
+                  color: AppTheme.separatorColor,
+                ),
               ),
               Expanded(
                 child: _StreakColumn(
-                  icon: CupertinoIcons.bolt_fill,
+                  icon: CupertinoIcons.bolt,
                   label: 'Focus streak',
                   days: summary.focusStreakDays,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Container(
-            height: 1,
-            color: AppTheme.textMuted.withValues(alpha: 0.1),
-          ),
+          const SizedBox(height: 16),
+          Divider(height: 1, thickness: 0.5, color: AppTheme.separatorColor),
           const SizedBox(height: 12),
           Text(
             summary.describe(),
-            style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
+            style: TextStyle(
+              fontFeatures: AppTheme.tabular,
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+            ),
           ),
         ],
       ),
@@ -75,30 +80,35 @@ class _StreakColumn extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: days > 0 ? AppTheme.accentColor : AppTheme.textMuted,
-                ),
-                const SizedBox(width: 6),
+                Icon(icon, size: 16, color: AppTheme.textSecondary),
+                const SizedBox(width: 8),
                 Text(
                   '$days',
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
                   ),
                 ),
                 Text(
                   days == 1 ? ' day' : ' days',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
+                    fontSize: 12,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+              style: TextStyle(
+                fontFeatures: AppTheme.tabular,
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
             ),
           ],
         ),

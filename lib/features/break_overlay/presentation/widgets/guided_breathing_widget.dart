@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
@@ -20,14 +21,12 @@ class _PhaseData {
   final int durationSeconds;
   final String label;
   final String sublabel;
-  final Color color;
 
   const _PhaseData({
     required this.phase,
     required this.durationSeconds,
     required this.label,
     required this.sublabel,
-    required this.color,
   });
 }
 
@@ -37,28 +36,24 @@ const _phases = [
     durationSeconds: 4,
     label: 'Breathe in',
     sublabel: 'Fill your lungs slowly',
-    color: Color(0xFF93C5FD),
   ),
   _PhaseData(
     phase: _BreathPhase.holdIn,
     durationSeconds: 7,
     label: 'Hold',
     sublabel: 'Keep the air inside',
-    color: Color(0xFFD8B4FE),
   ),
   _PhaseData(
     phase: _BreathPhase.exhale,
     durationSeconds: 8,
     label: 'Breathe out',
     sublabel: 'Release all tension',
-    color: Color(0xFFA7F3D0),
   ),
   _PhaseData(
     phase: _BreathPhase.holdOut,
     durationSeconds: 1,
     label: 'Rest',
     sublabel: 'Prepare for the next breath',
-    color: Color(0xFFFDE047),
   ),
 ];
 
@@ -80,8 +75,17 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
       vsync: this,
       duration: Duration(seconds: _phases[_phaseIndex].durationSeconds),
     );
-    _applyPhaseAnimation();
     _startPhase();
+  }
+
+  bool _ringReady = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_ringReady) return;
+    _ringReady = true;
+    _applyPhaseAnimation();
   }
 
   @override
@@ -92,10 +96,19 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
     super.dispose();
   }
 
-  // Per-phase ring animation: grow on inhale, gentle pulse on hold, shrink on exhale, still on rest.
+  // Per-phase ring animation: grow on inhale, still on hold, shrink on exhale, still on rest.
   void _applyPhaseAnimation() {
     final phase = _phases[_phaseIndex];
     _ringController.duration = Duration(seconds: phase.durationSeconds);
+    if (BreakMotion.reduced(context)) {
+      _ringScale = AlwaysStoppedAnimation<double>(
+        phase.phase == _BreathPhase.inhale || phase.phase == _BreathPhase.holdIn
+            ? 1.0
+            : 0.7,
+      );
+      _ringController.reset();
+      return;
+    }
     switch (phase.phase) {
       case _BreathPhase.inhale:
         _ringScale = Tween<double>(begin: 0.7, end: 1.0).animate(
@@ -106,25 +119,8 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           ..forward();
         break;
       case _BreathPhase.holdIn:
-        _ringScale = TweenSequence<double>([
-          TweenSequenceItem(
-            tween: Tween(
-              begin: 1.0,
-              end: 1.04,
-            ).chain(CurveTween(curve: Curves.easeInOut)),
-            weight: 1,
-          ),
-          TweenSequenceItem(
-            tween: Tween(
-              begin: 1.04,
-              end: 1.0,
-            ).chain(CurveTween(curve: Curves.easeInOut)),
-            weight: 1,
-          ),
-        ]).animate(_ringController);
-        _ringController
-          ..reset()
-          ..repeat();
+        _ringScale = const AlwaysStoppedAnimation<double>(1.0);
+        _ringController.reset();
         break;
       case _BreathPhase.exhale:
         _ringScale = Tween<double>(begin: 1.0, end: 0.7).animate(
@@ -198,7 +194,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
         _CycleIndicator(
           completed: _completedCycles,
           total: widget.targetCycles,
-          activeColor: phase.color,
+          activeColor: BreakOverlayTheme.eyeRest,
         ),
         const SizedBox(height: 32),
         RepaintBoundary(
@@ -221,7 +217,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                       child: CustomPaint(
                         size: const Size.square(ringRadius * 2),
                         painter: _PhaseArcPainter(
-                          color: phase.color,
+                          color: BreakOverlayTheme.eyeRest,
                           track: BreakPalette.of(context).track,
                           progress: progress,
                         ),
@@ -240,7 +236,9 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: phase.color.withValues(alpha: 0.35),
+                            color: BreakOverlayTheme.eyeRest.withValues(
+                              alpha: 0.35,
+                            ),
                             width: 1.5,
                           ),
                         ),
@@ -306,14 +304,14 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFFA7F3D0).withValues(alpha: 0.4),
+              color: BreakOverlayTheme.eyeRest.withValues(alpha: 0.4),
               width: 1.5,
             ),
           ),
           child: const Center(
             child: Icon(
-              Icons.check_rounded,
-              color: Color(0xFFA7F3D0),
+              CupertinoIcons.checkmark_alt,
+              color: BreakOverlayTheme.eyeRest,
               size: 28,
             ),
           ),
@@ -324,9 +322,8 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           style: TextStyle(
             color: BreakPalette.of(context).textPrimary,
             fontSize: 20,
-            fontWeight: FontWeight.w300,
+            fontWeight: FontWeight.w400,
             fontFamily: 'Inter',
-            letterSpacing: -0.2,
           ),
         ),
         const SizedBox(height: 10),

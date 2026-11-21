@@ -12,12 +12,12 @@ class StreakMilestone {
   const StreakMilestone(this.days, this.label);
 
   static const List<StreakMilestone> tiers = [
-    StreakMilestone(3, 'Getting Started'),
-    StreakMilestone(7, 'One Week Strong'),
-    StreakMilestone(14, 'Two Week Habit'),
-    StreakMilestone(30, 'Monthly Master'),
-    StreakMilestone(60, 'Two Month Champion'),
-    StreakMilestone(100, 'Century Streak'),
+    StreakMilestone(3, 'Getting started'),
+    StreakMilestone(7, 'One week strong'),
+    StreakMilestone(14, 'Two week habit'),
+    StreakMilestone(30, 'Monthly master'),
+    StreakMilestone(60, 'Two month champion'),
+    StreakMilestone(100, 'Century streak'),
   ];
 }
 

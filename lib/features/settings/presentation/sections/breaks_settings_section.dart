@@ -35,14 +35,14 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             sectionHeader(
-              'Break Configuration',
+              'Break configuration',
               subtitle:
                   'Pick a rhythm, fine-tune the timings, choose what a break shows, and style it.',
             ),
             const SizedBox(height: 12),
 
             segmentedControl(
-              ['Profiles', 'Intervals', 'Options', 'Themes', 'Exercises'],
+              ['Profiles', 'Intervals', 'Behavior', 'Appearance', 'Exercises'],
               _breaksSubTab,
               (i) => setState(() => _breaksSubTab = i),
               isSmall: isSmallScreen,

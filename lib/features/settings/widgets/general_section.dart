@@ -37,7 +37,7 @@ class GeneralSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        sectionHeader('Working Hours'),
+        sectionHeader('Working hours'),
         SettingsGroup(
           children: [
             _buildWorkingHoursToggle(),
@@ -60,7 +60,7 @@ class GeneralSection extends StatelessWidget {
             divider(),
             _buildGlobalHotkey(),
             const SizedBox(height: 16),
-            sectionHeader('Idle & Inactivity'),
+            sectionHeader('Idle and inactivity'),
             _buildPauseTimer(),
             divider(),
             _buildResetTimer(),
@@ -263,7 +263,7 @@ class GeneralSection extends StatelessWidget {
                 children: [
                   Text(
                     e.value,
-                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                   ),
                   const SizedBox(height: 4),
                   TapTarget(

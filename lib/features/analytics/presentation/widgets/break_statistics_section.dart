@@ -61,6 +61,30 @@ class BreakStatisticsSection extends StatelessWidget {
     return (completed: completed, skipped: skipped, days: days);
   }
 
+  String? _skipDelta(double skipRate) {
+    if (selectedFilter != 1) return null;
+    final today = DateTime.now();
+    String key(int daysAgo) {
+      final d = DateTime(today.year, today.month, today.day - daysAgo);
+      return '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+    }
+
+    final from = key(13);
+    final to = key(7);
+    final prev = stats.weeklyData.where(
+      (d) => d.date.compareTo(from) >= 0 && d.date.compareTo(to) <= 0,
+    );
+    final skipped = prev.fold<int>(0, (s, d) => s + d.breaksSkipped);
+    final total = prev.fold<int>(0, (s, d) => s + d.breaksCompleted) + skipped;
+    if (total == 0) return null;
+    final pts = ((skipRate - skipped / total) * 100).round();
+    return pts == 0
+        ? 'same as last week'
+        : '${pts > 0 ? '+' : '-'}${pts.abs()} pts vs last week';
+  }
+
   @override
   Widget build(BuildContext context) {
     final totals = _periodTotals();
@@ -70,21 +94,24 @@ class BreakStatisticsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Break Statistics'),
+        sectionHeader('Break statistics'),
         const SizedBox(height: 16),
         buildCard([
           _metricRow(
-            CupertinoIcons.person_alt,
+            CupertinoIcons.timer,
             'Breaks offered',
             'taken plus skipped, $_periodLabel',
             '$total',
           ),
           divider(),
           _metricRow(
-            CupertinoIcons.arrow_uturn_left,
+            CupertinoIcons.forward_end,
             'Skip rate',
-            'share of breaks you skipped, $_periodLabel',
-            total == 0 ? '-' : '${(skipRate * 100).round()}%',
+            [
+              'share of breaks you skipped, $_periodLabel',
+              ?(total == 0 ? null : _skipDelta(skipRate)),
+            ].join(' · '),
+            total == 0 ? '—' : '${(skipRate * 100).round()}%',
           ),
           if (selectedFilter != 0) ...[
             divider(),
@@ -98,10 +125,8 @@ class BreakStatisticsSection extends StatelessWidget {
         ]),
         const SizedBox(height: 32),
         sectionHeader(
-          'Break Activity',
-          subtitle:
-              'Each square is one day. The colour shows how many of that '
-              'day\'s breaks you actually took.',
+          'Break activity',
+          subtitle: 'Daily breaks taken, last 12 months',
         ),
         const SizedBox(height: 16),
         buildCard([_BreakActivityCard(days: stats.weeklyData)]),
@@ -127,19 +152,11 @@ class BreakStatisticsSection extends StatelessWidget {
     String value,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: AppTheme.accentColor),
-          ),
-          const SizedBox(width: 14),
+          Icon(icon, size: 16, color: AppTheme.textSecondary),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,17 +164,19 @@ class BreakStatisticsSection extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     color: AppTheme.textPrimary,
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     fontFamily: 'Inter',
                   ),
                 ),
                 Text(
                   sublabel,
                   style: TextStyle(
-                    color: AppTheme.textSecondary.withValues(alpha: 0.6),
-                    fontSize: 11,
+                    fontFeatures: AppTheme.tabular,
+                    color: AppTheme.textMuted,
+                    fontSize: 12,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -167,9 +186,10 @@ class BreakStatisticsSection extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: AppTheme.accentColor,
+              fontFeatures: AppTheme.tabular,
+              color: AppTheme.textPrimary,
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w500,
               fontFamily: 'Inter',
             ),
           ),
@@ -190,9 +210,9 @@ enum _HeatLevel {
 
   Color get color => switch (this) {
     none => AppTheme.textPrimary.withValues(alpha: 0.06),
-    mostlySkipped => AppTheme.error,
-    mixed => AppTheme.warning,
-    good => AppTheme.success,
+    mostlySkipped => AppTheme.accent.withValues(alpha: 0.25),
+    mixed => AppTheme.accent.withValues(alpha: 0.5),
+    good => AppTheme.accent.withValues(alpha: 0.9),
   };
 
   static _HeatLevel of(DailyStats? stat) {
@@ -255,8 +275,9 @@ class _HeatmapSummary extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
+        fontFeatures: AppTheme.tabular,
         color: AppTheme.textPrimary,
-        fontSize: 12.5,
+        fontSize: 12,
         fontFamily: 'Inter',
       ),
     );
@@ -280,9 +301,10 @@ class _BreakActivityCard extends StatelessWidget {
           Text(
             'Last 12 months',
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               color: AppTheme.textPrimary,
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               fontFamily: 'Inter',
             ),
           ),
@@ -293,9 +315,9 @@ class _BreakActivityCard extends StatelessWidget {
             end: w.today,
             periodLabel: 'in the last 12 months',
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Wrap(
-            spacing: 18,
+            spacing: 16,
             runSpacing: 8,
             children: [
               for (final level in _HeatLevel.values)
@@ -303,13 +325,14 @@ class _BreakActivityCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     BreakStatisticsSection.legendDot(level.color),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Flexible(
                       child: Text(
                         level.meaning,
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           color: AppTheme.textSecondary,
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontFamily: 'Inter',
                         ),
                       ),
@@ -438,8 +461,9 @@ class _YearlyHeatmapState extends State<_YearlyHeatmap> {
                       child: Text(
                         _months[weekStarts[i].month - 1],
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           color: AppTheme.textMuted,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontFamily: 'Inter',
                         ),
                       ),
@@ -494,8 +518,9 @@ class _YearlyHeatmapState extends State<_YearlyHeatmap> {
                         child: Text(
                           label,
                           style: TextStyle(
+                            fontFeatures: AppTheme.tabular,
                             color: AppTheme.textMuted,
-                            fontSize: 9.5,
+                            fontSize: 12,
                             fontFamily: 'Inter',
                           ),
                         ),
