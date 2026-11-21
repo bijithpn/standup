@@ -9,6 +9,7 @@ class BreakStartWarningOverlay extends StatelessWidget {
   final bool isPreBreak;
   final ValueNotifier<int>? remainingSecondsNotifier;
   final VoidCallback? onSkip;
+  final VoidCallback? onSnooze;
 
   const BreakStartWarningOverlay({
     super.key,
@@ -18,7 +19,31 @@ class BreakStartWarningOverlay extends StatelessWidget {
     this.isPreBreak = false,
     this.remainingSecondsNotifier,
     this.onSkip,
+    this.onSnooze,
   });
+
+  Widget _pill(String label, VoidCallback onTap) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.08),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.72),
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +64,7 @@ class BreakStartWarningOverlay extends StatelessWidget {
               ),
             ),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 320),
+              constraints: const BoxConstraints(maxWidth: 340),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
                 color: const Color(0xFF14161B).withValues(alpha: 0.88),
@@ -111,33 +136,13 @@ class BreakStartWarningOverlay extends StatelessWidget {
                       );
                     },
                   ),
-                  if (onSkip != null) ...[
+                  if (onSnooze != null) ...[
                     const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: onSkip,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: Text(
-                          'Skip',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.72),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
+                    _pill('+5 min', onSnooze!),
+                  ],
+                  if (onSkip != null) ...[
+                    SizedBox(width: onSnooze != null ? 6 : 10),
+                    _pill('Skip', onSkip!),
                   ],
                 ],
               ),

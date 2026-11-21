@@ -75,7 +75,8 @@ class OverlayWindowManager: NSObject {
                     NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
                 }
                 
-                for instance in overlayInstances.values {
+                for (screen, instance) in overlayInstances {
+                    instance.window.setFrame(screen.frame, display: true)
                     instance.window.isReminder = false
                     instance.window.ignoresMouseEvents = false
                     instance.window.orderFrontRegardless()
@@ -213,6 +214,15 @@ class OverlayWindowManager: NSObject {
             instance = createOverlayInstance(for: screen, args: args)
         }
         instance.window.isReminder = isReminder
+        if args?["type"] as? String == "preBreakWarning" {
+            // Card-sized window instead of full-screen so the Skip button is clickable without blocking the screen.
+            let size = NSSize(width: args?["warningWidth"] as? Double ?? 380, height: args?["warningHeight"] as? Double ?? 100)
+            let f = screen.frame
+            instance.window.setFrame(
+                NSRect(x: f.midX - size.width / 2, y: f.midY - size.height / 2, width: size.width, height: size.height),
+                display: true)
+            instance.window.ignoresMouseEvents = false
+        }
         overlayInstances[screen] = instance
         // Zero-duration animator write also cancels a fade-out still running from the previous hide.
         NSAnimationContext.runAnimationGroup { context in
@@ -564,6 +574,13 @@ class OverlayWindowManager: NSObject {
                 if let appDelegate = NSApp.delegate as? AppDelegate,
                    let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
                     mainWindow.bridgeChannel?.invokeMethod("skipBreak", arguments: nil)
+                }
+                OverlayWindowManager.shared.hideOverlay()
+                result(nil)
+            case "snoozeBreak":
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
+                    mainWindow.bridgeChannel?.invokeMethod("snoozeBreak", arguments: nil)
                 }
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)

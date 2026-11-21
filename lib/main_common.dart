@@ -679,6 +679,8 @@ void mainCommon(FlavorConfig config) async {
         ) async {
           if (call.method == 'handleReopen') {
             await sl<OverlayWindowService>().showDashboard(forceShow: true);
+          } else if (call.method == 'snoozeBreak') {
+            sl<BreakController>().snooze(minutes: 5);
           } else if (call.method == 'skipBreak') {
             sl<BreakController>().skipCurrentBreak();
           } else if (call.method == 'completeBreak') {

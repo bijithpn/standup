@@ -18,6 +18,7 @@ class QuickReminderOverlay extends StatefulWidget {
   final int durationSeconds;
   final ValueNotifier<int>? remainingSecondsNotifier;
   final VoidCallback? onSkip;
+  final VoidCallback? onSnooze;
 
   final bool allowFullPoster;
   final String templateId;
@@ -31,6 +32,7 @@ class QuickReminderOverlay extends StatefulWidget {
     required this.durationSeconds,
     this.remainingSecondsNotifier,
     this.onSkip,
+    this.onSnooze,
     this.allowFullPoster = false,
     this.templateId = defaultWellnessTemplateId,
   });
@@ -60,6 +62,7 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
   ValueNotifier<int>? get remainingSecondsNotifier =>
       widget.remainingSecondsNotifier;
   VoidCallback? get onSkip => widget.onSkip;
+  VoidCallback? get onSnooze => widget.onSnooze;
   bool get allowFullPoster => widget.allowFullPoster;
 
   @override
@@ -76,6 +79,7 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
         isPreBreak: overlayType == 'preBreakWarning',
         remainingSecondsNotifier: remainingSecondsNotifier,
         onSkip: onSkip,
+        onSnooze: onSnooze,
       );
     }
 

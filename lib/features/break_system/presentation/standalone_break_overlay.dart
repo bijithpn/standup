@@ -214,6 +214,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       completeBreak(_config.isPreview, _config.overlayType, _fadeController);
   void _skipBreak() =>
       skipBreak(_config.isPreview, _config.overlayType, _fadeController);
+  void _snoozeBreak() => snoozeBreak(_fadeController);
   void _quitApp() => _bridge.invokeMethod('quitApp');
 
   bool get _isCompact =>
@@ -223,8 +224,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool get _canDismiss =>
       _config.isPreview ||
       (!_config.strictMode) ||
-      _config.overlayType == 'quickReminder' ||
-      _config.overlayType == 'preBreakWarning';
+      _config.overlayType == 'quickReminder';
 
   @override
   void dispose() {
@@ -293,6 +293,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                         fadeAnimation: _fadeController,
                         remainingSecondsNotifier: remainingSecondsNotifier,
                         onSkip: _skipBreak,
+                        onSnooze: _snoozeBreak,
                         canDismiss: _canDismiss,
                         breakInfo: _cachedBreakModel!,
                         settings: _cachedSettingsModel!,

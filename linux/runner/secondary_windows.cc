@@ -200,7 +200,7 @@ void SecondaryWindows::AddOverlayChannels(Surface* surface) {
         } else if (method == "hideOverlay") {
           HideOverlay();
           Ok(call);
-        } else if (method == "skipBreak" || method == "completeBreak") {
+        } else if (method == "skipBreak" || method == "completeBreak" || method == "snoozeBreak") {
           ForwardToMain(method.c_str());
           HideOverlay();
           Ok(call);
@@ -364,7 +364,8 @@ void SecondaryWindows::ShowOverlay(FlValue* args) {
   if (last_overlay_args_ != nullptr) fl_value_unref(last_overlay_args_);
   last_overlay_args_ = fl_value_ref(args);
 
-  const bool ignore_mouse = GetBool(args, "ignoreMouseEvents", false);
+  const bool warning = Str(args, "type", Str(args, "overlayType", "breakScreen")) == "preBreakWarning";
+  const bool ignore_mouse = !warning && GetBool(args, "ignoreMouseEvents", false);
   const bool all_displays = GetBool(args, "showOnAllDisplays", true);
   const bool transparent = GetBool(args, "isTransparent", false);
   overlay_strict_ = GetBool(args, "strictMode", false);
@@ -401,6 +402,13 @@ void SecondaryWindows::ShowOverlay(FlValue* args) {
     gtk_window_set_focus_on_map(window, overlay_strict_);
     SetClickThrough(surface->window, ignore_mouse);
     PlaceOnMonitor(surface, i, !transparent);
+    if (warning) {
+      // Card-sized and centered so Skip is clickable without blocking the screen.
+      const int w = static_cast<int>(Num(args, "warningWidth", 380)), h = static_cast<int>(Num(args, "warningHeight", 100));
+      gtk_window_set_default_size(window, w, h);
+      gtk_window_resize(window, w, h);
+      gtk_window_move(window, geo.x + (geo.width - w) / 2, geo.y + (geo.height - h) / 2);
+    }
 
     if (warm) {
       // The engine is already running, so hand it the fresh data straight away.

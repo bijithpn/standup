@@ -71,8 +71,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
       callbackTriggered = true;
       if (isInternalPreview) {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': true});
-      } else if (overlayType == 'preBreakWarning' ||
-          overlayType == 'quickReminder') {
+      } else if (overlayType == 'quickReminder') {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
         bridgeChannel.invokeMethod('completeBreak', {'lookedAway': lookedAway});
@@ -102,10 +101,14 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
       callbackTriggered = true;
       if (isInternalPreview) {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': true});
-      } else if (overlayType == 'preBreakWarning' ||
-          overlayType == 'quickReminder') {
+      } else if (overlayType == 'quickReminder') {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
+        if (overlayType == 'preBreakWarning') {
+          bridgeChannel.invokeMethod('hideOverlay', {
+            'restoreMainWindow': false,
+          });
+        }
         NativeBridge.skipBreak();
       }
     }
@@ -114,6 +117,15 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
 
     fadeController.reverse().then((_) {
       triggerDismiss();
+    });
+  }
+
+  /// Delays the upcoming break: hides the warning and has the main app pause timers for a few minutes.
+  void snoozeBreak(AnimationController fadeController) {
+    if (isDismissing) return;
+    isDismissing = true;
+    fadeController.reverse().whenComplete(() {
+      bridgeChannel.invokeMethod('snoozeBreak');
     });
   }
 

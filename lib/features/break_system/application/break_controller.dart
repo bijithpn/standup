@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/core/services/native_enhancements_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/break_profile.dart';
@@ -156,6 +157,7 @@ class BreakController extends ChangeNotifier {
         !overlayService.isOverlayVisible) {
       if (_timerEngine.countdownSeconds <= 3) {
         _hasShownPreBreakWarning = true;
+        NativeEnhancementsService.instance.hideCursorCountdown();
         overlayService.showOverlay(
           type: OverlayType.preBreakWarning,
           builder: (_) => const SizedBox.shrink(),
@@ -163,6 +165,8 @@ class BreakController extends ChangeNotifier {
           overlayData: {
             'overlayType': 'preBreakWarning',
             'type': 'preBreakWarning',
+            'warningWidth': 380,
+            'warningHeight': 100,
             'secondsRemaining': _timerEngine.countdownSeconds,
             'remainingSeconds': _timerEngine.countdownSeconds,
             'durationSeconds': _timerEngine.countdownSeconds,
@@ -716,6 +720,12 @@ class BreakController extends ChangeNotifier {
 
   /// Ends the break as skipped (counts toward skipped stats).
   Future<void> skipCurrentBreak() async {
+    if (_timerEngine.isPreBreak &&
+        _timerEngine.state != TimerState.breakActive) {
+      NativeEnhancementsService.instance.hideCursorCountdown();
+      skipNextBreak();
+      return;
+    }
     _microExercise = null;
     await _timerEngine.finishBreak(skipped: true);
     notifyListeners();
