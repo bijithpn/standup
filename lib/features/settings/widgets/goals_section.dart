@@ -73,69 +73,64 @@ class GoalsSection extends StatelessWidget {
                 ),
                 SettingsNote(
                   week.restingToday
-                      ? 'Today is a rest day. Your weekly progress is still here; there is nothing to make up.'
-                      : 'A missed day does not erase the breaks you have taken. One comfortable break is a good place to begin again.',
+                      ? 'Today is a rest day. There is nothing to make up.'
+                      : 'A missed day does not erase the breaks you have taken.',
                 ),
                 RestDaySettings(settings: s, onSave: repo.save),
-                if (!week.restingToday) ...[
-                  _GoalRow(
-                    index: 1,
-                    title: 'Daily focus time',
-                    effect:
-                        'Counts the time your work timer has run today. '
-                        'Resets each morning.',
-                    current: _hm(worked),
-                    target: '${s.dailyWorkGoalHours}h',
-                    progress: focusP,
-                    value: s.dailyWorkGoalHours.toDouble(),
-                    min: 1,
-                    max: 12,
-                    onChanged: (v) =>
-                        repo.save(s.copyWith(dailyWorkGoalHours: v.round())),
-                  ),
-                  _GoalRow(
-                    index: 2,
-                    title: 'Daily breaks',
-                    effect:
-                        'Counts breaks you complete (skipped ones don\'t). '
-                        'Resets each morning.',
-                    current: '${stats.breaksCompleted}',
-                    target: '${s.dailyBreakGoalCount}',
-                    progress: breakP,
-                    value: s.dailyBreakGoalCount.toDouble(),
-                    min: 1,
-                    max: 30,
-                    onChanged: (v) =>
-                        repo.save(s.copyWith(dailyBreakGoalCount: v.round())),
-                  ),
-                ],
-                _GoalRow(
-                  index: 3,
-                  title: 'Weekly consistency',
-                  effect:
-                      'A day counts when you complete at least one break. '
-                      'Looks at the last 7 days. Planned target: ${s.weeklyConsistencyTargetDays} days; rest days reduce this when needed.',
-                  current: '$activeDays',
-                  target:
-                      '${week.targetDays} day${week.targetDays == 1 ? '' : 's'}',
-                  progress: weekP,
-                  value: s.weeklyConsistencyTargetDays.toDouble(),
-                  min: 1,
-                  max: 7,
-                  onChanged: (v) => repo.save(
-                    s.copyWith(weeklyConsistencyTargetDays: v.round()),
-                  ),
-                  last: true,
+                sectionHeader('Targets'),
+                SettingsGroup(
+                  children: [
+                    if (!week.restingToday) ...[
+                      _GoalRow(
+                        title: 'Daily focus time',
+                        effect: 'Time your work timer has run today',
+                        current: _hm(worked),
+                        target: '${s.dailyWorkGoalHours}h',
+                        progress: focusP,
+                        value: s.dailyWorkGoalHours.toDouble(),
+                        min: 1,
+                        max: 12,
+                        onChanged: (v) => repo.save(
+                          s.copyWith(dailyWorkGoalHours: v.round()),
+                        ),
+                      ),
+                      _GoalRow(
+                        title: 'Daily breaks',
+                        effect:
+                            'Completed breaks today; skipped ones do not count',
+                        current: '${stats.breaksCompleted}',
+                        target: '${s.dailyBreakGoalCount}',
+                        progress: breakP,
+                        value: s.dailyBreakGoalCount.toDouble(),
+                        min: 1,
+                        max: 30,
+                        onChanged: (v) => repo.save(
+                          s.copyWith(dailyBreakGoalCount: v.round()),
+                        ),
+                      ),
+                    ],
+                    _GoalRow(
+                      title: 'Weekly consistency',
+                      effect:
+                          'Days in the last 7 with at least one completed break. Planned target: ${s.weeklyConsistencyTargetDays} days; rest days lower it',
+                      current: '$activeDays',
+                      target:
+                          '${week.targetDays} day${week.targetDays == 1 ? '' : 's'}',
+                      progress: weekP,
+                      value: s.weeklyConsistencyTargetDays.toDouble(),
+                      min: 1,
+                      max: 7,
+                      onChanged: (v) => repo.save(
+                        s.copyWith(weeklyConsistencyTargetDays: v.round()),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
                 sectionHeader(
                   'App time budgets',
                   subtitle: s.appUsageTrackingEnabled
-                      ? 'Soft daily limits per kind of app. A note shows in '
-                            'your insights once you reach one. Nothing is '
-                            'ever blocked.'
-                      : 'Needs app usage tracking, which is off. Turn it on '
-                            'in Privacy to use budgets.',
+                      ? 'Soft daily limits. Reaching one adds a note to your insights; nothing is blocked.'
+                      : 'Needs app usage tracking, which is off. Turn it on in Privacy.',
                 ),
                 if (s.appUsageTrackingEnabled)
                   CategoryBudgetsCard(
@@ -159,9 +154,6 @@ class GoalsSection extends StatelessWidget {
   }
 }
 
-Widget _rule() =>
-    Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle);
-
 class _Summary extends StatelessWidget {
   final double overall;
   final int metCount;
@@ -176,7 +168,7 @@ class _Summary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 28),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -197,7 +189,7 @@ class _Summary extends StatelessWidget {
                 '$metCount',
                 style: TextStyle(
                   fontFeatures: AppTheme.tabular,
-                  fontSize: 48,
+                  fontSize: 40,
                   height: 1,
                   color: AppTheme.textPrimary,
                 ),
@@ -221,13 +213,8 @@ class _Summary extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Targets to aim for. BreakMate tracks your progress but never '
-            'blocks you or forces a break when you reach one.',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.5,
-              color: AppTheme.textSecondary,
-            ),
+            'Targets to aim for. Nothing is blocked or forced when you reach one.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -260,7 +247,6 @@ class _Hairline extends StatelessWidget {
 }
 
 class _GoalRow extends StatelessWidget {
-  final int index;
   final String title;
   final String effect;
   final String current;
@@ -270,10 +256,8 @@ class _GoalRow extends StatelessWidget {
   final double min;
   final double max;
   final ValueChanged<double> onChanged;
-  final bool last;
 
   const _GoalRow({
-    required this.index,
     required this.title,
     required this.effect,
     required this.current,
@@ -283,7 +267,6 @@ class _GoalRow extends StatelessWidget {
     required this.min,
     required this.max,
     required this.onChanged,
-    this.last = false,
   });
 
   @override
@@ -292,9 +275,8 @@ class _GoalRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _rule(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 20, 4, 20),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -302,20 +284,11 @@ class _GoalRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    '0$index',
-                    style: TextStyle(
-                      fontFamilyFallback: const ['Menlo', 'monospace'],
-                      fontSize: 12,
-                      color: AppTheme.textMuted,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       title,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
@@ -326,8 +299,7 @@ class _GoalRow extends StatelessWidget {
                       'Reached',
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.success,
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                 ],
@@ -341,7 +313,7 @@ class _GoalRow extends StatelessWidget {
                     current,
                     style: TextStyle(
                       fontFeatures: AppTheme.tabular,
-                      fontSize: 28,
+                      fontSize: 24,
                       height: 1,
                       color: AppTheme.textPrimary,
                     ),
@@ -369,13 +341,9 @@ class _GoalRow extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 effect,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.5,
-                  color: AppTheme.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Text(
@@ -394,7 +362,7 @@ class _GoalRow extends StatelessWidget {
                       target,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamilyFallback: const ['Menlo', 'monospace'],
+                        fontFeatures: AppTheme.tabular,
                         fontSize: 13,
                         color: AppTheme.textPrimary,
                       ),
@@ -410,7 +378,6 @@ class _GoalRow extends StatelessWidget {
             ],
           ),
         ),
-        if (last) _rule(),
       ],
     );
   }
@@ -435,8 +402,8 @@ class _StepButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.radiusXs),
         child: Container(
-          width: 28,
-          height: 28,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppTheme.radiusXs),
             border: Border.all(color: AppTheme.border),

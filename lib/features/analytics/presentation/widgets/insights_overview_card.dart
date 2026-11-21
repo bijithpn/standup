@@ -27,7 +27,7 @@ class InsightsOverviewCard extends StatelessWidget {
                 'Insights',
                 style: TextStyle(
                   fontFeatures: AppTheme.tabular,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),

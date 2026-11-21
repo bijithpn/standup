@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -36,99 +35,30 @@ class CalendarEventRow extends StatelessWidget {
     final meetingPlatform = event.getMeetingPlatform();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isHappeningNow
-                  ? AppTheme.error.withValues(alpha: 0.1)
-                  : AppTheme.accent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              isHappeningNow
-                  ? CupertinoIcons.circle_fill
-                  : CupertinoIcons.calendar,
-              size: 20,
-              color: isHappeningNow ? AppTheme.error : AppTheme.accent,
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isHappeningNow
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (meetingPlatform != null) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.radiusXs,
-                          ),
-                        ),
-                        child: Text(
-                          meetingPlatform,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.accent,
-                          ),
-                        ),
-                      ),
-                    ],
-                    if (badge != null) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.radiusXs,
-                          ),
-                        ),
-                        child: Text(
-                          badge,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            fontFeatures: AppTheme.tabular,
-                            color: badgeColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
                 Text(
-                  timeLabel,
+                  event.title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isHappeningNow
+                        ? FontWeight.w500
+                        : FontWeight.w400,
+                    color: AppTheme.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppTheme.space4),
+                Text(
+                  [timeLabel, ?meetingPlatform].join('  ·  '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textMuted,
@@ -138,6 +68,18 @@ class CalendarEventRow extends StatelessWidget {
               ],
             ),
           ),
+          if (badge != null) ...[
+            const SizedBox(width: AppTheme.space12),
+            Text(
+              badge,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                fontFeatures: AppTheme.tabular,
+                color: badgeColor,
+              ),
+            ),
+          ],
         ],
       ),
     );

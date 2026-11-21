@@ -59,120 +59,76 @@ class _AboutSectionState extends State<AboutSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              const ThemedAppIcon.badge(size: 72, showDevBadge: true),
-              const SizedBox(height: 16),
-              RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimary,
-                    fontFamily: 'Inter',
-                  ),
-                  children: [
-                    const TextSpan(text: 'Break'),
-                    TextSpan(
-                      text: 'Mate',
-                      style: TextStyle(color: AppTheme.accentColor),
+        Row(
+          children: [
+            const ThemedAppIcon.badge(size: 56, showDevBadge: true),
+            const SizedBox(width: AppTheme.space16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    FlavorConfig.isDevelopment ? 'BreakMate dev' : 'BreakMate',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textPrimary,
+                      fontFamily: 'Inter',
                     ),
-                    if (FlavorConfig.isDevelopment)
-                      TextSpan(
-                        text: ' dev',
-                        style: TextStyle(color: AppTheme.error),
-                      ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: AppTheme.space4),
+                  Text(
+                    'Break reminders for your eyes, posture and focus',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Break reminders for your eyes, posture and focus',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 13,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
+            ),
+          ],
         ),
+        const SizedBox(height: AppTheme.space32),
 
-        sectionHeader('Application info'),
+        sectionHeader('App info'),
         buildCard([
-          buildListRow(
-            'Version',
-            '$_version (Build $_buildNumber)',
-            null,
-            CupertinoIcons.info,
-            null,
-          ),
+          valueRow('Version', '$_version (build $_buildNumber)'),
           divider(),
           buildListRow(
             'Creator',
             'Bijith P N, bijith.in',
             null,
-            CupertinoIcons.person_circle,
             null,
             onTap: () => _launchUrl('https://bijith.in'),
-            trailing: Icon(
-              CupertinoIcons.link,
-              size: 16,
-              color: AppTheme.textSecondary,
-            ),
           ),
           divider(),
           buildListRow(
             'Official website',
             'Visit breakmate.app',
             null,
-            CupertinoIcons.globe,
             null,
             onTap: () => _launchUrl('https://breakmate.vercel.app'),
-            trailing: Icon(
-              CupertinoIcons.link,
-              size: 16,
-              color: AppTheme.textSecondary,
-            ),
           ),
           divider(),
           buildListRow(
             'Report a bug',
             'Open an issue on GitHub',
             null,
-            CupertinoIcons.exclamationmark_triangle,
             null,
             onTap: () =>
                 _launchUrl('https://github.com/bijithpn/standup/issues'),
-            trailing: Icon(
-              CupertinoIcons.link,
-              size: 16,
-              color: AppTheme.textSecondary,
-            ),
           ),
-        ]),
-
-        buildCard([
+          divider(),
           buildListRow(
             'Support development',
             'BreakMate stays ad-free',
             null,
-            CupertinoIcons.heart,
             null,
             onTap: () => _launchUrl('https://buymeacoffee.com/bijithpn'),
-            trailing: Icon(
-              CupertinoIcons.link,
-              size: 16,
-              color: AppTheme.textSecondary,
-            ),
           ),
         ]),
-        const SizedBox(height: 24),
       ],
     );
   }

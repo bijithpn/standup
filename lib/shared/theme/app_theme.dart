@@ -65,13 +65,17 @@ class AppTheme {
 
   static Color get border => highContrast
       ? _contrastText
-      : Color.lerp(_activePreset.border, _activePreset.textPrimary, 0.12)!;
+      : Color.lerp(
+          _activePreset.border,
+          _activePreset.textPrimary,
+          _activePreset.isDark ? 0.15 : 0.32,
+        )!;
   static Color get borderSubtle => highContrast
       ? _contrastText
       : Color.lerp(
           _activePreset.borderSubtle,
           _activePreset.textPrimary,
-          0.07,
+          _activePreset.isDark ? 0.13 : 0.22,
         )!;
 
   static Color get textPrimary =>
@@ -81,10 +85,14 @@ class AppTheme {
   static Color get textMuted =>
       highContrast ? _contrastText : _activePreset.textMuted;
 
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color info = Color(0xFF3B82F6);
+  static Color get success =>
+      _activePreset.isDark ? const Color(0xFF10B981) : const Color(0xFF047857);
+  static Color get warning =>
+      _activePreset.isDark ? const Color(0xFFF59E0B) : const Color(0xFFB45309);
+  static Color get error =>
+      _activePreset.isDark ? const Color(0xFFEF4444) : const Color(0xFFB91C1C);
+  static Color get info =>
+      _activePreset.isDark ? const Color(0xFF3B82F6) : const Color(0xFF1D4ED8);
 
   static Color get shortBreak => _activePreset.shortBreak;
   static Color get longBreak => _activePreset.longBreak;
@@ -101,6 +109,7 @@ class AppTheme {
   static const double space16 = 16;
   static const double space24 = 24;
   static const double space32 = 32;
+  static const double space40 = 40;
 
   static const Color scrim = Color(0x99000000);
 

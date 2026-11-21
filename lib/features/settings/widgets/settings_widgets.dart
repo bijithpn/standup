@@ -3,32 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
+import 'settings_group.dart';
 
 // Shared row/section builders used by every settings page so they look consistent.
+const _rowPadding = EdgeInsets.symmetric(vertical: AppTheme.space12);
+
 Widget sectionHeader(String title, {String? subtitle}) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 12, left: 4, top: 12),
+    padding: const EdgeInsets.only(
+      left: AppTheme.space4,
+      bottom: AppTheme.space8,
+    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.textPrimary,
-            fontFamily: 'Inter',
-          ),
-        ),
-        if (subtitle != null) ...[
-          const SizedBox(height: 4),
+        Text(title, style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+        if (subtitle != null && subtitle.isNotEmpty) ...[
+          const SizedBox(height: AppTheme.space4),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-              fontFamily: 'Inter',
-            ),
+            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
           ),
         ],
       ],
@@ -36,20 +30,59 @@ Widget sectionHeader(String title, {String? subtitle}) {
   );
 }
 
-Widget buildCard(List<Widget> children) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 32),
-    decoration: BoxDecoration(
-      border: Border.symmetric(
-        horizontal: BorderSide(color: AppTheme.borderSubtle),
-      ),
-    ),
-    child: Column(children: children),
-  );
-}
+Widget buildCard(List<Widget> children) => SettingsGroup(children: children);
 
 Widget divider() {
   return Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle);
+}
+
+Widget _rowLabel(String label, String? helper, {Color? color}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+          color: color ?? AppTheme.textPrimary,
+        ),
+      ),
+      if (helper != null && helper.isNotEmpty) ...[
+        const SizedBox(height: AppTheme.space4),
+        Text(
+          helper,
+          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+        ),
+      ],
+    ],
+  );
+}
+
+Widget _row(Widget label, Widget control) {
+  return Padding(
+    padding: _rowPadding,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 32),
+      child: Row(
+        children: [
+          Expanded(child: label),
+          const SizedBox(width: AppTheme.space16),
+          control,
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _switch(bool value, ValueChanged<bool>? onChanged) {
+  return CupertinoSwitch(
+    value: value,
+    activeTrackColor: AppTheme.accentColor,
+    inactiveTrackColor: AppTheme.border,
+    thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
+    onChanged: onChanged,
+  );
 }
 
 Widget toggleRow(
@@ -59,43 +92,19 @@ Widget toggleRow(
   ValueChanged<bool> onChanged,
 ) {
   return MergeSemantics(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: AppTheme.textPrimary,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 12,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          CupertinoSwitch(
-            value: value,
-            activeTrackColor: AppTheme.accentColor,
-            inactiveTrackColor: AppTheme.border,
-            thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
-            onChanged: onChanged,
-          ),
-        ],
+    child: _row(_rowLabel(label, subtitle), _switch(value, onChanged)),
+  );
+}
+
+Widget valueRow(String label, String value) {
+  return _row(
+    _rowLabel(label, null),
+    Text(
+      value,
+      style: TextStyle(
+        color: AppTheme.textSecondary,
+        fontSize: 13,
+        fontFeatures: AppTheme.tabular,
       ),
     ),
   );
@@ -107,43 +116,32 @@ Widget inputRow(
   VoidCallback? onTap,
   Widget? trailing,
 }) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-              color: AppTheme.textPrimary,
-              fontFamily: 'Inter',
-            ),
+  return _row(
+    _rowLabel(label, null),
+    trailing ??
+        MinimalButton(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.space12,
+            vertical: AppTheme.space8,
           ),
-        ),
-        if (trailing != null)
-          trailing
-        else
-          MinimalButton(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            onPressed: onTap,
-            isSecondary: true,
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          onPressed: onTap,
+          isSecondary: true,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 88),
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   value,
                   style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppTheme.space4),
                 Icon(
                   CupertinoIcons.chevron_up_chevron_down,
                   size: 12,
@@ -152,8 +150,7 @@ Widget inputRow(
               ],
             ),
           ),
-      ],
-    ),
+        ),
   );
 }
 
@@ -165,46 +162,19 @@ Widget sliderRow(
   double min = 0.0,
   double max = 1.0,
 }) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmallScreen = constraints.maxWidth < 500;
-      final padding = isSmallScreen ? 16.0 : 20.0;
-
-      return Padding(
-        padding: EdgeInsets.all(padding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: isSmallScreen ? 13 : 14,
-                      color: AppTheme.textPrimary.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: isSmallScreen ? 120 : 176,
-                  child: MinimalSlider(
-                    value: value.clamp(min, max),
-                    min: min,
-                    max: max,
-                    onChanged: onChanged,
-                    onChangeEnd: onChangeEnd,
-                    activeColor: AppTheme.accentColor,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    },
+  return _row(
+    _rowLabel(label, null),
+    SizedBox(
+      width: 176,
+      child: MinimalSlider(
+        value: value.clamp(min, max),
+        min: min,
+        max: max,
+        onChanged: onChanged,
+        onChangeEnd: onChangeEnd,
+        activeColor: AppTheme.accentColor,
+      ),
+    ),
   );
 }
 
@@ -214,44 +184,9 @@ Widget dropdownRow(
   List<String> options,
   ValueChanged<String?> onChanged,
 ) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmallScreen = constraints.maxWidth < 500;
-      final padding = isSmallScreen ? 16.0 : 20.0;
-
-      return Padding(
-        padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: isSmallScreen ? 13 : 14,
-                  color: AppTheme.textPrimary.withValues(alpha: 0.9),
-                ),
-              ),
-            ),
-            AppDropdown<String>(
-              value: options.contains(value)
-                  ? value
-                  : (options.isNotEmpty ? options.first : ''),
-              onChanged: onChanged,
-              items: options
-                  .map(
-                    (option) => AppDropdownItem<String>(
-                      value: option,
-                      label: _optionLabel(option),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
-        ),
-      );
-    },
+  return _row(
+    _rowLabel(label, null),
+    inlineDropdown(value, options, onChanged),
   );
 }
 
@@ -260,38 +195,25 @@ Widget textFieldRow(
   String value,
   ValueChanged<String> onChanged,
 ) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-            color: AppTheme.textPrimary,
-          ),
+  return _row(
+    _rowLabel(label, null),
+    SizedBox(
+      width: 224,
+      child: CupertinoTextField(
+        placeholder: value,
+        placeholderStyle: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+        style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+        decoration: BoxDecoration(
+          color: AppTheme.contentBackground,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(color: AppTheme.border),
         ),
-        const SizedBox(width: 24),
-        Expanded(
-          child: CupertinoTextField(
-            placeholder: value,
-            placeholderStyle: TextStyle(
-              color: AppTheme.textPrimary.withValues(alpha: 0.3),
-              fontSize: 13,
-            ),
-            style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
-            decoration: BoxDecoration(
-              color: AppTheme.textPrimary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.border),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            onSubmitted: onChanged,
-          ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.space12,
+          vertical: AppTheme.space8,
         ),
-      ],
+        onSubmitted: onChanged,
+      ),
     ),
   );
 }
@@ -300,53 +222,23 @@ Widget buildListRow(
   String label,
   String subtitle,
   bool? value,
-  IconData icon,
   ValueChanged<bool>? onChanged, {
   VoidCallback? onTap,
   Widget? trailing,
 }) {
-  final content = Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-    child: Row(
+  final content = _row(
+    _rowLabel(label, subtitle),
+    Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppTheme.textSecondary, size: 18),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                  color: AppTheme.textPrimary,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 12,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        if (value != null)
-          CupertinoSwitch(
-            value: value,
-            onChanged: onChanged,
-            activeTrackColor: AppTheme.accentColor,
-            inactiveTrackColor: AppTheme.border,
-            thumbColor: value ? AppTheme.onAccent : AppTheme.textPrimary,
-          ),
+        if (value != null) _switch(value, onChanged),
         ?trailing,
+        if (onTap != null)
+          Icon(
+            CupertinoIcons.chevron_right,
+            size: 14,
+            color: AppTheme.textMuted,
+          ),
       ],
     ),
   );
@@ -390,6 +282,7 @@ void showPicker({
   required List<String> options,
   required String suffix,
   required ValueChanged<String> onSelected,
+  String? selected,
 }) {
   showGeneralDialog(
     context: context,
@@ -401,77 +294,103 @@ void showPicker({
       return Center(
         child: Material(
           type: MaterialType.transparency,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 320, maxHeight: 400),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceElevated,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.border),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Inter',
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320, maxHeight: 440),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceCard,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                border: Border.all(color: AppTheme.borderSubtle),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(AppTheme.space16),
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: options.length,
-                    separatorBuilder: (context, index) => Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      color: AppTheme.borderSubtle,
-                    ),
-                    itemBuilder: (context, index) {
-                      final opt = options[index];
-                      return InkWell(
-                        onTap: () {
-                          onSelected(opt);
-                          Navigator.pop(context);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$opt$suffix',
-                              style: TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Inter',
+                    Divider(height: 1, color: AppTheme.borderSubtle),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          indent: AppTheme.space16,
+                          endIndent: AppTheme.space16,
+                          color: AppTheme.borderSubtle,
+                        ),
+                        itemBuilder: (context, index) {
+                          final opt = options[index];
+                          return InkWell(
+                            hoverColor: AppTheme.hoverOverlay,
+                            onTap: () {
+                              onSelected(opt);
+                              Navigator.pop(context);
+                            },
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 40),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppTheme.space16,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '$opt$suffix',
+                                        style: TextStyle(
+                                          color: AppTheme.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Inter',
+                                          fontFeatures: AppTheme.tabular,
+                                        ),
+                                      ),
+                                    ),
+                                    if (opt == selected)
+                                      Icon(
+                                        CupertinoIcons.checkmark_alt,
+                                        size: 16,
+                                        color: AppTheme.accent,
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
+                          );
+                        },
+                      ),
+                    ),
+                    Divider(height: 1, color: AppTheme.borderSubtle),
+                    Padding(
+                      padding: const EdgeInsets.all(AppTheme.space12),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: MinimalButton(
+                          isSecondary: true,
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(color: AppTheme.textPrimary),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: MinimalButton(
-                    isSecondary: true,
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(color: AppTheme.textPrimary),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -564,83 +483,26 @@ Widget actionRow({
 }) {
   final color = isDestructive
       ? AppTheme.error
-      : (buttonColor ?? AppTheme.accentColor);
+      : (buttonColor ?? AppTheme.textPrimary);
 
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: isDestructive ? AppTheme.error : AppTheme.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 12,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
-          ),
+  return _row(
+    _rowLabel(label, subtitle, color: isDestructive ? AppTheme.error : null),
+    MinimalButton(
+      onPressed: onPressed,
+      isSecondary: true,
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.space12,
+        vertical: AppTheme.space8,
+      ),
+      child: Text(
+        buttonText,
+        style: TextStyle(
+          color: onPressed == null ? color.withValues(alpha: 0.5) : color,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
         ),
-        const SizedBox(width: 16),
-        MinimalButton(
-          onPressed: onPressed,
-          backgroundColor: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            buttonText,
-            style: TextStyle(
-              color: onPressed == null ? color.withValues(alpha: 0.5) : color,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget colorRow(String label, Color color) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-            color: AppTheme.textPrimary,
-            fontFamily: 'Inter',
-          ),
-        ),
-        Container(
-          width: 44,
-          height: 24,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(AppTheme.radiusXs),
-            border: Border.all(color: AppTheme.border),
-          ),
-        ),
-      ],
+      ),
     ),
   );
 }

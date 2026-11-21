@@ -119,7 +119,8 @@ class _MinimalButtonState extends State<MinimalButton>
               borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
               border: _isFocused
                   ? Border.all(color: AppTheme.accentColor, width: 2)
-                  : widget.isSecondary
+                  : widget.isSecondary ||
+                        (!widget.isGhost && widget.backgroundColor == null)
                   ? Border.all(color: AppTheme.border, width: 1)
                   : null,
             ),

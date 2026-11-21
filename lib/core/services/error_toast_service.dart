@@ -7,8 +7,12 @@ class ErrorToastService {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
-  static void showError(String message) =>
-      _show(message, AppTheme.error, CupertinoIcons.exclamationmark_circle, 3500);
+  static void showError(String message) => _show(
+    message,
+    AppTheme.error,
+    CupertinoIcons.exclamationmark_circle,
+    3500,
+  );
 
   static void showInfo(String message) =>
       _show(message, AppTheme.info, CupertinoIcons.info, 4500);

@@ -22,100 +22,64 @@ class BreakProfileSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Recommended presets',
-          subtitle: 'Choose a scientifically-backed rhythm for your work day.',
-        ),
-        buildCard(
-          BreakProfile.presets.map((p) {
-            final isSelected = settings.selectedProfileId == p.id;
-            return Column(
-              children: [
-                Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
-                    onTap: () {
-                      Provider.of<BreakController>(
-                        context,
-                        listen: false,
-                      ).changeProfile(p);
-                      onSave(settings.copyWith(selectedProfileId: p.id));
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 18,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.accentColor.withValues(alpha: 0.08)
-                            : Colors.transparent,
-                      ),
-                      child: Row(
-                        children: [
+        sectionHeader('Presets'),
+        buildCard([
+          for (final p in BreakProfile.presets)
+            Semantics(
+              button: true,
+              selected: settings.selectedProfileId == p.id,
+              child: InkWell(
+                onTap: () {
+                  Provider.of<BreakController>(
+                    context,
+                    listen: false,
+                  ).changeProfile(p);
+                  onSave(settings.copyWith(selectedProfileId: p.id));
+                },
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 32),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Every ${p.shortIntervalMinutes} min · ${p.shortDurationSeconds} s',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12,
+                                  fontFeatures: AppTheme.tabular,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (settings.selectedProfileId == p.id)
                           Icon(
-                            isSelected
-                                ? CupertinoIcons.checkmark_alt
-                                : _getProfileIcon(p.id),
-                            color: isSelected
-                                ? AppTheme.accentColor
-                                : AppTheme.textMuted,
-                            size: 20,
+                            CupertinoIcons.checkmark_alt,
+                            color: AppTheme.accentColor,
+                            size: 18,
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  p.name,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                    color: isSelected
-                                        ? AppTheme.textPrimary
-                                        : AppTheme.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Every ${p.shortIntervalMinutes} min · ${p.shortDurationSeconds} s',
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? AppTheme.textSecondary
-                                        : AppTheme.textMuted,
-                                    fontSize: 12,
-                                    fontFeatures: AppTheme.tabular,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
-                if (p != BreakProfile.presets.last) divider(),
-              ],
-            );
-          }).toList(),
-        ),
+              ),
+            ),
+        ]),
       ],
     );
-  }
-
-  IconData _getProfileIcon(String id) {
-    switch (id) {
-      case 'balanced':
-        return CupertinoIcons.infinite;
-      case 'deep_work':
-        return CupertinoIcons.flame;
-      case 'pomodoro':
-        return CupertinoIcons.timer;
-      default:
-        return CupertinoIcons.layers;
-    }
   }
 }

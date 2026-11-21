@@ -30,26 +30,15 @@ class ApplicationUsageList extends StatefulWidget {
 
 class _ApplicationUsageListState extends State<ApplicationUsageList> {
   int? _touched;
-  final ScrollController _legendScroll = ScrollController();
-
-  @override
-  void dispose() {
-    _legendScroll.dispose();
-    super.dispose();
-  }
+  bool _showAll = false;
 
   @override
   Widget build(BuildContext context) {
     final apps = widget.apps;
     if (apps.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(20),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceCard,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(color: AppTheme.border),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.space16),
+        alignment: Alignment.centerLeft,
         child: Text(
           'No application activity recorded',
           style: TextStyle(
@@ -112,15 +101,15 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
       ..sort((x, y) => y.value.compareTo(x.value));
 
     final chart = SizedBox(
-      width: 220,
-      height: 220,
+      width: 180,
+      height: 180,
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
           PieChart(
             PieChartData(
               sections: sections,
-              centerSpaceRadius: 72,
+              centerSpaceRadius: 56,
               sectionsSpace: 2.5,
               startDegreeOffset: -90,
               pieTouchData: PieTouchData(
@@ -146,7 +135,7 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               SizedBox(
-                width: 120,
+                width: 96,
                 child: Text(
                   focused?.appName ?? 'Active time',
                   textAlign: TextAlign.center,
@@ -190,100 +179,74 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
       ),
     );
 
-    final legend = ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 300),
-      child: Scrollbar(
-        controller: _legendScroll,
-        thumbVisibility: apps.length > 5,
-        child: ListView.builder(
-          controller: _legendScroll,
-          shrinkWrap: true,
-          itemCount: apps.length,
-          itemBuilder: (context, i) {
-            final inChart = i < shown.length;
-            return _ApplicationRow(
-              app: apps[i],
-              colour: inChart ? colours[i] : AppTheme.border,
-              totalActiveSeconds: total,
-              highlighted: _touched == i,
-              onHover: inChart
-                  ? (hovering) => setState(() => _touched = hovering ? i : null)
-                  : null,
-              onTap: widget.onSelected == null
-                  ? null
-                  : () => widget.onSelected!(apps[i]),
-            );
-          },
-        ),
-      ),
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          LayoutBuilder(
-            builder: (context, box) {
-              if (box.maxWidth >= 640) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    chart,
-                    const SizedBox(width: 24),
-                    Expanded(child: legend),
-                  ],
-                );
-              }
-              return Column(
-                children: <Widget>[
-                  Center(child: chart),
-                  const SizedBox(height: 12),
-                  legend,
-                ],
-              );
-            },
+    final visible = _showAll ? apps.length : apps.length.clamp(0, 5);
+    final legend = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (var i = 0; i < visible; i++)
+          _ApplicationRow(
+            app: apps[i],
+            colour: i < shown.length ? colours[i] : AppTheme.border,
+            totalActiveSeconds: total,
+            highlighted: _touched == i,
+            onHover: i < shown.length
+                ? (hovering) => setState(() => _touched = hovering ? i : null)
+                : null,
+            onTap: widget.onSelected == null
+                ? null
+                : () => widget.onSelected!(apps[i]),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'By category',
-            style: TextStyle(
-              fontFeatures: AppTheme.tabular,
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
+        if (apps.length > 5)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => setState(() => _showAll = !_showAll),
+              child: Text(_showAll ? 'Show less' : 'Show all ${apps.length}'),
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 16,
-            runSpacing: 6,
-            children: <Widget>[
-              for (final c in categories)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      '${categoryLabel(c.key)} · ${formatDuration(c.value)}',
-                      style: TextStyle(
-                        fontFeatures: AppTheme.tabular,
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Center(child: chart),
+        const SizedBox(height: AppTheme.space16),
+        legend,
+        const SizedBox(height: 16),
+        Text(
+          'By category',
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textSecondary,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 16,
+          runSpacing: 6,
+          children: <Widget>[
+            for (final c in categories)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    '${categoryLabel(c.key)} · ${formatDuration(c.value)}',
+                    style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -312,9 +275,7 @@ class _ApplicationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final detail =
         '${categoryLabel(app.categoryName)} · '
-        '${app.sessionCount} ${app.sessionCount == 1 ? 'session' : 'sessions'}'
-        ' · avg ${formatDuration(app.averageSessionSeconds)}'
-        ' · longest ${formatDuration(app.longestSessionSeconds)}';
+        '${app.sessionCount} ${app.sessionCount == 1 ? 'session' : 'sessions'}';
 
     return InkWell(
       onTap: onTap,
@@ -325,7 +286,7 @@ class _ApplicationRow extends StatelessWidget {
           color: highlighted ? colour.withValues(alpha: 0.10) : null,
           borderRadius: BorderRadius.circular(AppTheme.radiusSm),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           children: <Widget>[
             Container(

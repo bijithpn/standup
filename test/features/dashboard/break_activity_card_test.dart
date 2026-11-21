@@ -1,5 +1,3 @@
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,8 +7,6 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
-import 'package:breakmate/features/analytics/break_history_service.dart';
-import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/dashboard/presentation/widgets/daily_summary_section.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -24,7 +20,6 @@ void main() {
   late FakeStorageService storage;
   late InMemorySettingsRepository settings;
   late StatsService stats;
-  late BreakHistoryService history;
 
   setUp(() async {
     await sl.reset();
@@ -33,7 +28,6 @@ void main() {
       const SettingsModel(dailyBreakGoalCount: 4),
     );
     stats = StatsService(storage: storage);
-    history = BreakHistoryService(storage: storage);
     final calendar = MockCalendarService();
     final detection = MockSmartDetectionService();
     when(() => calendar.isMeetingActive()).thenAnswer((_) async => false);
@@ -63,11 +57,7 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<StatsService>.value(value: stats),
-          ChangeNotifierProvider<BreakHistoryService>.value(value: history),
           ChangeNotifierProvider<SettingsRepository>.value(value: settings),
-          ChangeNotifierProvider<ContextSwitchTracker>(
-            create: (_) => ContextSwitchTracker(),
-          ),
         ],
         child: MaterialApp(
           builder: (context, child) => MediaQuery(
@@ -85,34 +75,22 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('empty day: explains and shows the goal at zero', (tester) async {
+  testWidgets('empty day: shows zero breaks against the goal', (tester) async {
     await pump(tester);
-    expect(find.text('Break activity'), findsOneWidget);
+    expect(find.text('Breaks today'), findsOneWidget);
     expect(find.text('0 / 4 breaks'), findsOneWidget);
-    expect(find.textContaining('No breaks yet today'), findsOneWidget);
+    expect(find.text('Focus time'), findsOneWidget);
+    expect(find.text('Streak'), findsOneWidget);
   });
 
-  testWidgets('shows today\'s breaks on a timeline and progress to the goal', (
+  testWidgets('shows today\'s completed breaks against the goal', (
     tester,
   ) async {
-    final now = clock.now();
-    final morning = DateTime(now.year, now.month, now.day, 0, 5);
-    history.recordBreak(time: morning, completed: true);
-    history.recordBreak(
-      time: morning.add(const Duration(minutes: 1)),
-      completed: false,
-    );
     stats.recordCompletedBreak();
     stats.recordCompletedBreak();
     stats.recordSkippedBreak();
     stats.flush();
-    await tester.pump();
-
     await pump(tester);
-    expect(find.text('Timeline'), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.checkmark_circle), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.xmark_circle), findsOneWidget);
-    expect(find.text('00:05'), findsOneWidget);
     expect(find.text('2 / 4 breaks'), findsOneWidget);
   });
 

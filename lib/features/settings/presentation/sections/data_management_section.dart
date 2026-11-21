@@ -7,10 +7,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
-import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/core/storage/models/daily_stats.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
@@ -508,113 +506,40 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Storage & Data',
-          subtitle: 'Manage local database, backups, and analytics exports.',
-        ),
-        const SizedBox(height: 12),
+        sectionHeader('Storage'),
         buildCard([
-          _infoRow(
-            'Database size',
-            '$sizeMb MB',
-            CupertinoIcons.circle_grid_hex,
-          ),
-          divider(),
-          _infoRow(
-            'Schema version',
-            'v1.1 (Production)',
-            CupertinoIcons.doc_text_viewfinder,
-          ),
-          divider(),
-          _infoRow(
+          valueRow('Database size', '$sizeMb MB'),
+          valueRow('Schema version', 'v1.1 (Production)'),
+          valueRow(
             'Last migration',
             migrationTime == 0 ? 'N/A' : '${migrationTime}ms',
-            CupertinoIcons.arrow_right_arrow_left_circle,
           ),
         ]),
-
-        sectionHeader(
-          'Backup & Restore',
-          subtitle:
-              'Export as JSON, CSV or TSV. Import detects the type automatically.',
-        ),
+        sectionHeader('Backup and restore'),
         buildCard([
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: MinimalButton(
-                    onPressed: _showExportOptions,
-                    isSecondary: true,
-                    borderRadius: BorderRadius.circular(10),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          CupertinoIcons.cloud_upload,
-                          size: 16,
-                          color: AppTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Export',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: MinimalButton(
-                    onPressed: _importData,
-                    isSecondary: true,
-                    borderRadius: BorderRadius.circular(10),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          CupertinoIcons.folder_badge_plus,
-                          size: 16,
-                          color: AppTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Import',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          actionRow(
+            label: 'Export',
+            subtitle: 'JSON, CSV or TSV',
+            buttonText: 'Export…',
+            onPressed: _showExportOptions,
           ),
-          divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: toggleRow(
-              'Daily automatic backup',
-              'Keeps the last ${BackupService.keepLast} days on this device.',
-              _backups.autoEnabled,
-              (v) async {
-                _backups.autoEnabled = v;
-                await _backups.runIfDue();
-                await _loadStats();
-              },
-            ),
+          actionRow(
+            label: 'Import',
+            subtitle: 'The file type is detected automatically',
+            buttonText: 'Import…',
+            onPressed: _importData,
           ),
-          for (final f in _localBackups) ...[
-            divider(),
+          toggleRow(
+            'Daily automatic backup',
+            'Keeps the last ${BackupService.keepLast} days on this device',
+            _backups.autoEnabled,
+            (v) async {
+              _backups.autoEnabled = v;
+              await _backups.runIfDue();
+              await _loadStats();
+            },
+          ),
+          for (final f in _localBackups)
             actionRow(
               label: p
                   .basename(f.path)
@@ -624,51 +549,18 @@ class _DataManagementSectionState extends State<DataManagementSection> {
               buttonText: 'Restore',
               onPressed: () => _restoreLocal(f),
             ),
-          ],
         ]),
-
-        sectionHeader('Danger zone', subtitle: 'Irreversible data actions'),
+        sectionHeader('Reset'),
         buildCard([
           actionRow(
             label: 'Clear all data',
-            subtitle: 'Delete all settings and local analytics history.',
-            buttonText: 'Reset',
+            subtitle: 'Deletes all settings and local analytics history',
+            buttonText: 'Reset…',
             onPressed: _showResetConfirmation,
             isDestructive: true,
           ),
         ]),
       ],
-    );
-  }
-
-  Widget _infoRow(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: AppTheme.textMuted),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -46,10 +46,7 @@ class _SkipAndScheduleSettingsState extends State<SkipAndScheduleSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Skipping',
-          subtitle: 'Limit how often breaks can be skipped.',
-        ),
+        sectionHeader('Skipping'),
         buildCard([
           dropdownRow(
             'Daily skip limit',
@@ -66,14 +63,14 @@ class _SkipAndScheduleSettingsState extends State<SkipAndScheduleSettings> {
           divider(),
           toggleRow(
             'Ask why when skipping',
-            'Pick a quick reason when you skip a break.',
+            '',
             SkipPolicy.reasonsEnabled,
             (v) => setState(() => SkipPolicy.reasonsEnabled = v),
           ),
           if (counts.isNotEmpty) ...[
             divider(),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               child: Wrap(
                 spacing: 16,
                 runSpacing: 4,
@@ -93,11 +90,7 @@ class _SkipAndScheduleSettingsState extends State<SkipAndScheduleSettings> {
             ),
           ],
         ]),
-        const SizedBox(height: 16),
-        sectionHeader(
-          'Time-of-day profiles',
-          subtitle: 'Use a different break rhythm for each part of the day.',
-        ),
+        sectionHeader('Time-of-day profiles'),
         buildCard([
           toggleRow(
             'Switch profile by time of day',

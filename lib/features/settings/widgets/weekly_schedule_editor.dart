@@ -1,6 +1,6 @@
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
+import 'settings_group.dart';
 import 'settings_widgets.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../settings_model.dart';
 import '../work_schedule.dart';
@@ -142,36 +142,19 @@ class WeeklyScheduleEditor extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Text(
-          'Customize each working day, including overnight shifts and lunch.',
-        ),
-      ),
       for (final day in settings.workingDays.where(
         (day) => day >= 1 && day <= 7,
-      )) ...[
-        divider(),
-        ListTile(
-          title: Text(
-            days[day - 1],
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          subtitle: Text(
-            _summary(day),
-            style: const TextStyle(fontSize: 12, height: 1.5),
-          ),
-          trailing: const Icon(CupertinoIcons.pencil, size: 16),
-          contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      ))
+        buildListRow(
+          days[day - 1],
+          _summary(day),
+          null,
+          null,
           onTap: () => _edit(context, day),
         ),
-      ],
       if (settings.workingDays.isEmpty)
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Text(
-            'Choose at least one working day to receive scheduled breaks.',
-          ),
+        const SettingsNote(
+          'Choose at least one working day to receive scheduled breaks.',
         ),
     ],
   );

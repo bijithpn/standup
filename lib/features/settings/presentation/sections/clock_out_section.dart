@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
 
 class ClockOutSection extends StatelessWidget {
   final SettingsModel settings;
@@ -27,24 +26,17 @@ class ClockOutSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionHeader('Balance'),
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 24),
-          child: Text(
-            'Establish healthy boundaries with fixed rest hours.',
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-          ),
-        ),
         buildCard([
           toggleRow(
-            'Workday Enforcement',
-            'Remind me to clock out at end of day',
+            'Workday enforcement',
+            'Reminds you to clock out at the end of the day',
             _settings.enableClockOut,
             (v) => _save(_settings.copyWith(enableClockOut: v)),
           ),
           if (_settings.enableClockOut) ...[
             divider(),
             inputRow(
-              'End Workday At',
+              'End workday at',
               '',
               trailing: inlineDropdown(
                 _settings.clockOutTime,

@@ -47,15 +47,17 @@ class TodayAgendaCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                CupertinoIcons.calendar_today,
-                size: 16,
-                color: AppTheme.accent,
-              ),
-              const SizedBox(width: 8),
               Text('Today · ${_dayLabel(DateTime.now())}', style: _title),
               const Spacer(),
-              if (events.isNotEmpty) _Pill('${events.length}'),
+              if (events.isNotEmpty)
+                Text(
+                  '${events.length}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFeatures: AppTheme.tabular,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -152,8 +154,6 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
         children: [
           Row(
             children: [
-              Icon(CupertinoIcons.calendar, size: 16, color: AppTheme.accent),
-              const SizedBox(width: 8),
               Text(
                 '${_months[_month.month - 1]} ${_month.year}',
                 style: _title,
@@ -254,19 +254,17 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
     final isToday = _sameDay(day, DateTime.now());
     final isSel = _sameDay(day, _selected);
     final count = _on(day).length;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+      hoverColor: AppTheme.hoverOverlay,
       onTap: () => setState(() => _selected = day),
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: isSel
-              ? AppTheme.accent.withValues(alpha: 0.18)
-              : Colors.transparent,
+          color: isSel ? AppTheme.surfaceElevated : Colors.transparent,
           borderRadius: BorderRadius.circular(AppTheme.radiusSm),
           border: Border.all(
             color: isToday ? AppTheme.accent : Colors.transparent,
-            width: 1,
           ),
         ),
         child: Column(
@@ -277,7 +275,8 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: isSel ? AppTheme.accent : AppTheme.textPrimary,
+                fontFeatures: AppTheme.tabular,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -416,7 +415,15 @@ class EventTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (live) const _Pill('Now', color: AppTheme.success),
+              if (live)
+                Text(
+                  'Now',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.success,
+                  ),
+                ),
             ],
           ),
         ),
@@ -436,35 +443,17 @@ class _Panel extends StatelessWidget {
   const _Panel({required this.child});
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    margin: const EdgeInsets.only(bottom: 24),
-    padding: const EdgeInsets.all(16),
-    decoration: AppTheme.cardDecoration(),
-    child: child,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: AppTheme.space24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        child,
+        const SizedBox(height: AppTheme.space24),
+        Divider(height: 1, color: AppTheme.borderSubtle),
+      ],
+    ),
   );
-}
-
-class _Pill extends StatelessWidget {
-  final String text;
-  final Color? color;
-  const _Pill(this.text, {this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? AppTheme.accent;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppTheme.radiusXs),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: c),
-      ),
-    );
-  }
 }
 
 class _NavButton extends StatelessWidget {

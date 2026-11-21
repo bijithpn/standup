@@ -181,8 +181,8 @@ class AppUsageSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.borderSubtle),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +190,7 @@ class AppUsageSection extends StatelessWidget {
                 Icon(
                   CupertinoIcons.lightbulb,
                   size: 16,
-                  color: AppTheme.accentColor,
+                  color: AppTheme.textSecondary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -226,13 +226,13 @@ class AppUsageSection extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.warning.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.borderSubtle),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(CupertinoIcons.timer, size: 16, color: AppTheme.warning),
+            Icon(CupertinoIcons.timer, size: 16, color: AppTheme.textSecondary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

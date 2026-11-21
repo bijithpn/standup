@@ -28,7 +28,7 @@ class ProductivitySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+          padding: const EdgeInsets.only(bottom: AppTheme.space12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
@@ -41,7 +41,7 @@ class ProductivitySection extends StatelessWidget {
                       style: TextStyle(
                         fontFeatures: AppTheme.tabular,
                         fontFamily: 'Inter',
-                        fontSize: 13,
+                        fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
@@ -125,129 +125,117 @@ class ProductivityOverviewCard extends StatelessWidget {
         : (activeSeconds / goal).clamp(0.0, 1.0);
     final verdict = switchingVerdict(switchesPerHour, contextSwitches);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: <Widget>[
-              // TODO(no-data): comparison baseline needs previous-period stats
-              Text(
-                formatDuration(activeSeconds),
-                style: TextStyle(
-                  fontFeatures: AppTheme.tabular,
-                  fontFamily: 'Inter',
-                  fontSize: 34,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'active',
-                style: TextStyle(
-                  fontFeatures: AppTheme.tabular,
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              const Spacer(),
-              if (goal != null && goalRatio != null)
-                _GoalPill(
-                  reached: activeSeconds >= goal,
-                  label: activeSeconds >= goal
-                      ? 'Goal reached'
-                      : '${(goalRatio * 100).round()}% of ${formatDuration(goal)} goal',
-                ),
-            ],
-          ),
-          if (caption != null) ...<Widget>[
-            const SizedBox(height: 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: <Widget>[
+            // TODO(no-data): comparison baseline needs previous-period stats
             Text(
-              caption!,
+              formatDuration(activeSeconds),
               style: TextStyle(
                 fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 12,
-                color: AppTheme.textMuted,
+                fontSize: 40,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.accent,
               ),
             ),
-          ],
-          const SizedBox(height: 10),
-          Text(
-            summarySentence(
-              activeSeconds: activeSeconds,
-              breakSeconds: breakSeconds,
-              idleSeconds: idleSeconds,
+            const SizedBox(width: 8),
+            Text(
+              'active',
+              style: TextStyle(
+                fontFeatures: AppTheme.tabular,
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
             ),
+            const Spacer(),
+            if (goal != null && goalRatio != null)
+              _GoalPill(
+                reached: activeSeconds >= goal,
+                label: activeSeconds >= goal
+                    ? 'Goal reached'
+                    : '${(goalRatio * 100).round()}% of ${formatDuration(goal)} goal',
+              ),
+          ],
+        ),
+        if (caption != null) ...<Widget>[
+          const SizedBox(height: 2),
+          Text(
+            caption!,
             style: TextStyle(
               fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
-              fontSize: 13,
-              height: 1.4,
-              color: AppTheme.textSecondary,
+              fontSize: 12,
+              color: AppTheme.textMuted,
             ),
           ),
-          if (total > 0) ...<Widget>[
-            const SizedBox(height: 16),
-            _SplitBar(
-              active: activeSeconds,
-              onBreak: breakSeconds,
-              idle: idleSeconds,
-            ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final stats = <Widget>[
-                  _Stat(
-                    label: 'Working',
-                    value: formatDuration(activeSeconds),
-                    color: AppTheme.accent,
-                  ),
-                  _Stat(
-                    label: 'Breaks',
-                    value: formatDuration(breakSeconds),
-                    color: AppTheme.gray400,
-                  ),
-                  _Stat(
-                    label: 'Away',
-                    value: formatDuration(idleSeconds),
-                    color: AppTheme.gray500,
-                  ),
-                  _Stat(
-                    label: 'App switches',
-                    value: contextSwitches == 0 ? '—' : '$contextSwitches',
-                    color: null,
-                    footnote:
-                        verdict ??
-                        (switchesPerHour == null || contextSwitches == 0
-                            ? null
-                            : '${switchesPerHour!.toStringAsFixed(1)}/hr'),
-                  ),
-                ];
-
-                final columns = constraints.maxWidth >= 440 ? 4 : 2;
-                final gap = 12.0;
-                final width =
-                    (constraints.maxWidth - gap * (columns - 1)) / columns;
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: 16,
-                  children: <Widget>[
-                    for (final stat in stats)
-                      SizedBox(width: width, child: stat),
-                  ],
-                );
-              },
-            ),
-          ],
         ],
-      ),
+        const SizedBox(height: 10),
+        Text(
+          summarySentence(
+            activeSeconds: activeSeconds,
+            breakSeconds: breakSeconds,
+            idleSeconds: idleSeconds,
+          ),
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            fontFamily: 'Inter',
+            fontSize: 13,
+            height: 1.4,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        if (total > 0) ...<Widget>[
+          const SizedBox(height: 16),
+          _SplitBar(
+            active: activeSeconds,
+            onBreak: breakSeconds,
+            idle: idleSeconds,
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stats = <Widget>[
+                _Stat(label: 'Working', value: formatDuration(activeSeconds)),
+                _Stat(label: 'Breaks', value: formatDuration(breakSeconds)),
+                _Stat(label: 'Away', value: formatDuration(idleSeconds)),
+                _Stat(
+                  label: 'App switches',
+                  value: contextSwitches == 0 ? '—' : '$contextSwitches',
+                  footnote:
+                      verdict ??
+                      (switchesPerHour == null || contextSwitches == 0
+                          ? null
+                          : '${switchesPerHour!.toStringAsFixed(1)}/hr'),
+                ),
+              ];
+
+              final columns = constraints.maxWidth >= 440 ? 4 : 2;
+              return Column(
+                children: <Widget>[
+                  for (var r = 0; r < stats.length; r += columns) ...<Widget>[
+                    if (r > 0) const SizedBox(height: AppTheme.space16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        for (var i = r; i < r + columns; i++) ...<Widget>[
+                          if (i > r) const SizedBox(width: AppTheme.space16),
+                          Expanded(child: stats[i]),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ],
     );
   }
 }
@@ -314,16 +302,10 @@ class _SplitBar extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({
-    required this.label,
-    required this.value,
-    this.color,
-    this.footnote,
-  });
+  const _Stat({required this.label, required this.value, this.footnote});
 
   final String label;
   final String value;
-  final Color? color;
   final String? footnote;
 
   @override
@@ -331,26 +313,14 @@ class _Stat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            if (color != null) ...<Widget>[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontFeatures: AppTheme.tabular,
-                fontFamily: 'Inter',
-                fontSize: 12,
-                color: AppTheme.textMuted,
-              ),
-            ),
-          ],
+        Text(
+          label,
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: AppTheme.textMuted,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -358,8 +328,8 @@ class _Stat extends StatelessWidget {
           style: TextStyle(
             fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontSize: 24,
+            fontWeight: FontWeight.w400,
             color: AppTheme.textPrimary,
           ),
         ),
@@ -384,27 +354,6 @@ class InsightCard extends StatelessWidget {
 
   final ProductivityInsight insight;
 
-  IconData get _icon {
-    switch (insight.type) {
-      case InsightType.focusWindow:
-        return CupertinoIcons.clock;
-      case InsightType.contextSwitching:
-        return CupertinoIcons.arrow_right_arrow_left;
-      case InsightType.applicationPattern:
-        return CupertinoIcons.square_grid_2x2;
-      case InsightType.breakPattern:
-        return CupertinoIcons.timer;
-      case InsightType.idleTime:
-        return CupertinoIcons.pause_circle;
-      case InsightType.focusOpportunity:
-        return CupertinoIcons.lightbulb;
-      case InsightType.goalProgress:
-        return CupertinoIcons.flag;
-      case InsightType.comparison:
-        return CupertinoIcons.arrow_right_arrow_left;
-    }
-  }
-
   String get _kind {
     switch (insight.type) {
       case InsightType.focusWindow:
@@ -426,26 +375,16 @@ class InsightCard extends StatelessWidget {
     }
   }
 
-  Color get _accent => insight.confidence == InsightConfidence.low
-      ? AppTheme.textMuted
-      : AppTheme.textSecondary;
-
   @override
   Widget build(BuildContext context) {
-    final accent = _accent;
     final suggestion = insight.suggestion;
     final low = insight.confidence == InsightConfidence.low;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(_icon, size: 18, color: accent),
-          ),
-          const SizedBox(width: 14),
           Expanded(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),

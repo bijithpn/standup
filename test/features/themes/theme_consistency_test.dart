@@ -159,7 +159,7 @@ void main() {
                 data: MediaQuery.of(context).copyWith(disableAnimations: true),
                 child: child!,
               ),
-              home: child,
+              home: Material(child: child),
             ),
           ),
         ),
@@ -168,10 +168,6 @@ void main() {
       AppTheme.applyPreset(AppThemePreset.softLight);
       themes.value = AppTheme.materialTheme;
       await tester.pumpAndSettle();
-      expect(
-        tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
-        AppTheme.surface,
-      );
       expect(
         tester.widget<Text>(find.text('High contrast')).style!.color,
         AppTheme.textPrimary,

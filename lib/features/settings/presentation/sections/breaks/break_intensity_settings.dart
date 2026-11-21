@@ -24,18 +24,15 @@ class BreakIntensitySettings extends StatelessWidget {
       children: [
         sectionHeader('Display options'),
         buildCard([
-          toggleRow(
-            'Show on All Displays',
-            'Dim all monitors when taking a break.',
-            settings.showOnAllDisplays,
-            (val) {
-              onSave(settings.copyWith(showOnAllDisplays: val));
-            },
-          ),
+          toggleRow('Show on all displays', '', settings.showOnAllDisplays, (
+            val,
+          ) {
+            onSave(settings.copyWith(showOnAllDisplays: val));
+          }),
           divider(),
           toggleRow(
             'Show wellness notes',
-            'Display tips and exercise notes on break templates.',
+            'Tips and exercise notes on break templates',
             settings.showExercisesInBreak,
             (val) {
               onSave(settings.copyWith(showExercisesInBreak: val));
@@ -43,15 +40,14 @@ class BreakIntensitySettings extends StatelessWidget {
           ),
           divider(),
           toggleRow(
-            'Play lo-fi music during break',
-            'Play relaxing LoFi music when on break.',
+            'Play lo-fi music during breaks',
+            '',
             settings.playMusicDuringBreak,
             (val) {
               onSave(settings.copyWith(playMusicDuringBreak: val));
             },
           ),
         ]),
-        const SizedBox(height: 16),
         sectionHeader('Connected displays'),
         ListenableBuilder(
           listenable: sl<DisplayController>(),
@@ -60,12 +56,12 @@ class BreakIntensitySettings extends StatelessWidget {
             if (displays.isEmpty) {
               return buildCard([
                 Padding(
-                  padding: EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
-                    'No external displays detected or plugin not fully initialized.',
+                    'No external displays detected.',
                     style: TextStyle(
                       color: AppTheme.textSecondary,
-                      fontFamily: 'Inter',
+                      fontSize: 13,
                     ),
                   ),
                 ),
@@ -74,10 +70,7 @@ class BreakIntensitySettings extends StatelessWidget {
             return buildCard(
               displays.map((display) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Row(
                     children: [
                       Expanded(
@@ -95,7 +88,7 @@ class BreakIntensitySettings extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
+                              '${display.width.toInt()}x${display.height.toInt()}${display.isPrimary ? ' · Primary' : ''}',
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
                                 fontSize: 12,
@@ -106,23 +99,11 @@ class BreakIntensitySettings extends StatelessWidget {
                         ),
                       ),
 
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Active',
-                          style: TextStyle(
-                            color: AppTheme.accentColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Inter',
-                          ),
+                      Text(
+                        'Active',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
                         ),
                       ),
                     ],

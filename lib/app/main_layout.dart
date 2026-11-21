@@ -10,6 +10,7 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
@@ -18,20 +19,29 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/features/themes/application/theme_controller.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
-import 'package:breakmate/shared/widgets/themed_app_icon.dart';
+
+enum _NavGroup {
+  today('Today'),
+  insights('Insights'),
+  customize('Customize'),
+  system('System');
+
+  final String label;
+  const _NavGroup(this.label);
+}
 
 /// Sidebar entry mapping a label/icon to a navigation section.
 class _NavItem {
   final String label;
   final IconData icon;
   final String section;
-  final bool isBottom;
+  final _NavGroup group;
 
   const _NavItem({
     required this.label,
     required this.icon,
     required this.section,
-    this.isBottom = false,
+    required this.group,
   });
 }
 
@@ -60,95 +70,100 @@ class _MainLayoutState extends State<MainLayout> {
   bool _isMenuOpen = false;
   late final AppNavigationService _navigationService;
 
-  static final List<_NavItem> _mainNavItems = [
+  static final List<_NavItem> _allItems = [
     _NavItem(
       label: AppStrings.today,
       icon: CupertinoIcons.home,
       section: 'Today',
+      group: _NavGroup.today,
     ),
     _NavItem(
       label: AppStrings.navBreaks,
       icon: CupertinoIcons.timer,
       section: 'Breaks & Profiles',
+      group: _NavGroup.today,
     ),
     _NavItem(
       label: AppStrings.navSmartDetection,
       icon: CupertinoIcons.eye,
       section: 'Intelligent Detection',
+      group: _NavGroup.today,
     ),
     _NavItem(
       label: 'Calendar sync',
       icon: CupertinoIcons.calendar,
       section: 'Calendar Sync',
-    ),
-    _NavItem(
-      label: AppStrings.navNotifications,
-      icon: CupertinoIcons.bell,
-      section: 'Notifications',
-    ),
-    _NavItem(
-      label: AppStrings.navCompanion,
-      icon: CupertinoIcons.paw,
-      section: 'Companion',
+      group: _NavGroup.today,
     ),
     if (ProductivityConfig.current.enabled)
       _NavItem(
         label: 'Productivity',
         icon: CupertinoIcons.chart_bar,
         section: 'Productivity',
+        group: _NavGroup.insights,
       ),
     _NavItem(
       label: AppStrings.navStatistics,
       icon: CupertinoIcons.graph_square,
       section: 'Statistics',
+      group: _NavGroup.insights,
     ),
     _NavItem(
-      label: 'Personal Goals',
+      label: 'Personal goals',
       icon: CupertinoIcons.forward_fill,
       section: 'Goals',
+      group: _NavGroup.insights,
     ),
     _NavItem(
-      label: 'Themes & Styling',
+      label: AppStrings.navCompanion,
+      icon: CupertinoIcons.paw,
+      section: 'Companion',
+      group: _NavGroup.customize,
+    ),
+    _NavItem(
+      label: 'Themes and styling',
       icon: CupertinoIcons.paintbrush,
       section: 'Themes',
+      group: _NavGroup.customize,
+    ),
+    _NavItem(
+      label: AppStrings.navNotifications,
+      icon: CupertinoIcons.bell,
+      section: 'Notifications',
+      group: _NavGroup.customize,
     ),
     _NavItem(
       label: 'Privacy',
       icon: CupertinoIcons.lock_shield,
       section: 'Privacy',
+      group: _NavGroup.customize,
     ),
     _NavItem(
       label: AppStrings.navGeneralSettings,
       icon: CupertinoIcons.settings,
       section: 'General',
+      group: _NavGroup.customize,
+    ),
+    _NavItem(
+      label: AppStrings.navDataBackup,
+      icon: CupertinoIcons.folder,
+      section: 'Data & Backup',
+      group: _NavGroup.system,
+    ),
+    if (!Platform.isWindows)
+      _NavItem(
+        label: AppStrings.navSoftwareUpdate,
+        icon: CupertinoIcons.arrow_down_circle,
+        section: 'Updates',
+        group: _NavGroup.system,
+      ),
+    _NavItem(
+      label: AppStrings.navAbout,
+      icon: CupertinoIcons.info_circle,
+      section: 'About',
+      group: _NavGroup.system,
     ),
   ];
-
-  List<_NavItem> get _bottomNavItems {
-    return [
-      const _NavItem(
-        label: AppStrings.navDataBackup,
-        icon: CupertinoIcons.folder,
-        section: 'Data & Backup',
-        isBottom: true,
-      ),
-      if (!Platform.isWindows)
-        const _NavItem(
-          label: AppStrings.navSoftwareUpdate,
-          icon: CupertinoIcons.arrow_down_circle,
-          section: 'Updates',
-          isBottom: true,
-        ),
-      const _NavItem(
-        label: AppStrings.navAbout,
-        icon: CupertinoIcons.info_circle,
-        section: 'About',
-        isBottom: true,
-      ),
-    ];
-  }
-
-  List<_NavItem> get _allItems => [..._mainNavItems, ..._bottomNavItems];
 
   static const Map<String, String> _legacySections = {
     'Exercises': 'Breaks & Profiles',
@@ -265,20 +280,13 @@ class _MainLayoutState extends State<MainLayout> {
     return MacosWindow(
       key: key,
       backgroundColor: AppTheme.contentBackground,
-      titleBar: TitleBar(
-        height: 52,
-        dividerColor: AppTheme.separatorColor,
-        centerTitle: true,
-      ),
       sidebar: Sidebar(
-        minWidth: 210,
+        minWidth: 240,
         maxWidth: 240,
         builder: (context, scrollController) {
           return _SidebarContent(
             scrollController: scrollController,
             selectedIndex: _pageIndex,
-            mainItems: _mainNavItems,
-            bottomItems: _bottomNavItems,
             onItemSelected: (i) {
               setState(() => _pageIndex = i);
               _navigationService.openSection(_allItems[i].section);
@@ -304,7 +312,10 @@ class _MainLayoutState extends State<MainLayout> {
       child: Stack(
         key: key,
         children: [
-          _buildMainContent(),
+          Padding(
+            padding: const EdgeInsets.only(top: 52),
+            child: _buildMainContent(),
+          ),
           Positioned(
             top: 0,
             left: 0,
@@ -373,8 +384,6 @@ class _MainLayoutState extends State<MainLayout> {
                   child: _SidebarContent(
                     scrollController: null,
                     selectedIndex: _pageIndex,
-                    mainItems: _mainNavItems,
-                    bottomItems: _bottomNavItems,
                     onItemSelected: (i) {
                       setState(() {
                         _pageIndex = i;
@@ -393,24 +402,13 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildMainContent() {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 280),
-      switchInCurve: Curves.easeInOutCubic,
-      switchOutCurve: Curves.easeInOutCubic,
-      transitionBuilder: (child, animation) {
-        final slideAnimation =
-            Tween<Offset>(
-              begin: const Offset(0.0, 0.03),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
-
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(position: slideAnimation, child: child),
-        );
-      },
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 120),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
       child: KeyedSubtree(
         key: ValueKey(_pageIndex),
         child: _getPageForIndex(_pageIndex),
@@ -464,121 +462,103 @@ class _MainLayoutState extends State<MainLayout> {
 class _SidebarContent extends StatelessWidget {
   final ScrollController? scrollController;
   final int selectedIndex;
-  final List<_NavItem> mainItems;
-  final List<_NavItem> bottomItems;
   final ValueChanged<int> onItemSelected;
 
   const _SidebarContent({
     this.scrollController,
     required this.selectedIndex,
-    required this.mainItems,
-    required this.bottomItems,
     required this.onItemSelected,
   });
 
   @override
   Widget build(BuildContext context) {
+    final items = _MainLayoutState._allItems;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildBrandHeader(),
-        const SizedBox(height: 8),
-
-        Expanded(
-          child: ListView.builder(
-            controller: scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            itemCount: mainItems.length,
-            itemBuilder: (context, i) {
-              final globalIndex = i;
-              return _SidebarNavItem(
-                item: mainItems[i],
-                isSelected: selectedIndex == globalIndex,
-                onTap: () {
-                  onItemSelected(globalIndex);
-                  sl<TrayManagerService>().triggerActionAnimation();
-                },
-              );
-            },
-          ),
-        ),
-
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Divider(
-            height: 1,
-            thickness: 0.5,
-            color: AppTheme.separatorColor,
-          ),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-          child: Column(
-            children: bottomItems.asMap().entries.map((entry) {
-              final globalIndex = mainItems.length + entry.key;
-              return _SidebarNavItem(
-                item: entry.value,
-                isSelected: selectedIndex == globalIndex,
-                onTap: () {
-                  onItemSelected(globalIndex);
-                  sl<TrayManagerService>().triggerActionAnimation();
-                },
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBrandHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const ThemedAppIcon.badge(size: 72, showDevBadge: true),
-          const SizedBox(height: 14),
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Break',
+          padding: const EdgeInsets.fromLTRB(24, 44, 24, 8),
+          child: Row(
+            children: [
+              Semantics(
+                label: 'BreakMate app icon',
+                child: ThemedAppIcon.badge(
+                  size: 28,
+                  iconSize: 20,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  showDevBadge: false,
+                ),
+              ),
+              const SizedBox(width: AppTheme.space12),
+              Flexible(
+                child: Text(
+                  'BreakMate',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
-                    letterSpacing: 0,
                     fontFamily: 'Inter',
                   ),
                 ),
-                TextSpan(
-                  text: 'Mate',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.accentColor,
-                    letterSpacing: 0,
-                    fontFamily: 'Inter',
+              ),
+              if (FlavorConfig.instance.isDev) ...[
+                const SizedBox(width: AppTheme.space8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppTheme.borderSubtle),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                ),
-                if (FlavorConfig.instance.isDev)
-                  TextSpan(
-                    text: ' DEV',
+                  child: Text(
+                    'DEV',
+                    maxLines: 1,
+                    softWrap: false,
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.error,
-                      letterSpacing: 0,
+                      color: AppTheme.textMuted,
                       fontFamily: 'Inter',
                     ),
                   ),
+                ),
               ],
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i == 0 || items[i].group != items[i - 1].group)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(12, i == 0 ? 16 : 24, 12, 4),
+                    child: Text(
+                      items[i].group.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppTheme.textMuted,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                _SidebarNavItem(
+                  item: items[i],
+                  isSelected: selectedIndex == i,
+                  onTap: () {
+                    onItemSelected(i);
+                    sl<TrayManagerService>().triggerActionAnimation();
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -604,64 +584,66 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
   @override
   Widget build(BuildContext context) {
     final isSelected = widget.isSelected;
+    final color = isSelected ? AppTheme.textPrimary : AppTheme.textSecondary;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
-      child: TapTarget(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.only(bottom: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: _isHovered && !isSelected
-                ? AppTheme.surfaceElevated.withValues(alpha: 0.5)
-                : isSelected
-                ? AppTheme.surfaceElevated
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: isSelected
-                ? Border.all(color: AppTheme.border, width: 0.5)
-                : Border.all(color: Colors.transparent, width: 0.5),
-          ),
-          child: Row(
+      child: Tooltip(
+        message: widget.item.label,
+        waitDuration: const Duration(milliseconds: 600),
+        child: TapTarget(
+          onTap: widget.onTap,
+          selected: isSelected,
+          semanticLabel: widget.item.label,
+          child: Stack(
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                width: 3,
-                height: isSelected ? 18 : 0,
+                constraints: const BoxConstraints(minHeight: 32),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.space12,
+                  vertical: AppTheme.space8,
+                ),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentColor,
-                  borderRadius: BorderRadius.circular(2),
+                  color: isSelected
+                      ? AppTheme.surfaceElevated
+                      : _isHovered
+                      ? AppTheme.surfaceElevated.withValues(alpha: 0.5)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Icon(widget.item.icon, size: 16, color: color),
+                    const SizedBox(width: AppTheme.space12),
+                    Expanded(
+                      child: Text(
+                        widget.item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w500
+                              : FontWeight.w400,
+                          color: color,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(width: isSelected ? 12 : 0),
-              Icon(
-                widget.item.icon,
-                size: 16,
-                color: isSelected
-                    ? AppTheme.accentColor
-                    : AppTheme.textSecondary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                    color: isSelected
-                        ? AppTheme.textPrimary
-                        : AppTheme.textSecondary,
-                    letterSpacing: 0,
-                    fontFamily: 'Inter',
-                  ),
+              if (isSelected)
+                Positioned(
+                  left: 0,
+                  top: AppTheme.space8,
+                  bottom: AppTheme.space8,
+                  width: 2,
+                  child: ColoredBox(color: AppTheme.accentColor),
                 ),
-              ),
             ],
           ),
         ),

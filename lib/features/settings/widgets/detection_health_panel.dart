@@ -233,26 +233,9 @@ class _DetectionHealthPanelState extends State<DetectionHealthPanel>
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Semantics(
               liveRegion: true,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    CupertinoIcons.info,
-                    size: 16,
-                    color: AppTheme.accentColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _message!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.5,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                _message!,
+                style: TextStyle(fontSize: 12, color: AppTheme.textPrimary),
               ),
             ),
           ),

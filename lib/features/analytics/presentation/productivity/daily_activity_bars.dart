@@ -70,77 +70,69 @@ class _DailyActivityBarsState extends State<DailyActivityBars> {
         ? (widget.days.length / 5).ceil().clamp(1, widget.days.length)
         : 1;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildHeaderHud(avgActiveSeconds, peakDay, todayStr),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 124,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildYAxisLabels(peak),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      _buildGuidelines(),
-                      if (goal != null)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 22 + (goal / peak) * (124 - 22),
-                          child: _GoalLine(label: formatDuration(goal)),
-                        ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          for (int i = 0; i < widget.days.length; i++)
-                            Expanded(
-                              child: _buildBarItem(
-                                day: widget.days[i],
-                                peakSeconds: peak,
-                                isToday: widget.days[i].date == todayStr,
-                                isHovered:
-                                    _hoveredDay?.date == widget.days[i].date,
-                                showLabel:
-                                    !isSparseLabels ||
-                                    i == 0 ||
-                                    i == widget.days.length - 1 ||
-                                    i % labelInterval == 0,
-                                isSparseLabels: isSparseLabels,
-                              ),
-                            ),
-                        ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildHeaderHud(avgActiveSeconds, peakDay, todayStr),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 124,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildYAxisLabels(peak),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Stack(
+                  children: [
+                    _buildGuidelines(),
+                    if (goal != null)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 22 + (goal / peak) * (124 - 22),
+                        child: _GoalLine(label: formatDuration(goal)),
                       ),
-                    ],
-                  ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        for (int i = 0; i < widget.days.length; i++)
+                          Expanded(
+                            child: _buildBarItem(
+                              day: widget.days[i],
+                              peakSeconds: peak,
+                              isToday: widget.days[i].date == todayStr,
+                              isHovered:
+                                  _hoveredDay?.date == widget.days[i].date,
+                              showLabel:
+                                  !isSparseLabels ||
+                                  i == 0 ||
+                                  i == widget.days.length - 1 ||
+                                  i % labelInterval == 0,
+                              isSparseLabels: isSparseLabels,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        if (goal != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            'Dashed line is your daily goal',
+            style: TextStyle(
+              fontFeatures: AppTheme.tabular,
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: AppTheme.textMuted,
             ),
           ),
-          if (goal != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              'Dashed line is your daily goal',
-              style: TextStyle(
-                fontFeatures: AppTheme.tabular,
-                fontFamily: 'Inter',
-                fontSize: 12,
-                color: AppTheme.textMuted,
-              ),
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 

@@ -74,7 +74,7 @@ class _MenuBarModePickerState extends State<MenuBarModePicker>
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -120,22 +120,20 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return TapTarget(
       onTap: onTap,
       selected: selected,
       child: AnimatedContainer(
         duration: motionDuration(context, const Duration(milliseconds: 200)),
         width: 120,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        height: 104,
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
         decoration: BoxDecoration(
-          color: selected
-              ? colors.secondaryContainer
-              : colors.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(12),
+          color: AppTheme.surfaceCard,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
           border: Border.all(
-            color: selected ? colors.primary : colors.outlineVariant,
-            width: 1,
+            color: selected ? AppTheme.accent : AppTheme.borderSubtle,
+            width: selected ? 2 : 1,
           ),
         ),
         child: Column(
@@ -145,19 +143,27 @@ class _Tile extends StatelessWidget {
               height: 44,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: colors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(4),
+                color: AppTheme.contentBackground,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXs),
               ),
               child: child,
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: selected ? AppTheme.textPrimary : AppTheme.textSecondary,
+            const SizedBox(height: AppTheme.space8),
+            Expanded(
+              child: Center(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: selected
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
+                  ),
+                ),
               ),
             ),
           ],

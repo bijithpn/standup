@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'settings_group.dart';
 
 /// Keeps less frequent controls reachable through a keyboard-focusable disclosure.
 class AdvancedSettings extends StatelessWidget {
@@ -14,10 +15,10 @@ class AdvancedSettings extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 16),
+    margin: const EdgeInsets.only(bottom: AppTheme.space24),
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      border: Border.all(color: Theme.of(context).colorScheme.outline),
+      color: AppTheme.surfaceCard,
+      border: Border.all(color: AppTheme.borderSubtle),
       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
     ),
     clipBehavior: Clip.antiAlias,
@@ -35,31 +36,26 @@ class AdvancedSettings extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: Theme.of(context).colorScheme.onSurface,
+          color: AppTheme.textPrimary,
         ),
       ),
       subtitle: subtitle == null
           ? null
           : Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: AppTheme.space4),
               child: Text(
                 subtitle!,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.5,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
             ),
-      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      tilePadding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.space16,
+        vertical: AppTheme.space4,
+      ),
+      childrenPadding: EdgeInsets.zero,
       children: [
         Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
-        const SizedBox(height: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children.skipWhile((child) => child is Divider).toList(),
-        ),
+        SettingsRows(children: children),
       ],
     ),
   );

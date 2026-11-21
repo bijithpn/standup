@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/page_scroll.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
@@ -83,67 +82,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 600;
-        final horizontalPadding = isSmallScreen ? 16.0 : 40.0;
-        final verticalPadding = isSmallScreen ? 20.0 : 32.0;
-
-        Widget buildContent(ScrollController? scrollController) {
-          return ScrollConfiguration(
-            behavior: ScrollConfiguration.of(
-              context,
-            ).copyWith(scrollbars: false),
-            child: SingleChildScrollView(
-              controller: scrollController,
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: verticalPadding,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isSmallScreen ? double.infinity : 760,
-                  ),
-                  child: _buildContentShell(),
-                ),
-              ),
-            ),
-          );
-        }
-
-        if (isSmallScreen) {
-          return Scaffold(
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.surfaceContainerLowest,
-            body: buildContent(null),
-          );
-        }
-
-        return MacosScaffold(
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-          toolBar: ToolBar(
-            title: Text(
-              _sectionDisplayName(widget.section),
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            titleWidth: 260,
-            actions: [],
-          ),
-          children: [
-            ContentArea(
-              builder: (context, scrollController) =>
-                  buildContent(scrollController),
-            ),
-          ],
-        );
-      },
-    );
+    return PageScroll(child: _buildContentShell());
   }
 
   String _sectionDisplayName(String section) {
@@ -218,11 +157,20 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          _sectionDisplayName(widget.section),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppTheme.space24),
         if (_settingsWarnings.isNotEmpty) ...[
-          const SizedBox(height: 12),
           _buildSettingsWarnings(),
+          const SizedBox(height: AppTheme.space16),
         ],
-        const SizedBox(height: 20),
         _buildContent(),
       ],
     );

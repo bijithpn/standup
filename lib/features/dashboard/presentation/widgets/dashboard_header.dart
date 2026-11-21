@@ -14,9 +14,8 @@ class DashboardHeader extends StatelessWidget {
           AppStrings.today,
           style: TextStyle(
             fontFamily: 'Inter',
-            fontSize: 32,
+            fontSize: 24,
             fontWeight: FontWeight.w500,
-            height: 1.1,
             color: AppTheme.textPrimary,
           ),
         ),

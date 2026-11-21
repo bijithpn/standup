@@ -4,6 +4,7 @@ import '../settings_model.dart';
 import '../exercise_model.dart';
 import '../experience_preferences.dart';
 import 'settings_widgets.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class ExercisePreferencesSection extends StatelessWidget {
   final SettingsModel settings;
@@ -28,11 +29,7 @@ class ExercisePreferencesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Exercises that suit you',
-          subtitle:
-              'Filters apply to guided breaks and Quick Stretch. While filters are active, breaks use a simple view with matching exercises or quiet rest.',
-        ),
+        sectionHeader('Exercises that suit you'),
         SettingsGroup(
           children: [
             SettingsField(
@@ -56,23 +53,21 @@ class ExercisePreferencesSection extends StatelessWidget {
                 ],
               ),
             ),
-
             toggleRow(
               'No equipment',
-              'Exclude exercises that need a wall, chair or other equipment.',
+              'Skips exercises that need a wall, chair or other equipment',
               preferences.noEquipmentOnly,
               (value) => save(preferences.copyWith(noEquipmentOnly: value)),
             ),
             toggleRow(
               'Low movement',
-              'Prefer small movements and quiet rest activities.',
+              'Small movements and quiet rest',
               preferences.lowMovementOnly,
               (value) => save(preferences.copyWith(lowMovementOnly: value)),
             ),
             SettingsField(
               title: 'Areas to avoid',
-              description:
-                  'Selected areas will be excluded from guided exercises.',
+              description: 'Selected areas are left out of guided exercises',
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -97,29 +92,20 @@ class ExercisePreferencesSection extends StatelessWidget {
               ),
             ),
             SettingsField(
-              title: 'Matching exercises',
+              title: matching.isEmpty
+                  ? 'Matching exercises'
+                  : '${matching.length} matching exercises',
               child: Semantics(
                 liveRegion: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      matching.isEmpty
-                          ? 'No matching exercises. Breaks will offer quiet rest; your filters will stay in place.'
-                          : '${matching.length} matching exercises.',
-                    ),
-                    if (matching.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        matching.map((e) => e.title).join(' · '),
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.7,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  matching.isEmpty
+                      ? 'No matching exercises. Breaks will offer quiet rest.'
+                      : matching.map((e) => e.title).join(' · '),
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.7,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
               ),
             ),

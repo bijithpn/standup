@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_cards.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -23,32 +24,12 @@ class DailyBudgetsCard extends StatelessWidget {
     };
     if (budgets.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: AppTheme.cardDecoration(),
+    return ProductivitySection(
+      title: 'Daily budgets',
+      subtitle: 'Soft limits from Personal Goals. Nothing is blocked.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Daily budgets',
-            style: TextStyle(
-              fontFeatures: AppTheme.tabular,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Soft limits from Personal Goals. Nothing is blocked.',
-            style: TextStyle(
-              fontFeatures: AppTheme.tabular,
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
           for (final category in AppCategory.values)
             if (budgets.containsKey(category.name))
               _row(

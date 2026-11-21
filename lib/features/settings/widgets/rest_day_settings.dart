@@ -22,15 +22,13 @@ class RestDaySettings extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Make room for rest',
-          subtitle:
-              'Rest days reduce your weekly target and remove daily goal pressure. Reminder schedules stay under Working Hours.',
-        ),
+        sectionHeader('Rest days'),
         SettingsGroup(
           children: [
             SettingsField(
               title: 'Weekly rest days',
+              description:
+                  'Lowers your weekly target and removes daily goal pressure',
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,

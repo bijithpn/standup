@@ -260,17 +260,18 @@ class ProductivityTrendChart extends StatelessWidget {
       if (s.value > maxValue) maxValue = s.value.toDouble();
     }
 
-    final double maxY = maxValue < 4
+    final double rawMax = maxValue < 4
         ? 4
         : (maxValue + (maxValue * 0.25)).ceilToDouble();
 
-    final double interval = maxY <= 4
+    final double interval = rawMax <= 4
         ? 1
-        : maxY <= 8
+        : rawMax <= 8
         ? 2
-        : maxY <= 16
+        : rawMax <= 16
         ? 4
-        : (maxY / 4).ceilToDouble();
+        : (rawMax / 4).ceilToDouble();
+    final double maxY = (rawMax / interval).ceilToDouble() * interval;
 
     final groups = slots.asMap().entries.map((e) {
       final slot = e.value;
