@@ -57,7 +57,7 @@ class BreakOverlayContent extends StatelessWidget {
         durationSeconds: config.durationSeconds,
         remainingSecondsNotifier: remainingSecondsNotifier,
         onSkip: canDismiss ? onSkip : null,
-        onSnooze: canDismiss ? onSnooze : null,
+        onSnooze: canDismiss && !config.snoozeLocked ? onSnooze : null,
         allowFullPoster:
             config.overlayType == 'quickReminder' && config.allowFullPoster,
         templateId: config.breakTemplate,

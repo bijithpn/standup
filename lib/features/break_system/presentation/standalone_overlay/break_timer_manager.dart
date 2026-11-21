@@ -90,8 +90,9 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
   void skipBreak(
     bool isInternalPreview,
     String overlayType,
-    AnimationController fadeController,
-  ) {
+    AnimationController fadeController, {
+    String? reason,
+  }) {
     if (isDismissing) return;
     isDismissing = true;
 
@@ -109,7 +110,11 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
             'restoreMainWindow': false,
           });
         }
-        NativeBridge.skipBreak();
+        if (reason != null) {
+          bridgeChannel.invokeMethod('skipBreak', {'reason': reason});
+        } else {
+          NativeBridge.skipBreak();
+        }
       }
     }
 

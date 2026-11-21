@@ -105,36 +105,41 @@ class BreakStartWarningOverlay extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  ValueListenableBuilder<int>(
-                    valueListenable:
-                        remainingSecondsNotifier ??
-                        ValueNotifier<int>(durationSeconds),
-                    builder: (context, remaining, _) {
-                      final displaySec = remaining > 0 ? remaining : 1;
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Break starting in ',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.88),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Inter',
+                  Flexible(
+                    child: ValueListenableBuilder<int>(
+                      valueListenable:
+                          remainingSecondsNotifier ??
+                          ValueNotifier<int>(durationSeconds),
+                      builder: (context, remaining, _) {
+                        final displaySec = remaining > 0 ? remaining : 1;
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Break starting in ',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.88),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${displaySec}s',
-                            style: TextStyle(
-                              color: AppTheme.accent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Inter',
+                            Text(
+                              '${displaySec}s',
+                              style: TextStyle(
+                                color: AppTheme.accent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Inter',
+                              ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
                   ),
                   if (onSnooze != null) ...[
                     const SizedBox(width: 10),

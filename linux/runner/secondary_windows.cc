@@ -201,7 +201,7 @@ void SecondaryWindows::AddOverlayChannels(Surface* surface) {
           HideOverlay();
           Ok(call);
         } else if (method == "skipBreak" || method == "completeBreak" || method == "snoozeBreak") {
-          ForwardToMain(method.c_str());
+          ForwardToMain(method.c_str(), args);
           HideOverlay();
           Ok(call);
         } else if (method == "openImmersive") {
@@ -245,9 +245,9 @@ gboolean SecondaryWindows::OnOverlayKey(GtkWidget*, GdkEventKey* event, gpointer
   return FALSE;  // Dart still sees the key
 }
 
-void SecondaryWindows::ForwardToMain(const char* method) {
+void SecondaryWindows::ForwardToMain(const char* method, FlValue* args) {
   g_autoptr(FlValue) empty = fl_value_new_map();
-  Invoke(main_bridge_, method, empty);
+  Invoke(main_bridge_, method, args != nullptr && fl_value_get_type(args) == FL_VALUE_TYPE_MAP ? args : empty);
 }
 
 void SecondaryWindows::PlaceCompact(Surface* surface, FlValue* args) {

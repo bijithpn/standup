@@ -573,7 +573,7 @@ class OverlayWindowManager: NSObject {
             case "skipBreak":
                 if let appDelegate = NSApp.delegate as? AppDelegate,
                    let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
-                    mainWindow.bridgeChannel?.invokeMethod("skipBreak", arguments: nil)
+                    mainWindow.bridgeChannel?.invokeMethod("skipBreak", arguments: call.arguments)
                 }
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)

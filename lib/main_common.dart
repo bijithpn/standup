@@ -17,6 +17,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'package:breakmate/core/services/daily_reset_service.dart';
 import 'package:breakmate/core/services/desktop_update_notifier.dart';
+import 'package:breakmate/features/break_system/application/skip_policy.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 
@@ -680,8 +681,12 @@ void mainCommon(FlavorConfig config) async {
           if (call.method == 'handleReopen') {
             await sl<OverlayWindowService>().showDashboard(forceShow: true);
           } else if (call.method == 'snoozeBreak') {
-            sl<BreakController>().snooze(minutes: 5);
+            sl<BreakController>().snoozeUpcomingBreak();
           } else if (call.method == 'skipBreak') {
+            final args = call.arguments;
+            if (args is Map && args['reason'] is String) {
+              SkipPolicy.recordReason(args['reason'] as String, DateTime.now());
+            }
             sl<BreakController>().skipCurrentBreak();
           } else if (call.method == 'completeBreak') {
             final args = call.arguments;
