@@ -3,7 +3,37 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                                                                                              <item>
+        <language>en</language>                                                                                                                                                              <item>
+            <title>Version 1.14.0</title>
+            <pubDate>Mon, 23 Nov 2026 03:57:53 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.14.0</h3>
+                <p>Bug fixes and performance improvements.</p>
+                
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.14.0/BreakMate-1.14.0-linux-x64.tar.gz" sparkle:os="linux"
+                       sparkle:version="53"
+                       sparkle:shortVersionString="1.14.0"
+                       sparkle:edSignature=""
+                       length="33078868"
+                       type="application/octet-stream" />
+        </item>
+<item>
+            <title>Version 1.14.0</title>
+            <pubDate>Mon, 23 Nov 2026 03:57:53 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.14.0</h3>
+                <p>Bug fixes and performance improvements.</p>
+                
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.14.0/BreakMate-Setup-1.14.0.exe" sparkle:os="windows"
+                       sparkle:version="53"
+                       sparkle:shortVersionString="1.14.0"
+                       sparkle:edSignature=""
+                       length="21365717"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.14.0</title>
             <pubDate>Mon, 23 Nov 2026 03:55:08 +0000</pubDate>
             <description><![CDATA[
