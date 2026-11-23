@@ -1,7 +1,7 @@
 # Auto-updated by .github/workflows/macos_release.yml on every release.
 cask "breakmate" do
-  version "1.14.1"
-  sha256 "111af8e2d3aa32522cb9539e302a84d9857589c27a4aa666a8e458bdd34beb02"
+  version "1.15.0"
+  sha256 "a91ae42d73d4ae77a3cb2ee9ef16a6bd7d529bc0d500f72ecc0d1968db88d43e"
 
   url "https://github.com/bijithpn/standup/releases/download/v#{version}/BreakMate-Installer.dmg"
   name "BreakMate"
