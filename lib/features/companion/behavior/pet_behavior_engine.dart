@@ -245,6 +245,9 @@ class PetBehaviorEngine extends ChangeNotifier {
   double _idleActionTimer = 6.0;
 
   bool _held = false;
+  double _heldSeconds = 0.0;
+  double _dizzy = 0.0;
+  double _dizzyPhase = 0.0;
 
   double _accumulator = 0.0;
   Duration _lastTick = Duration.zero;
@@ -272,6 +275,7 @@ class PetBehaviorEngine extends ChangeNotifier {
         _wobbleVelocity == 0.0 &&
         _startle == 0.0 &&
         _delight == 0.0 &&
+        _dizzy == 0.0 &&
         _playing == 0.0 &&
         _travel == Offset.zero;
   }
@@ -395,6 +399,7 @@ class PetBehaviorEngine extends ChangeNotifier {
   void grab() {
     onNeedsFrames?.call();
     _held = true;
+    _heldSeconds = 0.0;
     _startle = 1.0;
     _attention = 1.0;
     _arousal = math.min(1.0, _arousal + 0.4);
@@ -406,6 +411,8 @@ class PetBehaviorEngine extends ChangeNotifier {
   void release() {
     onNeedsFrames?.call();
     _held = false;
+    if (_motionAllowed && _heldSeconds >= _dizzyAfterDragSeconds) _dizzy = 1.0;
+    _heldSeconds = 0.0;
     _delight = math.max(_delight, 0.6);
     if (_motionAllowed) _bounceVelocity = 120.0;
     _rock(5.0);
@@ -544,6 +551,9 @@ class PetBehaviorEngine extends ChangeNotifier {
         a.emotion.emotion == b.emotion.emotion &&
         (a.emotion.intensity - b.emotion.intensity).abs() < 0.01;
   }
+
+  static const double _dizzyAfterDragSeconds = 1.2;
+  static const double _dizzySeconds = 3.0;
 
   static double _decay(double value, double rate, double dt) {
     final next = value - value * rate * dt;

@@ -227,15 +227,6 @@ enum AvatarSpecies {
       'hasRoundEars': true,
     },
   ),
-  wolf(
-    displayName: 'Wolf',
-    category: AvatarSpeciesCategory.canine,
-    defaultPartConfigurations: {
-      'hasPointyEars': true,
-      'hasLongMuzzle': true,
-      'hasBushyTail': true,
-    },
-  ),
   bear(
     displayName: 'Bear',
     category: AvatarSpeciesCategory.wildlife,
@@ -298,8 +289,6 @@ enum AvatarSpecies {
         return 'assets/avatars/breeds/bear--red-panda.svg';
       case AvatarSpecies.raccoon:
         return 'assets/avatars/breeds/bear--raccoon.svg';
-      case AvatarSpecies.wolf:
-        return 'assets/avatars/breeds/dog--husky.svg';
       default:
         return 'assets/avatars/species/$name.svg';
     }
@@ -313,8 +302,6 @@ enum AvatarSpecies {
       case AvatarSpecies.redPanda:
       case AvatarSpecies.raccoon:
         return 'assets/avatars/species/bear.thumbnail.png';
-      case AvatarSpecies.wolf:
-        return 'assets/avatars/species/dog.thumbnail.png';
       default:
         return 'assets/avatars/species/$name.thumbnail.png';
     }

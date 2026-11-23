@@ -221,6 +221,7 @@ class PetWanderer {
     if (snapshot.arousal > 0.6) return false;
     if (snapshot.activity == PetActivity.startled) return false;
     if (snapshot.activity == PetActivity.delighted) return false;
+    if (snapshot.activity == PetActivity.dizzy) return false;
 
     return true;
   }

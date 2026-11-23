@@ -1020,14 +1020,5 @@ class AvatarBreed {
         svgAssetPath: 'assets/avatars/breeds/tiger--white-tiger.svg',
       ),
     ],
-    AvatarSpecies.wolf: [
-      AvatarBreed(
-        id: 'husky',
-        displayName: 'Husky Wolf',
-        entityName: 'dog',
-        species: AvatarSpecies.wolf,
-        svgAssetPath: 'assets/avatars/breeds/dog--husky.svg',
-      ),
-    ],
   };
 }

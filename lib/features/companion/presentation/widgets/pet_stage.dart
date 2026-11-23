@@ -191,6 +191,7 @@ class PetStage extends StatelessWidget {
       case PetActivity.delighted:
         return loveExpression;
       case PetActivity.startled:
+      case PetActivity.dizzy:
         return surprisedExpression;
       case PetActivity.playful:
         return happyExpression;

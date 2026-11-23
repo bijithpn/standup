@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_format.dart';
 import 'package:breakmate/features/analytics/segments/productivity_insight.dart';
+import 'package:breakmate/features/analytics/segments/productivity_insight_engine.dart'
+    show kMinComparableSeconds;
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -466,21 +468,24 @@ class ProductivityEmptyState extends StatelessWidget {
   const ProductivityEmptyState({
     super.key,
     required this.trackingEnabled,
+    this.recordedSeconds = 0,
     this.onEnableTracking,
   });
 
   final bool trackingEnabled;
+  final int recordedSeconds;
   final VoidCallback? onEnableTracking;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
+        constraints: const BoxConstraints(maxWidth: 480),
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               Icon(
                 trackingEnabled
@@ -522,6 +527,10 @@ class ProductivityEmptyState extends StatelessWidget {
                   color: AppTheme.textSecondary,
                 ),
               ),
+              if (trackingEnabled) ...<Widget>[
+                const SizedBox(height: 20),
+                ProductivityDataProgress(recordedSeconds: recordedSeconds),
+              ],
               if (!trackingEnabled && onEnableTracking != null) ...<Widget>[
                 const SizedBox(height: 20),
                 FilledButton(
@@ -546,6 +555,50 @@ class ProductivityEmptyState extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Progress toward the minimum recorded time insights need.
+class ProductivityDataProgress extends StatelessWidget {
+  const ProductivityDataProgress({super.key, required this.recordedSeconds});
+
+  final int recordedSeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = (recordedSeconds / kMinComparableSeconds).clamp(0.0, 1.0);
+    return Semantics(
+      label: 'Recorded today',
+      value: '${(value * 100).round()} percent',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          SizedBox(
+            width: 220,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 4,
+                color: AppTheme.accent,
+                backgroundColor: AppTheme.surfaceElevated,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${formatDuration(recordedSeconds)} of '
+            '${formatDuration(kMinComparableSeconds)} recorded today',
+            style: TextStyle(
+              fontFeatures: AppTheme.tabular,
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -407,6 +407,10 @@ class _MainLayoutState extends State<MainLayout> {
       duration: reduceMotion
           ? Duration.zero
           : const Duration(milliseconds: 120),
+      layoutBuilder: (current, previous) => Stack(
+        fit: StackFit.expand,
+        children: <Widget>[...previous, ?current],
+      ),
       transitionBuilder: (child, animation) =>
           FadeTransition(opacity: animation, child: child),
       child: KeyedSubtree(

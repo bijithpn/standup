@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Scroll container shared by every shell page: scrollbar at the window edge, centered content column with a fixed side gutter.
+/// Scroll container shared by every shell page: scrollbar at the window edge, top-left aligned content column with a fixed side gutter.
 class PageScroll extends StatefulWidget {
   const PageScroll({super.key, required this.child});
 
@@ -37,7 +37,8 @@ class _PageScrollState extends State<PageScroll> {
           AppTheme.space40,
           AppTheme.space40,
         ),
-        child: Center(
+        child: Align(
+          alignment: Alignment.topLeft,
           child: ConstrainedBox(
             constraints: const BoxConstraints(
               maxWidth: PageScroll.maxContentWidth,

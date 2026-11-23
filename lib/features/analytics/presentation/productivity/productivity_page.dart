@@ -11,6 +11,8 @@ import 'package:breakmate/features/analytics/presentation/productivity/activity_
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_cards.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_format.dart';
 import 'package:breakmate/features/analytics/segments/productivity_insight.dart';
+import 'package:breakmate/features/analytics/segments/productivity_insight_engine.dart'
+    show kMinComparableSeconds;
 import 'package:breakmate/features/analytics/segments/productivity_repository.dart';
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -201,16 +203,14 @@ class _ProductivityPageState extends State<ProductivityPage> {
 
     if (widget.embedded) {
       if (_loading) {
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 48),
-          child: Center(child: CircularProgressIndicator()),
-        );
+        return const _ProductivitySkeleton();
       }
       if (!hasActivity) {
         return ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 280),
+          constraints: const BoxConstraints(minHeight: 420),
           child: ProductivityEmptyState(
             trackingEnabled: _trackingEnabled,
+            recordedSeconds: _today.trackedSeconds,
             onEnableTracking: _trackingEnabled ? null : _enableTracking,
           ),
         );
@@ -234,15 +234,13 @@ class _ProductivityPageState extends State<ProductivityPage> {
           ),
           const SizedBox(height: AppTheme.space32),
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
-              child: Center(child: CircularProgressIndicator()),
-            )
+            const _ProductivitySkeleton()
           else if (!hasActivity)
             ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 280),
+              constraints: const BoxConstraints(minHeight: 420),
               child: ProductivityEmptyState(
                 trackingEnabled: _trackingEnabled,
+                recordedSeconds: _today.trackedSeconds,
                 onEnableTracking: _trackingEnabled ? null : _enableTracking,
               ),
             )
@@ -276,35 +274,30 @@ class _ProductivityPageState extends State<ProductivityPage> {
             ],
           );
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: primary,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.space32),
-                Expanded(flex: 2, child: applications),
-              ],
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[...primary, insights],
+              ),
             ),
-            const SizedBox(height: 48),
-            if (budgets == null)
-              insights
-            else
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: AppTheme.space32),
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Expanded(child: insights),
-                  const SizedBox(width: AppTheme.space32),
-                  Expanded(child: budgets),
+                  applications,
+                  if (budgets != null) ...<Widget>[
+                    const SizedBox(height: 48),
+                    budgets,
+                  ],
                 ],
               ),
+            ),
           ],
         );
       },
@@ -335,6 +328,14 @@ class _ProductivityPageState extends State<ProductivityPage> {
         : (summary?.activeSeconds ?? 0);
 
     return <Widget>[
+      if (showingToday &&
+          day.trackedSeconds < kMinComparableSeconds) ...<Widget>[
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ProductivityDataProgress(recordedSeconds: day.trackedSeconds),
+        ),
+        const SizedBox(height: 32),
+      ],
       ProductivityOverviewCard(
         activeSeconds: activeSeconds,
         idleSeconds: showingToday ? day.idleSeconds : summary?.idleSeconds ?? 0,
@@ -545,6 +546,96 @@ class _RangeButton extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductivitySkeleton extends StatefulWidget {
+  const _ProductivitySkeleton();
+
+  @override
+  State<_ProductivitySkeleton> createState() => _ProductivitySkeletonState();
+}
+
+class _ProductivitySkeletonState extends State<_ProductivitySkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pulse.value = 1;
+    } else if (!_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  static Widget _bar(double height, {double? width}) => Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: AppTheme.surfaceElevated,
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+    ),
+  );
+
+  static Widget _block(List<double> rows) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      _bar(16, width: 96),
+      const SizedBox(height: AppTheme.space16),
+      for (final h in rows) ...<Widget>[
+        _bar(h),
+        const SizedBox(height: AppTheme.space12),
+      ],
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0.45, end: 1).animate(_pulse),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final left = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _block(const <double>[56, 12]),
+                const SizedBox(height: 48),
+                _block(const <double>[72]),
+                const SizedBox(height: 48),
+                _block(const <double>[48, 48, 48]),
+              ],
+            );
+            final right = _block(const <double>[40, 40, 40, 40, 40]);
+            if (box.maxWidth < 760) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[left, const SizedBox(height: 48), right],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(flex: 3, child: left),
+                const SizedBox(width: AppTheme.space32),
+                Expanded(flex: 2, child: right),
+              ],
+            );
+          },
         ),
       ),
     );

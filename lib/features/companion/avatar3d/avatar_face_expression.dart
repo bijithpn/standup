@@ -165,6 +165,23 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
     highlight: _Highlight(enabled: true, size: 1.8),
   ),
 
+  PetEmotion.dizzy: _Expression(
+    eyeHeight: 0.8,
+    eyeWidth: 1.3,
+    eyeGap: 1.04,
+    eyeRoundness: 1.7,
+    outerTilt: 24,
+    mouth: _Mouth(
+      enabled: true,
+      shape: 'ellipse',
+      curve: -20,
+      width: 0.6,
+      height: 0.9,
+      rotation: 8,
+    ),
+    highlight: _Highlight(enabled: false),
+  ),
+
   PetEmotion.laughing: _Expression(
     eyeHeight: 0.22,
     eyeWidth: 1.5,

@@ -21,6 +21,8 @@ enum PetActivity {
   startled,
 
   delighted,
+
+  dizzy,
 }
 
 /// Immutable per-frame pose/emotion output of PetBehaviorEngine consumed by the avatar views.

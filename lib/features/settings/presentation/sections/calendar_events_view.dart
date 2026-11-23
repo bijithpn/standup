@@ -7,6 +7,15 @@ import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _fullWeekdays = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
 const _months = [
   'January',
   'February',
@@ -225,16 +234,7 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
           const SizedBox(height: 16),
           Divider(height: 1, color: AppTheme.borderSubtle),
           const SizedBox(height: 16),
-          Text(
-            _sameDay(_selected, DateTime.now())
-                ? 'Today'
-                : _dayLabel(_selected),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
-            ),
-          ),
+          _SelectedDayHeader(day: _selected, eventCount: selectedEvents.length),
           const SizedBox(height: 8),
           if (selectedEvents.isEmpty)
             const _Empty(
@@ -249,34 +249,56 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
   }
 
   Widget _cell(int dayNum, int days) {
-    if (dayNum < 1 || dayNum > days) return const SizedBox(height: 48);
+    if (dayNum < 1 || dayNum > days) return const SizedBox(height: 56);
     final day = DateTime(_month.year, _month.month, dayNum);
     final isToday = _sameDay(day, DateTime.now());
     final isSel = _sameDay(day, _selected);
     final count = _on(day).length;
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-      hoverColor: AppTheme.hoverOverlay,
-      onTap: () => setState(() => _selected = day),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: isSel ? AppTheme.surfaceElevated : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          border: Border.all(
-            color: isToday ? AppTheme.accent : Colors.transparent,
-          ),
-        ),
+    final textColor = isSel
+        ? AppTheme.gray950
+        : isToday
+        ? AppTheme.accent
+        : AppTheme.textPrimary;
+    return Semantics(
+      button: true,
+      selected: isSel,
+      label: _dayLabel(day),
+      child: SizedBox(
+        height: 56,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '$dayNum',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                fontFeatures: AppTheme.tabular,
-                color: AppTheme.textPrimary,
+            Material(
+              color: isSel ? AppTheme.accent : Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: isToday && !isSel
+                    ? BorderSide(color: AppTheme.accent)
+                    : BorderSide.none,
+              ),
+              child: InkWell(
+                customBorder: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                hoverColor: AppTheme.hoverOverlay,
+                onTap: () => setState(() => _selected = day),
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: Center(
+                    child: Text(
+                      '$dayNum',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSel || isToday
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        fontFeatures: AppTheme.tabular,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 4),
@@ -289,7 +311,7 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
                     Container(
                       width: 4,
                       height: 4,
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
                       decoration: BoxDecoration(
                         color: AppTheme.accent,
                         shape: BoxShape.circle,
@@ -301,6 +323,72 @@ class _MonthCalendarCardState extends State<MonthCalendarCard> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SelectedDayHeader extends StatelessWidget {
+  final DateTime day;
+  final int eventCount;
+  const _SelectedDayHeader({required this.day, required this.eventCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final today = _sameDay(day, DateTime.now());
+    final count = eventCount == 0
+        ? 'No events'
+        : '$eventCount ${eventCount == 1 ? 'event' : 'events'}';
+    return Row(
+      children: [
+        Container(
+          width: 52,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceElevated,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Text(
+                _weekdays[day.weekday - 1].toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.accent,
+                ),
+              ),
+              Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: AppTheme.tabular,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                today
+                    ? 'Today'
+                    : '${_fullWeekdays[day.weekday - 1]}, ${_months[day.month - 1]}',
+                style: _title,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                count,
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -473,10 +561,12 @@ class _NavButton extends StatelessWidget {
       button: true,
       label: label,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        borderRadius: BorderRadius.circular(10),
+        hoverColor: AppTheme.hoverOverlay,
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
+        child: SizedBox(
+          width: 32,
+          height: 32,
           child: Icon(icon, size: 16, color: AppTheme.textSecondary),
         ),
       ),

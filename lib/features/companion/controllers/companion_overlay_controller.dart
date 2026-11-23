@@ -660,10 +660,6 @@ class CompanionOverlayController extends ChangeNotifier {
         case AvatarSpecies.tiger:
           breedName = 'bengal-tiger';
           break;
-        case AvatarSpecies.wolf:
-          entityName = 'dog';
-          breedName = 'husky';
-          break;
         case AvatarSpecies.bear:
           breedName = 'brown-bear';
           break;
@@ -678,7 +674,6 @@ class CompanionOverlayController extends ChangeNotifier {
           species == AvatarSpecies.redPanda) {
         entityName = 'bear';
       }
-      if (species == AvatarSpecies.wolf) entityName = 'dog';
     }
 
     var query = 'entity=$entityName&breed=$breedName&nose=1&mouth=1&bg=$bg';
