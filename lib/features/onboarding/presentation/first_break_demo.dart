@@ -1,6 +1,8 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:clock/clock.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 /// An optional practice break. It never starts the timer or writes break history.
 class FirstBreakDemo extends StatefulWidget {
@@ -45,9 +47,11 @@ class _FirstBreakDemoState extends State<FirstBreakDemo> {
       children: [
         Text(
           _remaining == 0 ? 'Ready when you are' : '$_remaining seconds',
-          style: Theme.of(context).textTheme.headlineMedium,
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontFeatures: AppTheme.tabular),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         Text(
           _remaining == 0
               ? 'You can take a break, snooze, or pause from Today or the menu bar.'
@@ -58,7 +62,8 @@ class _FirstBreakDemoState extends State<FirstBreakDemo> {
       ],
     ),
     actions: [
-      TextButton(
+      MinimalButton(
+        isGhost: true,
         onPressed: () => Navigator.pop(context),
         child: Text(_remaining == 0 ? 'Done' : 'End demo'),
       ),

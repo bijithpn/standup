@@ -1,48 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// A visual group of related controls with one consistent divider per row.
+/// Rows separated by 1px hairlines inset 16px; explicit [Divider] children are dropped.
+class SettingsRows extends StatelessWidget {
+  final List<Widget> children;
+  const SettingsRows({super.key, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = children.where((c) => c is! Divider).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < rows.length; index++) ...[
+          if (index > 0)
+            Divider(
+              height: 1,
+              thickness: 1,
+              indent: AppTheme.space16,
+              endIndent: AppTheme.space16,
+              color: AppTheme.borderSubtle,
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.space16),
+            child: rows[index],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One rounded surface holding related rows.
 class SettingsGroup extends StatelessWidget {
   final List<Widget> children;
   final EdgeInsetsGeometry margin;
   const SettingsGroup({
     super.key,
     required this.children,
-    this.margin = const EdgeInsets.only(bottom: 24),
+    this.margin = const EdgeInsets.only(bottom: AppTheme.space24),
   });
 
   @override
   Widget build(BuildContext context) => Container(
     margin: margin,
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      border: Border.all(color: Theme.of(context).colorScheme.outline),
+      color: AppTheme.surfaceCard,
+      border: Border.all(color: AppTheme.borderSubtle),
       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
     ),
     clipBehavior: Clip.antiAlias,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var index = 0; index < children.length; index++) ...[
-          if (index > 0)
-            Divider(
-              height: 1,
-              thickness: 1,
-              indent: 16,
-              endIndent: 16,
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: children[index],
-          ),
-        ],
-      ],
-    ),
+    child: SettingsRows(children: children),
   );
 }
 
-/// Gives pickers and chip controls the same label spacing as setting rows.
+/// Label and optional helper for a control that does not fit on one line (chips, pickers).
 class SettingsField extends StatelessWidget {
   final String title;
   final String? description;
@@ -56,7 +68,7 @@ class SettingsField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 16),
+    padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,22 +76,18 @@ class SettingsField extends StatelessWidget {
           title,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textPrimary,
           ),
         ),
         if (description != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: AppTheme.space4),
           Text(
             description!,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.5,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
         ],
-        const SizedBox(height: 12),
+        const SizedBox(height: AppTheme.space8),
         child,
       ],
     ),
@@ -88,32 +96,18 @@ class SettingsField extends StatelessWidget {
 
 class SettingsNote extends StatelessWidget {
   final String text;
-  final IconData icon;
-  const SettingsNote(
-    this.text, {
-    super.key,
-    this.icon = Icons.info_outline_rounded,
-  });
+  const SettingsNote(this.text, {super.key});
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 14),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: AppTheme.textSecondary),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.6,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
+    padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        height: 1.5,
+        color: AppTheme.textSecondary,
+      ),
     ),
   );
 }

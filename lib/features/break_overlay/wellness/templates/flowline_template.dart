@@ -91,13 +91,6 @@ class FlowlineTemplate extends WellnessTemplate {
   @override
   Widget immersive(BuildContext context, BreakSession s, MotionClock clock) {
     final p = palette;
-    final mono = TextStyle(
-      fontFamily: BreakOverlayTheme.monoFamily,
-      fontSize: 12,
-      color: p.textMuted,
-      fontFeatures: BreakOverlayTheme.tabular,
-    );
-    final elapsed = s.totalSeconds - s.remainingSeconds;
     return ColoredBox(
       color: p.canvas,
       child: Padding(
@@ -105,15 +98,7 @@ class FlowlineTemplate extends WellnessTemplate {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              s.title,
-              style: TextStyle(
-                fontFamily: BreakOverlayTheme.fontFamily,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: p.textSecondary,
-              ),
-            ),
+            Text(s.title, style: WellnessType.label(p)),
             const SizedBox(height: 8),
             Semantics(
               label: spokenRemaining(s.remainingSeconds),
@@ -133,6 +118,8 @@ class FlowlineTemplate extends WellnessTemplate {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            Text(s.instruction, style: WellnessType.instruction(p)),
             Expanded(
               child: RepaintBoundary(
                 child: ExcludeSemantics(
@@ -140,34 +127,6 @@ class FlowlineTemplate extends WellnessTemplate {
                     child: CustomPaint(
                       painter: _FlowPainter(s, clock, compact: false),
                     ),
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('${formatRemaining(elapsed)} elapsed', style: mono),
-                Text(
-                  '${formatRemaining(s.remainingSeconds)} left',
-                  style: mono,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Text(
-                  s.focus == BreakFocus.eyes
-                      ? 'Look away from the screen, at something far off.'
-                      : s.instruction,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: BreakOverlayTheme.fontFamily,
-                    fontSize: 15,
-                    height: 1.5,
-                    color: p.textSecondary,
                   ),
                 ),
               ),

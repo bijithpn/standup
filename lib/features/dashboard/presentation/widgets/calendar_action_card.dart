@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
 class CalendarActionCard extends StatelessWidget {
   final CalendarEvent event;
@@ -22,87 +23,49 @@ class CalendarActionCard extends StatelessWidget {
 
     return Consumer<BreakController>(
       builder: (context, controller, _) {
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppTheme.accent.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppTheme.accent.withValues(alpha: 0.16)),
-          ),
-          child: Row(
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppTheme.space12,
+            runSpacing: AppTheme.space8,
             children: [
-              Icon(
-                Icons.event_available_rounded,
-                color: AppTheme.accent,
-                size: 18,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textPrimary,
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      event.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
+                  ),
+                  const SizedBox(height: AppTheme.space4),
+                  Text(
+                    event.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              _SmallActionButton(
-                label: actionLabel,
-                onTap: isLive
+              MinimalButton(
+                isSecondary: true,
+                onPressed: isLive
                     ? () => controller.snoozeUntil(event.end)
-                    : () => controller.takeBreakNow(),
+                    : controller.takeBreakNow,
+                child: Text(actionLabel),
               ),
             ],
           ),
         );
       },
-    );
-  }
-}
-
-class _SmallActionButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _SmallActionButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppTheme.accent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.onAccent,
-          ),
-        ),
-      ),
     );
   }
 }

@@ -11,7 +11,7 @@ MediaQueryData accessibleMediaData(
   textScaler: TextScaler.linear(
     media.textScaler.scale(1) *
         math.max(
-          settings.experience.textScale,
+          settings.experience.textScale.clamp(1.0, 1.5),
           settings.largeOverlayText ? legacyLargeScale : 1,
         ),
   ),

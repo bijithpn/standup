@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_cards.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -23,28 +24,12 @@ class DailyBudgetsCard extends StatelessWidget {
     };
     if (budgets.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: AppTheme.cardDecoration(),
+    return ProductivitySection(
+      title: 'Daily budgets',
+      subtitle: 'Soft limits from Personal Goals. Nothing is blocked.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Daily budgets',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            "Today's time against your soft limits (set in Personal Goals). "
-            'Nothing is ever blocked.',
-            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-          ),
-          const SizedBox(height: 14),
           for (final category in AppCategory.values)
             if (budgets.containsKey(category.name))
               _row(
@@ -67,14 +52,15 @@ class DailyBudgetsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(category.icon, size: 15, color: category.color),
+              Icon(category.icon, size: 16, color: AppTheme.textSecondary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   category.label,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
                   ),
                 ),
@@ -84,20 +70,21 @@ class DailyBudgetsCard extends StatelessWidget {
                 '${formatUsageDuration(budgetSeconds)}'
                 '${over ? '  ·  over' : ''}',
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: over ? AppTheme.warning : AppTheme.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: ratio.clamp(0.0, 1.0),
-              minHeight: 5,
-              color: over ? AppTheme.warning : category.color,
+              minHeight: 4,
+              color: over ? AppTheme.warning : AppTheme.textMuted,
               backgroundColor: AppTheme.border,
             ),
           ),

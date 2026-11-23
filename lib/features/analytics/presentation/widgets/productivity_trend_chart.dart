@@ -172,7 +172,7 @@ class ProductivityTrendChart extends StatelessWidget {
             if (skipped > 0)
               PieChartSectionData(
                 value: skipped.toDouble(),
-                color: AppTheme.error,
+                color: AppTheme.textMuted,
                 radius: 20,
                 showTitle: false,
               ),
@@ -203,12 +203,12 @@ class ProductivityTrendChart extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
+                      fontFeatures: AppTheme.tabular,
                       color: total == 0
                           ? AppTheme.textMuted
                           : AppTheme.accentColor,
                       height: 1.1,
-                      letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -216,9 +216,10 @@ class ProductivityTrendChart extends StatelessWidget {
                     total == 0 ? 'no breaks' : '$done of $total',
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 10.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textMuted,
+                      fontFeatures: AppTheme.tabular,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -231,28 +232,18 @@ class ProductivityTrendChart extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // TODO(no-data): comparison baseline needs previous-period stats
               _TodayMetricTile(
-                icon: Icons.check_circle_rounded,
-                iconColor: AppTheme.accentColor,
-                backgroundColor: AppTheme.accentColor.withValues(alpha: 0.08),
                 label: 'Completed',
                 value: '$done',
                 unit: done == 1 ? 'break' : 'breaks',
               ),
-              const SizedBox(height: 9),
               _TodayMetricTile(
-                icon: Icons.cancel_rounded,
-                iconColor: AppTheme.error,
-                backgroundColor: AppTheme.error.withValues(alpha: 0.08),
                 label: 'Skipped',
                 value: '$skipped',
                 unit: skipped == 1 ? 'break' : 'breaks',
               ),
-              const SizedBox(height: 9),
               _TodayMetricTile(
-                icon: Icons.schedule_rounded,
-                iconColor: AppTheme.warning,
-                backgroundColor: AppTheme.warning.withValues(alpha: 0.08),
                 label: 'Active time',
                 value: _formatMinutes(d.usageMinutes),
               ),
@@ -269,64 +260,38 @@ class ProductivityTrendChart extends StatelessWidget {
       if (s.value > maxValue) maxValue = s.value.toDouble();
     }
 
-    final double maxY = maxValue < 4
+    final double rawMax = maxValue < 4
         ? 4
         : (maxValue + (maxValue * 0.25)).ceilToDouble();
 
-    final double interval = maxY <= 4
+    final double interval = rawMax <= 4
         ? 1
-        : maxY <= 8
+        : rawMax <= 8
         ? 2
-        : maxY <= 16
+        : rawMax <= 16
         ? 4
-        : (maxY / 4).ceilToDouble();
+        : (rawMax / 4).ceilToDouble();
+    final double maxY = (rawMax / interval).ceilToDouble() * interval;
 
     final groups = slots.asMap().entries.map((e) {
       final slot = e.value;
       final isToday = slot.isToday;
       final isFuture = slot.isFuture;
 
-      final gradient = isFuture
-          ? LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: [
-                AppTheme.accentColor.withValues(alpha: 0.08),
-                AppTheme.accentColor.withValues(alpha: 0.14),
-              ],
-            )
+      final color = isFuture
+          ? AppTheme.border
           : isToday
-          ? LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: [
-                AppTheme.accentColor,
-                Color.lerp(AppTheme.accentColor, Colors.white, 0.3) ??
-                    AppTheme.accentColor,
-              ],
-            )
-          : LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: [
-                AppTheme.accentColor.withValues(alpha: 0.45),
-                AppTheme.accentColor.withValues(alpha: 0.85),
-              ],
-            );
+          ? AppTheme.accentColor
+          : AppTheme.textMuted.withValues(alpha: 0.5);
 
       return BarChartGroupData(
         x: e.key,
         barRods: [
           BarChartRodData(
             toY: slot.value.toDouble(),
-            gradient: gradient,
+            color: color,
             width: barWidth,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-            backDrawRodData: BackgroundBarChartRodData(
-              show: true,
-              toY: maxY,
-              color: AppTheme.accentColor.withValues(alpha: 0.04),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ],
       );
@@ -340,11 +305,8 @@ class ProductivityTrendChart extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           horizontalInterval: interval,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: AppTheme.textMuted.withValues(alpha: 0.1),
-            strokeWidth: 1,
-            dashArray: [4, 4],
-          ),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: AppTheme.border, strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
         barTouchData: BarTouchData(
@@ -354,11 +316,8 @@ class ProductivityTrendChart extends StatelessWidget {
               horizontal: 12,
               vertical: 8,
             ),
-            tooltipBorderRadius: BorderRadius.circular(10),
-            tooltipBorder: BorderSide(
-              color: AppTheme.accentColor.withValues(alpha: 0.3),
-              width: 1,
-            ),
+            tooltipBorderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            tooltipBorder: BorderSide(color: AppTheme.border, width: 1),
             getTooltipItem: (group, gi, rod, ri) {
               final slot = slots[group.x];
               final title = slot.dateStr.isNotEmpty
@@ -367,8 +326,9 @@ class ProductivityTrendChart extends StatelessWidget {
               return BarTooltipItem(
                 '$title\n',
                 TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   color: AppTheme.textSecondary,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                 ),
@@ -377,18 +337,20 @@ class ProductivityTrendChart extends StatelessWidget {
                     text:
                         '${rod.toY.toInt()} ${rod.toY.toInt() == 1 ? 'break' : 'breaks'} completed',
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       color: AppTheme.textPrimary,
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontFamily: 'Inter',
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (slot.breaksSkipped > 0)
                     TextSpan(
                       text: '\n${slot.breaksSkipped} skipped',
                       style: TextStyle(
-                        color: AppTheme.error,
-                        fontSize: 11,
+                        fontFeatures: AppTheme.tabular,
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,
                       ),
@@ -397,8 +359,9 @@ class ProductivityTrendChart extends StatelessWidget {
                     TextSpan(
                       text: '\n${_formatMinutes(slot.usageMinutes)} active',
                       style: TextStyle(
-                        color: AppTheme.info,
-                        fontSize: 11,
+                        fontFeatures: AppTheme.tabular,
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w500,
                       ),
@@ -429,9 +392,10 @@ class ProductivityTrendChart extends StatelessWidget {
                     value.toInt().toString(),
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textMuted.withValues(alpha: 0.65),
+                      fontFeatures: AppTheme.tabular,
+                      color: AppTheme.textMuted,
                     ),
                   ),
                 );
@@ -455,29 +419,15 @@ class ProductivityTrendChart extends StatelessWidget {
                       Text(
                         slot.label,
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: slot.isToday
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                           color: slot.isToday
                               ? AppTheme.accentColor
-                              : slot.isFuture
-                              ? AppTheme.textMuted.withValues(alpha: 0.4)
-                              : AppTheme.textMuted.withValues(alpha: 0.85),
+                              : AppTheme.textMuted,
                         ),
                       ),
-                      if (slot.isToday) ...[
-                        const SizedBox(height: 3),
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 );
@@ -511,45 +461,25 @@ class _BarSlot {
 }
 
 class _TodayMetricTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final Color backgroundColor;
   final String label;
   final String value;
   final String? unit;
 
-  const _TodayMetricTile({
-    required this.icon,
-    required this.iconColor,
-    required this.backgroundColor,
-    required this.label,
-    required this.value,
-    this.unit,
-  });
+  const _TodayMetricTile({required this.label, required this.value, this.unit});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: iconColor.withValues(alpha: 0.15),
-          width: 0.5,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 10),
           Expanded(
             child: Text(
               label,
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
                 color: AppTheme.textSecondary,
               ),
             ),
@@ -559,8 +489,9 @@ class _TodayMetricTile extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: iconColor,
+              fontWeight: FontWeight.w500,
+              fontFeatures: AppTheme.tabular,
+              color: AppTheme.textPrimary,
             ),
           ),
           if (unit != null) ...[
@@ -568,8 +499,9 @@ class _TodayMetricTile extends StatelessWidget {
             Text(
               unit!,
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 10.5,
+                fontSize: 12,
                 color: AppTheme.textMuted,
               ),
             ),

@@ -1,8 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
-import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 /// Break completion stats for the selected filter, plus a yearly heatmap of daily adherence.
@@ -61,50 +59,98 @@ class BreakStatisticsSection extends StatelessWidget {
     return (completed: completed, skipped: skipped, days: days);
   }
 
+  String? _skipDelta(double skipRate) {
+    if (selectedFilter != 1) return null;
+    final today = DateTime.now();
+    String key(int daysAgo) {
+      final d = DateTime(today.year, today.month, today.day - daysAgo);
+      return '${d.year.toString().padLeft(4, '0')}-'
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
+    }
+
+    final from = key(13);
+    final to = key(7);
+    final prev = stats.weeklyData.where(
+      (d) => d.date.compareTo(from) >= 0 && d.date.compareTo(to) <= 0,
+    );
+    final skipped = prev.fold<int>(0, (s, d) => s + d.breaksSkipped);
+    final total = prev.fold<int>(0, (s, d) => s + d.breaksCompleted) + skipped;
+    if (total == 0) return null;
+    final pts = ((skipRate - skipped / total) * 100).round();
+    return pts == 0
+        ? 'same as last week'
+        : '${pts > 0 ? '+' : '-'}${pts.abs()} pts vs last week';
+  }
+
   @override
   Widget build(BuildContext context) {
     final totals = _periodTotals();
     final total = totals.completed + totals.skipped;
     final skipRate = total > 0 ? totals.skipped / total : 0.0;
 
+    final figures = [
+      _figure('Breaks offered', '$total', 'taken plus skipped, $_periodLabel'),
+      _figure(
+        'Skip rate',
+        total == 0 ? '—' : '${(skipRate * 100).round()}%',
+        [
+          'skipped, $_periodLabel',
+          ?(total == 0 ? null : _skipDelta(skipRate)),
+        ].join(' · '),
+      ),
+      if (selectedFilter != 0)
+        _figure(
+          'Breaks taken per day',
+          (totals.completed / totals.days).toStringAsFixed(1),
+          'average, $_periodLabel',
+        ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Break Statistics'),
-        const SizedBox(height: 16),
-        buildCard([
-          _metricRow(
-            CupertinoIcons.person_alt,
-            'Breaks offered',
-            'taken plus skipped, $_periodLabel',
-            '$total',
-          ),
-          divider(),
-          _metricRow(
-            CupertinoIcons.arrow_uturn_left,
-            'Skip rate',
-            'share of breaks you skipped, $_periodLabel',
-            total == 0 ? '-' : '${(skipRate * 100).round()}%',
-          ),
-          if (selectedFilter != 0) ...[
-            divider(),
-            _metricRow(
-              CupertinoIcons.chart_bar,
-              'Breaks taken per day',
-              'average, $_periodLabel',
-              (totals.completed / totals.days).toStringAsFixed(1),
-            ),
-          ],
-        ]),
-        const SizedBox(height: 32),
-        sectionHeader(
-          'Break Activity',
-          subtitle:
-              'Each square is one day. The colour shows how many of that '
-              'day\'s breaks you actually took.',
+        _heading('Break statistics'),
+        const SizedBox(height: AppTheme.space16),
+        LayoutBuilder(
+          builder: (context, box) {
+            final cols = box.maxWidth >= 560 ? figures.length : 1;
+            return Column(
+              children: [
+                for (var r = 0; r < figures.length; r += cols) ...[
+                  if (r > 0) const SizedBox(height: AppTheme.space16),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (
+                          var i = r;
+                          i < r + cols && i < figures.length;
+                          i++
+                        ) ...[
+                          if (i > r)
+                            VerticalDivider(
+                              width: AppTheme.space16 * 2 + 1,
+                              thickness: 1,
+                              color: AppTheme.borderSubtle,
+                            ),
+                          Expanded(child: figures[i]),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
-        const SizedBox(height: 16),
-        buildCard([_BreakActivityCard(days: stats.weeklyData)]),
+        const SizedBox(height: AppTheme.space32),
+        _heading(
+          'Break activity',
+          subtitle: 'Daily breaks taken, last 12 months',
+        ),
+        const SizedBox(height: AppTheme.space16),
+        _BreakActivityCard(days: stats.weeklyData),
       ],
     );
   }
@@ -120,61 +166,67 @@ class BreakStatisticsSection extends StatelessWidget {
     );
   }
 
-  Widget _metricRow(
-    IconData icon,
-    String label,
-    String sublabel,
-    String value,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: AppTheme.accentColor),
+  static Widget _heading(String title, {String? subtitle}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Inter',
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                Text(
-                  sublabel,
-                  style: TextStyle(
-                    color: AppTheme.textSecondary.withValues(alpha: 0.6),
-                    fontSize: 11,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: AppTheme.space4),
           Text(
-            value,
+            subtitle,
             style: TextStyle(
-              color: AppTheme.accentColor,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+              color: AppTheme.textSecondary,
+              fontSize: 12,
               fontFamily: 'Inter',
             ),
           ),
         ],
-      ),
+      ],
+    );
+  }
+
+  Widget _figure(String label, String value, String hint) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: AppTheme.textMuted,
+            fontSize: 12,
+            fontFamily: 'Inter',
+          ),
+        ),
+        const SizedBox(height: AppTheme.space4),
+        Text(
+          value,
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            color: AppTheme.textPrimary,
+            fontSize: 28,
+            fontWeight: FontWeight.w400,
+            fontFamily: 'Inter',
+          ),
+        ),
+        Text(
+          hint,
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            color: AppTheme.textMuted,
+            fontSize: 12,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
     );
   }
 }
@@ -190,9 +242,9 @@ enum _HeatLevel {
 
   Color get color => switch (this) {
     none => AppTheme.textPrimary.withValues(alpha: 0.06),
-    mostlySkipped => AppTheme.error,
-    mixed => AppTheme.warning,
-    good => AppTheme.success,
+    mostlySkipped => AppTheme.accent.withValues(alpha: 0.25),
+    mixed => AppTheme.accent.withValues(alpha: 0.5),
+    good => AppTheme.accent.withValues(alpha: 0.9),
   };
 
   static _HeatLevel of(DailyStats? stat) {
@@ -255,8 +307,9 @@ class _HeatmapSummary extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
+        fontFeatures: AppTheme.tabular,
         color: AppTheme.textPrimary,
-        fontSize: 12.5,
+        fontSize: 12,
         fontFamily: 'Inter',
       ),
     );
@@ -272,56 +325,55 @@ class _BreakActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final w = _heatmapWindow();
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Last 12 months',
-            style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Inter',
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Last 12 months',
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            color: AppTheme.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Inter',
           ),
-          const SizedBox(height: 12),
-          _HeatmapSummary(
-            days: days,
-            start: w.start,
-            end: w.today,
-            periodLabel: 'in the last 12 months',
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 18,
-            runSpacing: 8,
-            children: [
-              for (final level in _HeatLevel.values)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    BreakStatisticsSection.legendDot(level.color),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        level.meaning,
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 11.5,
-                          fontFamily: 'Inter',
-                        ),
+        ),
+        const SizedBox(height: 12),
+        _HeatmapSummary(
+          days: days,
+          start: w.start,
+          end: w.today,
+          periodLabel: 'in the last 12 months',
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          children: [
+            for (final level in _HeatLevel.values)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  BreakStatisticsSection.legendDot(level.color),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      level.meaning,
+                      style: TextStyle(
+                        fontFeatures: AppTheme.tabular,
+                        color: AppTheme.textSecondary,
+                        fontSize: 12,
+                        fontFamily: 'Inter',
                       ),
                     ),
-                  ],
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _YearlyHeatmap(days: days, from: w.start, to: w.today),
-        ],
-      ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _YearlyHeatmap(days: days, from: w.start, to: w.today),
+      ],
     );
   }
 }
@@ -438,8 +490,9 @@ class _YearlyHeatmapState extends State<_YearlyHeatmap> {
                       child: Text(
                         _months[weekStarts[i].month - 1],
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           color: AppTheme.textMuted,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontFamily: 'Inter',
                         ),
                       ),
@@ -494,8 +547,9 @@ class _YearlyHeatmapState extends State<_YearlyHeatmap> {
                         child: Text(
                           label,
                           style: TextStyle(
+                            fontFeatures: AppTheme.tabular,
                             color: AppTheme.textMuted,
-                            fontSize: 9.5,
+                            fontSize: 12,
                             fontFamily: 'Inter',
                           ),
                         ),

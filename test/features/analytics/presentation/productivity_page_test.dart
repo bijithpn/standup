@@ -36,9 +36,11 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: ProductivityPage(
-          repository: repository,
-          settingsRepository: settings,
+        home: Scaffold(
+          body: ProductivityPage(
+            repository: repository,
+            settingsRepository: settings,
+          ),
         ),
       ),
     );

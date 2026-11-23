@@ -1,4 +1,3 @@
-import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -60,213 +59,76 @@ class _AboutSectionState extends State<AboutSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              const ThemedAppIcon.badge(size: 72, showDevBadge: true),
-              const SizedBox(height: 16),
-              ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [AppTheme.textPrimary, AppTheme.textSecondary],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ).createShader(bounds),
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'Break',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                          letterSpacing: -0.3,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'Mate',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.accentColor,
-                          letterSpacing: -0.3,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      if (FlavorConfig.isDevelopment)
-                        TextSpan(
-                          text: ' DEV',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.error,
-                            letterSpacing: -0.3,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                    ],
+        Row(
+          children: [
+            const ThemedAppIcon.badge(size: 56, showDevBadge: true),
+            const SizedBox(width: AppTheme.space16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    FlavorConfig.isDevelopment ? 'BreakMate dev' : 'BreakMate',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textPrimary,
+                      fontFamily: 'Inter',
+                    ),
                   ),
-                ),
+                  const SizedBox(height: AppTheme.space4),
+                  Text(
+                    'Break reminders for your eyes, posture and focus',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'A premium desktop companion for your well-being.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 13,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const SizedBox(height: 28),
-            ],
-          ),
+            ),
+          ],
         ),
+        const SizedBox(height: AppTheme.space32),
 
-        sectionHeader('Application Info'),
+        sectionHeader('App info'),
         buildCard([
-          buildListRow(
-            'Version',
-            '$_version (Build $_buildNumber)',
-            null,
-            CupertinoIcons.info,
-            null,
-          ),
+          valueRow('Version', '$_version (build $_buildNumber)'),
           divider(),
           buildListRow(
-            'Creator: Bijith P N',
-            'Visit portfolio: bijith.in',
+            'Creator',
+            'Bijith P N, bijith.in',
             null,
-            CupertinoIcons.person_circle,
             null,
             onTap: () => _launchUrl('https://bijith.in'),
-            trailing: Icon(
-              CupertinoIcons.link,
-              size: 14,
-              color: AppTheme.accentColor,
-            ),
           ),
           divider(),
           buildListRow(
-            'Official Website',
+            'Official website',
             'Visit breakmate.app',
             null,
-            CupertinoIcons.globe,
             null,
             onTap: () => _launchUrl('https://breakmate.vercel.app'),
-            trailing: Icon(
-              CupertinoIcons.link,
-              size: 14,
-              color: AppTheme.accentColor,
-            ),
           ),
           divider(),
           buildListRow(
-            'Report Bug / Issue',
-            'Help us improve BreakMate on GitHub',
+            'Report a bug',
+            'Open an issue on GitHub',
             null,
-            CupertinoIcons.exclamationmark_triangle,
             null,
             onTap: () =>
                 _launchUrl('https://github.com/bijithpn/standup/issues'),
-            trailing: Icon(
-              CupertinoIcons.link,
-              size: 14,
-              color: AppTheme.accentColor,
-            ),
+          ),
+          divider(),
+          buildListRow(
+            'Support development',
+            'BreakMate stays ad-free',
+            null,
+            null,
+            onTap: () => _launchUrl('https://buymeacoffee.com/bijithpn'),
           ),
         ]),
-
-        const SizedBox(height: 8),
-
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: AppTheme.textPrimary.withValues(alpha: 0.02),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.border),
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Enjoying BreakMate?',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Support development and keep BreakMate ad-free by fueling my coffee mug.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                  fontFamily: 'Inter',
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              TapTarget(
-                onTap: () => _launchUrl('https://buymeacoffee.com/bijithpn'),
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFFD15C), Color(0xFFF39C12)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFFF39C12,
-                          ).withValues(alpha: 0.25),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          CupertinoIcons.heart_fill,
-                          color: Color(0xFF1A1A1A),
-                          size: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Buy me a Coffee',
-                          style: TextStyle(
-                            color: Color(0xFF1A1A1A),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
       ],
     );
   }

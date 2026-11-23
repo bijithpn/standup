@@ -13,32 +13,29 @@ class ActionGrid extends StatelessWidget {
     return Consumer<BreakController>(
       builder: (context, controller, _) {
         final companionActive = controller.companionEnabled;
-
         return Column(
           children: [
-            _ActionCard(
+            _StatusRow(
               title: AppStrings.companion,
               subtitle: companionActive
                   ? (controller.timerEngine.state == TimerState.running
                         ? 'Active and watching'
                         : 'Resting')
                   : 'Disabled in settings',
-              icon: Icons.pets_rounded,
-              isActive: companionActive,
-              onTap: () => controller.toggleCompanion(),
+              value: companionActive,
+              onChanged: controller.toggleCompanion,
               semanticsLabel: 'Toggle desktop companion',
             ),
-            _ActionCard(
+            Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
+            _StatusRow(
               title: AppStrings.quietMode,
               subtitle: controller.quietModeEnabled
                   ? 'All alerts silenced'
                   : 'Notifications on',
-              icon: Icons.do_not_disturb_on_rounded,
-              isActive: controller.quietModeEnabled,
-              onTap: () => controller.toggleQuietMode(),
+              value: controller.quietModeEnabled,
+              onChanged: controller.toggleQuietMode,
               semanticsLabel: 'Toggle quiet mode',
             ),
-            Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
           ],
         );
       },
@@ -46,79 +43,54 @@ class ActionGrid extends StatelessWidget {
   }
 }
 
-class _ActionCard extends StatelessWidget {
+class _StatusRow extends StatelessWidget {
   final String title;
   final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isActive;
-  final String? semanticsLabel;
+  final bool value;
+  final VoidCallback onChanged;
+  final String semanticsLabel;
 
-  const _ActionCard({
+  const _StatusRow({
     required this.title,
     required this.subtitle,
-    required this.icon,
-    required this.onTap,
-    this.isActive = true,
-    this.semanticsLabel,
+    required this.value,
+    required this.onChanged,
+    required this.semanticsLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: semanticsLabel ?? '$title: $subtitle',
-      button: true,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          children: [
-            Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
-              child: Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.space8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                text: title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
                 children: [
-                  Icon(
-                    icon,
-                    color: isActive ? AppTheme.textPrimary : AppTheme.textMuted,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    isActive ? 'On' : 'Off',
+                  TextSpan(
+                    text: '   $subtitle',
                     style: TextStyle(
-                      fontFamilyFallback: const ['Menlo', 'monospace'],
-                      fontSize: 12,
-                      color: isActive ? AppTheme.success : AppTheme.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          Semantics(
+            label: semanticsLabel,
+            child: Switch(value: value, onChanged: (_) => onChanged()),
+          ),
+        ],
       ),
     );
   }

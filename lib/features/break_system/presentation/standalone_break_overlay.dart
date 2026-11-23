@@ -12,6 +12,7 @@ import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/skip_reason_picker.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_timer_manager.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_overlay_keyboard_handler.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_overlay_content.dart';
@@ -207,13 +208,28 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     });
   }
 
-  // The warning never self-dismisses: its delayed hideOverlay would close the break screen that replaces it. BreakController owns its lifetime.
-  void _completeBreak() {
-    if (_config.overlayType == 'preBreakWarning') return;
-    completeBreak(_config.isPreview, _config.overlayType, _fadeController);
+  void _completeBreak() =>
+      completeBreak(_config.isPreview, _config.overlayType, _fadeController);
+  bool _askingReason = false;
+
+  void _skipBreak() {
+    if (_askingReason) return;
+    final isRealBreak =
+        !_config.isPreview && _config.overlayType == 'breakScreen';
+    if (_config.askSkipReason && isRealBreak) {
+      setState(() => _askingReason = true);
+      return;
+    }
+    skipBreak(_config.isPreview, _config.overlayType, _fadeController);
   }
-  void _skipBreak() =>
-      skipBreak(_config.isPreview, _config.overlayType, _fadeController);
+
+  void _skipWithReason(String reason) => skipBreak(
+    _config.isPreview,
+    _config.overlayType,
+    _fadeController,
+    reason: reason,
+  );
+  void _snoozeBreak() => snoozeBreak(_fadeController);
   void _quitApp() => _bridge.invokeMethod('quitApp');
 
   bool get _isCompact =>
@@ -222,9 +238,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   // Strict mode only locks real breaks; reminders and previews can always be dismissed.
   bool get _canDismiss =>
       _config.isPreview ||
-      (!_config.strictMode) ||
-      _config.overlayType == 'quickReminder' ||
-      _config.overlayType == 'preBreakWarning';
+      (!_config.strictMode && !_config.skipLocked) ||
+      _config.overlayType == 'quickReminder';
 
   @override
   void dispose() {
@@ -275,7 +290,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                         ? Colors.black.withValues(alpha: 0.25)
                         : palette.canvas),
               child: BreakOverlayKeyboardHandler(
-                canDismiss: _canDismiss,
+                canDismiss: _canDismiss && !_askingReason,
                 onSkip: _skipBreak,
                 onQuitApp: _quitApp,
                 child: RepaintBoundary(
@@ -288,16 +303,29 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                           !(media.disableAnimations ||
                               _config.reduceMotion ||
                               !_config.enableAnimations),
-                      child: BreakOverlayContent(
-                        config: _config,
-                        fadeAnimation: _fadeController,
-                        remainingSecondsNotifier: remainingSecondsNotifier,
-                        onSkip: _skipBreak,
-                        canDismiss: _canDismiss,
-                        breakInfo: _cachedBreakModel!,
-                        settings: _cachedSettingsModel!,
-                        lookedAway: lookedAway,
-                        onLookedAway: () => setState(() => lookedAway = true),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          BreakOverlayContent(
+                            config: _config,
+                            fadeAnimation: _fadeController,
+                            remainingSecondsNotifier: remainingSecondsNotifier,
+                            onSkip: _skipBreak,
+                            onSnooze: _snoozeBreak,
+                            canDismiss: _canDismiss,
+                            breakInfo: _cachedBreakModel!,
+                            settings: _cachedSettingsModel!,
+                            lookedAway: lookedAway,
+                            onLookedAway: () =>
+                                setState(() => lookedAway = true),
+                          ),
+                          if (_askingReason)
+                            SkipReasonPicker(
+                              onReason: _skipWithReason,
+                              onCancel: () =>
+                                  setState(() => _askingReason = false),
+                            ),
+                        ],
                       ),
                     ),
                   ),

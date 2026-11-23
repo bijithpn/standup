@@ -1,15 +1,13 @@
-import 'package:breakmate/features/settings/widgets/advanced_settings.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/weekly_actionable_insight_card.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show CircularProgressIndicator;
+import 'package:flutter/material.dart' show CircularProgressIndicator, InkWell;
 import 'package:breakmate/features/analytics/presentation/widgets/break_statistics_section.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/productivity_trend_chart.dart';
-import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -47,6 +45,7 @@ class AnalyticsSettingsSection extends StatefulWidget {
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0;
+  bool _focusOpen = false;
 
   StatsModel get _stats => widget.stats;
 
@@ -67,7 +66,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(),
         WeeklyActionableInsightCard(
           days: _stats.weeklyData,
           settings: widget.settings,
@@ -75,41 +73,33 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           onApply:
               widget.onApplySuggestion ?? (value) async => widget.onSave(value),
         ),
-        const SizedBox(height: 18),
-        _buildPeriodBar(),
-        const SizedBox(height: 20),
-        _buildHero(m),
-        const SizedBox(height: 32),
-
-        _groupHeader(
-          CupertinoIcons.chart_bar_alt_fill,
-          'Activity trend',
-          'Breaks taken and skipped $_periodLabel.',
+        const SizedBox(height: AppTheme.space32),
+        segmentedControl(
+          ['Today', 'This Week', 'Month'],
+          _selectedFilter,
+          (i) => setState(() => _selectedFilter = i),
+          expand: false,
         ),
+        const SizedBox(height: AppTheme.space24),
+        _buildHero(m),
+        const SizedBox(height: 48),
+
+        _heading('Breaks per day', note: _trendNote),
         _buildTrendSection(),
-        const SizedBox(height: 32),
+        const SizedBox(height: 48),
 
         if (!ProductivityConfig.current.enabled) ...[
-          _groupHeader(
-            CupertinoIcons.time,
-            'Where your time goes',
-            'Your apps and what the activity shows.',
-          ),
+          _heading('Where your time goes'),
           _buildAppUsageTab(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 48),
         ],
 
-        _groupHeader(
-          CupertinoIcons.scope,
+        _heading(
           'Focus',
-          'Uninterrupted deep-work sessions $_periodLabel.',
+          note: 'Uninterrupted deep-work sessions $_periodLabel',
         ),
-        AdvancedSettings(
-          title: 'Focus details',
-          subtitle: 'Sessions, score and trends',
-          children: [_buildFocusTab()],
-        ),
-        const SizedBox(height: 32),
+        _buildFocusDisclosure(),
+        const SizedBox(height: 48),
 
         BreakStatisticsSection(stats: _stats, selectedFilter: _selectedFilter),
         const SizedBox(height: 48),
@@ -117,165 +107,176 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
-  Widget _buildHero(_ViewMetrics m) {
-    final total = m.breaksCompleted + m.breaksSkipped;
-    final rate = m.successRate;
-    final (verdict, ringColor) = total == 0
-        ? ('No breaks yet', AppTheme.textMuted)
-        : rate >= 80
-        ? ('Excellent', AppTheme.success)
-        : rate >= 60
-        ? ('Good', AppTheme.accent)
-        : rate >= 40
-        ? ('Finding your rhythm', AppTheme.warning)
-        : ('Try a gentler rhythm', AppTheme.warning);
-
-    final ring = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 132,
-          height: 132,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 132,
-                height: 132,
-                child: CircularProgressIndicator(
-                  value: total == 0 ? 0 : (rate / 100).clamp(0.0, 1.0),
-                  strokeWidth: 10,
-                  strokeCap: StrokeCap.round,
-                  color: ringColor,
-                  backgroundColor: AppTheme.border,
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    total == 0 ? '–' : '$rate%',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'breaks taken',
-                    style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: ringColor.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Text(
-            verdict,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: ringColor,
-            ),
-          ),
-        ),
-      ],
-    );
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration(),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tiles = _buildDetailGrid(m);
-          if (constraints.maxWidth <= 640) {
-            return Column(children: [ring, const SizedBox(height: 20), tiles]);
-          }
-          return Row(
-            children: [
-              ring,
-              const SizedBox(width: 28),
-              Expanded(child: tiles),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _groupHeader(
-    IconData icon,
-    String title,
-    String subtitle, {
-    Widget? trailing,
-  }) {
+  Widget _heading(String title, {String? note}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: AppTheme.space16),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 16, color: AppTheme.accentColor),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textPrimary,
             ),
           ),
-          ?trailing,
+          if (note != null) ...[
+            const SizedBox(width: AppTheme.space12),
+            Flexible(
+              child: Text(
+                note,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildPeriodBar() {
-    return Row(
+  Widget _buildHero(_ViewMetrics m) {
+    final total = m.breaksCompleted + m.breaksSkipped;
+    final ring = SizedBox(
+      width: 168,
+      height: 168,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox.expand(
+            child: CircularProgressIndicator(
+              value: total == 0 ? 0 : m.breaksCompleted / total,
+              strokeWidth: 6,
+              strokeCap: StrokeCap.round,
+              color: AppTheme.accent,
+              backgroundColor: AppTheme.border,
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                total == 0 ? '–' : '${m.breaksCompleted} of $total',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w400,
+                  fontFeatures: AppTheme.tabular,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              Text(
+                'breaks taken',
+                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final figures = Column(
       children: [
-        Expanded(
-          child: Text(
-            'Showing $_periodLabel',
-            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+        _figure('Breaks skipped', '${m.breaksSkipped}', first: true),
+        _figure('Active time', _formatMinutes(m.usageMinutes)),
+        _figure(
+          _selectedFilter == 0 ? 'Current streak' : 'Longest streak',
+          m.streak == 1 ? '1 day' : '${m.streak} days',
+        ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth <= 560) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ring,
+              const SizedBox(height: AppTheme.space24),
+              figures,
+            ],
+          );
+        }
+        return Row(
+          children: [
+            ring,
+            const SizedBox(width: 56),
+            Expanded(child: figures),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _figure(String label, String value, {bool first = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
+      decoration: BoxDecoration(
+        border: first
+            ? null
+            : Border(top: BorderSide(color: AppTheme.borderSubtle)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w400,
+              fontFeatures: AppTheme.tabular,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFocusDisclosure() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _focusOpen = !_focusOpen),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppTheme.space8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Focus details',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.space8),
+                Icon(
+                  _focusOpen
+                      ? CupertinoIcons.chevron_up
+                      : CupertinoIcons.chevron_down,
+                  size: 16,
+                  color: AppTheme.textMuted,
+                ),
+              ],
+            ),
           ),
         ),
-        segmentedControl(
-          ['Today', 'This Week', 'Month'],
-          _selectedFilter,
-          (i) => setState(() => _selectedFilter = i),
-          expand: false,
-        ),
+        if (_focusOpen) ...[
+          const SizedBox(height: AppTheme.space16),
+          _buildFocusTab(),
+        ],
       ],
     );
   }
@@ -379,13 +380,14 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               value,
               style: TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
+                fontFeatures: AppTheme.tabular,
                 color: AppTheme.textPrimary,
               ),
             ),
             Text(
               label,
-              style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
+              style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),
           ],
         );
@@ -403,7 +405,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                         'Trend',
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           color: AppTheme.textPrimary,
                         ),
                       ),
@@ -441,110 +443,16 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     }
   }
 
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: AppTheme.accentColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          ),
-          child: Icon(
-            CupertinoIcons.chart_bar_alt_fill,
-            size: 18,
-            color: AppTheme.accentColor,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                AppStrings.analytics,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                AppStrings.analyticsSubtitle,
-                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  String get _trendNote => _selectedFilter == 2
+      ? 'Taken per week, this month'
+      : 'Taken and skipped, this week';
 
   Widget _buildTrendSection() {
-    final isMonth = _selectedFilter == 2;
-    final chartPeriod = isMonth
-        ? ChartPeriod.month
-        : _selectedFilter == 1
-        ? ChartPeriod.week
-        : ChartPeriod.today;
-    final chartTitle = _selectedFilter == 0
-        ? "Today's Breakdown"
-        : _selectedFilter == 1
-        ? 'Weekly Completion'
-        : 'Monthly Overview';
-    final chartSubtitle = _selectedFilter == 0
-        ? 'Completed vs skipped breaks today.'
-        : _selectedFilter == 1
-        ? 'Break completions for each day this week.'
-        : 'Total breaks completed per week this month.';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      chartTitle,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      chartSubtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 190,
-            child: ProductivityTrendChart(
-              weeklyData: _stats.weeklyData,
-              period: chartPeriod,
-            ),
-          ),
-        ],
+    return SizedBox(
+      height: 220,
+      child: ProductivityTrendChart(
+        weeklyData: _stats.weeklyData,
+        period: _selectedFilter == 2 ? ChartPeriod.month : ChartPeriod.week,
       ),
     );
   }
@@ -609,123 +517,9 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     return m == 0 ? '${h}h' : '${h}h ${m}m';
   }
 
-  Widget _buildDetailGrid(_ViewMetrics m) {
-    final total = m.breaksCompleted + m.breaksSkipped;
-    final skipShare = total > 0 ? (m.breaksSkipped * 100 / total).round() : 0;
-    final streakLabel = _selectedFilter == 0
-        ? 'Current streak'
-        : 'Longest streak';
-    final tiles = [
-      _buildStatCard(
-        'Breaks taken',
-        '${m.breaksCompleted}',
-        total == 0 ? 'none offered $_periodLabel' : 'of $total offered',
-        CupertinoIcons.checkmark_seal,
-        AppTheme.success,
-      ),
-      _buildStatCard(
-        'Breaks skipped',
-        '${m.breaksSkipped}',
-        total == 0 ? 'nothing skipped' : '$skipShare% of offered',
-        CupertinoIcons.arrow_uturn_left,
-        m.breaksSkipped == 0 ? AppTheme.textMuted : AppTheme.warning,
-      ),
-      _buildStatCard(
-        'Active time',
-        _formatMinutes(m.usageMinutes),
-        'at the computer $_periodLabel',
-        CupertinoIcons.stopwatch,
-        AppTheme.accent,
-      ),
-      _buildStatCard(
-        streakLabel,
-        '${m.streak}',
-        m.streak == 1 ? 'day in a row' : 'days in a row',
-        CupertinoIcons.flame,
-        m.streak > 0 ? AppTheme.warning : AppTheme.textMuted,
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cols = constraints.maxWidth > 420 ? 2 : 1;
-        const gap = 12.0;
-        final w = (constraints.maxWidth - gap * (cols - 1)) / cols;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [for (final t in tiles) SizedBox(width: w, child: t)],
-        );
-      },
-    );
-  }
-
   String _todayString() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    String hint,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                Text(
-                  hint,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.5, color: AppTheme.textMuted),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

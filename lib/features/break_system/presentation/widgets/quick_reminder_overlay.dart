@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/health_reminder_messages.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
@@ -18,6 +19,7 @@ class QuickReminderOverlay extends StatefulWidget {
   final int durationSeconds;
   final ValueNotifier<int>? remainingSecondsNotifier;
   final VoidCallback? onSkip;
+  final VoidCallback? onSnooze;
 
   final bool allowFullPoster;
   final String templateId;
@@ -31,6 +33,7 @@ class QuickReminderOverlay extends StatefulWidget {
     required this.durationSeconds,
     this.remainingSecondsNotifier,
     this.onSkip,
+    this.onSnooze,
     this.allowFullPoster = false,
     this.templateId = defaultWellnessTemplateId,
   });
@@ -60,6 +63,7 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
   ValueNotifier<int>? get remainingSecondsNotifier =>
       widget.remainingSecondsNotifier;
   VoidCallback? get onSkip => widget.onSkip;
+  VoidCallback? get onSnooze => widget.onSnooze;
   bool get allowFullPoster => widget.allowFullPoster;
 
   @override
@@ -75,20 +79,22 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
         durationSeconds: durationSeconds,
         isPreBreak: overlayType == 'preBreakWarning',
         remainingSecondsNotifier: remainingSecondsNotifier,
+        onSkip: onSkip,
+        onSnooze: onSnooze,
       );
     }
 
     final icon = isMeetingBreak
-        ? Icons.videocam_rounded
+        ? CupertinoIcons.videocam
         : switch (reminderType) {
-            'blink' => Icons.visibility_rounded,
-            'posture' => Icons.accessibility_new_rounded,
-            'hydration' => Icons.water_drop_rounded,
-            'stretch' => Icons.self_improvement_rounded,
-            'standup' => Icons.directions_walk_rounded,
+            'blink' => CupertinoIcons.eye,
+            'posture' => CupertinoIcons.person,
+            'hydration' => CupertinoIcons.drop,
+            'stretch' => CupertinoIcons.arrow_up_down,
+            'standup' => CupertinoIcons.person_crop_circle,
             _ when HealthReminderMessages.isCustom(reminderType) =>
-              Icons.notifications_active_rounded,
-            _ => Icons.remove_red_eye_rounded,
+              CupertinoIcons.bell,
+            _ => CupertinoIcons.eye,
           };
     final pillText = isMeetingBreak
         ? 'Break ready after your meeting'
@@ -96,7 +102,7 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
 
     if (allowFullPoster) {
       final posterText = isMeetingBreak
-          ? 'Break ready after your meeting!'
+          ? 'Your break is ready after this meeting'
           : HealthReminderMessages.poster(reminderType);
 
       return PosterReminderOverlay(

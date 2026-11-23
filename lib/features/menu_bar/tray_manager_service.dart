@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import 'package:tray_manager/tray_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
@@ -64,9 +65,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   String _menuStyle = 'countdown';
   double _progress = 0;
   double _shownProgress = 0;
-  double _pulse = 0;
   Timer? _progressAnimTimer;
-  Timer? _pulseTimer;
   bool _onBreak = false;
   String? _lastDrawnKey;
   final Map<String, Uint8List> _drawnCache = {};
@@ -505,13 +504,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     _lastAvatarKey = null;
     _lastAppliedIconPath = null;
     _progressAnimTimer?.cancel();
-    _pulseTimer?.cancel();
     if (!_usesDrawnIcon) {
       _applyIcon();
       return;
     }
-
-    _startPulse();
     _shownProgress = 0;
     _animateProgressTo(_progress, const Duration(milliseconds: 1800));
   }
@@ -526,20 +522,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     if (!_usesDrawnIcon) return;
     if (_progressAnimTimer?.isActive ?? false) return;
     _animateProgressTo(_progress, const Duration(milliseconds: 900));
-  }
-
-  // Slow pulse; throttled to every other tick while far from the break to save CPU.
-  void _startPulse() {
-    _pulseTimer?.cancel();
-    if (!_usesDrawnIcon) return;
-    var tick = 0;
-    _pulseTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
-      tick++;
-      if (!_onBreak && _progress < 0.7 && tick.isOdd) return;
-      _pulse = (_pulse + 1 / 24) % 1.0;
-      if (_progressAnimTimer?.isActive ?? false) return;
-      _applyIcon();
-    });
   }
 
   void _animateProgressTo(double target, Duration duration) {
@@ -564,38 +546,22 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     });
   }
 
-  // Green -> yellow -> red as the break approaches; blue while on break.
   bool get _paused => _timerEngine?.state == TimerState.paused;
 
   Color _accent(double progress) {
-    if (_paused) return const Color(0xFF8E8E93);
-    if (_onBreak) return const Color(0xFF4DA3FF);
-    if (progress < 0.5) {
-      return Color.lerp(
-        const Color(0xFF34C759),
-        const Color(0xFFFFCC00),
-        progress / 0.5,
-      )!;
-    }
-    return Color.lerp(
-      const Color(0xFFFFCC00),
-      const Color(0xFFFF453A),
-      (progress - 0.5) / 0.5,
-    )!;
+    if (_paused) return AppTheme.textMuted;
+    if (!_onBreak && progress > 0.85) return AppTheme.warning;
+    return AppTheme.accent;
   }
 
   // Quantized key + cache avoid re-rendering and re-pushing identical icons.
   Future<void> _applyDrawnIcon() async {
     final q = (_shownProgress * 120).round();
-    final pulseStep = (_pulse * 24).floor();
-    final key = '$_menuStyle:$q:$pulseStep:$_onBreak:$_paused';
+    final key = '$_menuStyle:$q:$_onBreak:$_paused';
     if (key == _lastDrawnKey) return;
     _lastDrawnKey = key;
     try {
-      final bytes = _drawnCache[key] ??= await _renderIcon(
-        q / 120,
-        pulseStep / 24,
-      );
+      final bytes = _drawnCache[key] ??= await _renderIcon(q / 120);
       if (_drawnCache.length > 600) _drawnCache.clear();
       await _setTrayIconBytes(bytes);
       if (_currentTitle.isNotEmpty && Platform.isMacOS) {
@@ -609,7 +575,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   void _paintPauseBadge(Canvas canvas, double size) {
     final c = Offset(size * 0.75, size * 0.75);
     final r = size * 0.25;
-    canvas.drawCircle(c, r, Paint()..color = const Color(0xFFFF9F0A));
+    canvas.drawCircle(c, r, Paint()..color = AppTheme.warning);
     for (final dx in [-r * 0.29, r * 0.29]) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
@@ -620,7 +586,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           ),
           Radius.circular(r * 0.1),
         ),
-        Paint()..color = const Color(0xFFFFFFFF),
+        Paint()..color = AppTheme.onColor(AppTheme.warning),
       );
     }
   }
@@ -658,48 +624,33 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   /// Paints the progress ring / badge / focus dot icon at 36px with the current [_accent].
-  Future<Uint8List> _renderIcon(double progress, double pulse) async {
+  Future<Uint8List> _renderIcon(double progress) async {
     const size = 36.0;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, size, size));
     const center = Offset(size / 2, size / 2);
-    const white = Color(0xFFFFFFFF);
     final color = _accent(progress);
 
-    final breathe = (1 - math.cos(pulse * math.pi * 2)) / 2;
-    final urgent = _onBreak || progress > 0.9;
-
     if (_menuStyle == 'icon') {
-      final badge = 30.0 + breathe * 2.5;
+      const badge = 30.0;
       final rect = RRect.fromRectAndRadius(
         Rect.fromCenter(center: center, width: badge, height: badge),
         const Radius.circular(9),
       );
-      canvas.drawRRect(
-        rect.inflate(2),
-        Paint()
-          ..color = color.withValues(alpha: 0.25 + 0.2 * breathe)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
-      );
-      canvas.drawRRect(
-        rect,
-        Paint()
-          ..shader = ui.Gradient.linear(
-            rect.outerRect.topLeft,
-            rect.outerRect.bottomRight,
-            [Color.lerp(color, white, 0.25)!, color],
-          ),
-      );
+      canvas.drawRRect(rect, Paint()..color = color);
       final base = await _loadBaseIcon();
       if (base != null) {
-        final mark = badge * 0.64;
+        const mark = badge * 0.64;
         canvas.drawImageRect(
           base,
           Rect.fromLTWH(0, 0, base.width.toDouble(), base.height.toDouble()),
           Rect.fromCenter(center: center, width: mark, height: mark),
           Paint()
             ..filterQuality = FilterQuality.high
-            ..colorFilter = const ColorFilter.mode(white, BlendMode.srcIn),
+            ..colorFilter = ColorFilter.mode(
+              AppTheme.onColor(color),
+              BlendMode.srcIn,
+            ),
         );
       }
     } else if (_menuStyle == 'progress') {
@@ -713,25 +664,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = stroke
-          ..color = const Color(0xFF8E8E93).withValues(alpha: 0.55),
-      );
-      final sweep = math.pi * 2 * math.max(progress, 0.02);
-      canvas.drawArc(
-        rect,
-        -math.pi / 2,
-        sweep,
-        false,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = stroke + 5
-          ..strokeCap = StrokeCap.round
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3)
-          ..color = color.withValues(alpha: 0.25 + 0.2 * breathe),
+          ..color = AppTheme.textMuted.withValues(alpha: 0.55),
       );
       canvas.drawArc(
         rect,
         -math.pi / 2,
-        sweep,
+        math.pi * 2 * math.max(progress, 0.02),
         false,
         Paint()
           ..style = PaintingStyle.stroke
@@ -739,52 +677,18 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           ..strokeCap = StrokeCap.round
           ..color = color,
       );
-
-      canvas.drawCircle(
-        center,
-        3 + breathe * (urgent ? 1.5 : 0.8),
-        Paint()..color = color,
-      );
+      canvas.drawCircle(center, 3, Paint()..color = color);
     } else {
-      final core = 5.0 + 3.0 * progress + breathe * (urgent ? 1.2 : 0.6);
-      const outer = 16.5;
-
+      final core = 5.0 + 3.0 * progress;
       canvas.drawCircle(
         center,
-        outer,
+        16.5,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.6
           ..color = color.withValues(alpha: 0.35),
       );
-
-      final t = Curves.easeOut.transform(pulse);
-      final rippleR = core + 4 + t * (outer - core - 6);
-      canvas.drawCircle(
-        center,
-        rippleR,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..color = color.withValues(alpha: 0.7 * (1 - t)),
-      );
-      canvas.drawCircle(
-        center,
-        core + 1.5,
-        Paint()
-          ..color = color.withValues(alpha: 0.3)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
-      );
-      canvas.drawCircle(
-        center,
-        core,
-        Paint()
-          ..shader = ui.Gradient.radial(
-            center.translate(-core / 3, -core / 3),
-            core * 1.5,
-            [Color.lerp(color, white, 0.45)!, color],
-          ),
-      );
+      canvas.drawCircle(center, core, Paint()..color = color);
     }
 
     if (_paused) _paintPauseBadge(canvas, size);
@@ -1062,7 +966,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       if (timerEngine.systemSleepPaused) {
         _animTimer?.cancel();
         _actionAnimTimer?.cancel();
-        _pulseTimer?.cancel();
         _lastState = null;
         return;
       }
@@ -1071,7 +974,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         _lastState = state;
         _currentFrameIndex = 0;
         _updateTimerSpeed();
-        if (!(_pulseTimer?.isActive ?? false)) _startPulse();
         _applyIcon();
         _scheduleMenuRebuild();
       }
@@ -1163,10 +1065,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         state == AppLifecycleState.paused) {
       _animTimer?.cancel();
       _actionAnimTimer?.cancel();
-      _pulseTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       _updateTimerSpeed();
-      _startPulse();
     }
   }
 
@@ -1174,7 +1074,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     _liveMenuTimer?.cancel();
     _animTimer?.cancel();
     _progressAnimTimer?.cancel();
-    _pulseTimer?.cancel();
+    _actionAnimTimer?.cancel();
     _timerEngine?.removeListener(_onTimerChanged);
     _breakController?.removeListener(_onTimerChanged);
     trayManager.removeListener(this);

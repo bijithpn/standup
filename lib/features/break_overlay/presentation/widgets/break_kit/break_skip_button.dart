@@ -63,18 +63,12 @@ class _BreakSkipButtonState extends State<BreakSkipButton> {
                     : BorderSide(color: palette.border),
               ),
             ),
-            child: AnimatedOpacity(
-              duration: BreakMotion.reduced(context)
-                  ? Duration.zero
-                  : BreakMotion.fast,
-              opacity: _hovered || _focused ? 1.0 : 0.82,
-              child: Text(
-                widget.label,
-                style: BreakOverlayTheme.body.copyWith(
-                  color: palette.textSecondary,
-                  fontWeight: FontWeight.w500,
-                  height: 1.0,
-                ),
+            child: Text(
+              widget.label,
+              style: BreakOverlayTheme.body.copyWith(
+                color: palette.textSecondary,
+                fontWeight: FontWeight.w500,
+                height: 1.0,
               ),
             ),
           ),

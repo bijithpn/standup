@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -205,204 +204,89 @@ class _UpdateSectionState extends State<UpdateSection> {
 
   @override
   Widget build(BuildContext context) {
+    final title = _errorMessage.isNotEmpty
+        ? 'Update check failed'
+        : _hasUpdate
+        ? 'Version $_updateVersion available'
+        : _isChecking
+        ? 'Checking for updates'
+        : _checked
+        ? 'BreakMate is up to date'
+        : 'Software update';
+    final helper = _errorMessage.isNotEmpty
+        ? _errorMessage
+        : _hasUpdate
+        ? 'Release notes appear in the update window when you install'
+        : _isChecking
+        ? 'Connecting to the update server'
+        : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Software Update'),
-        const SizedBox(height: 8),
-
+        sectionHeader('Software update'),
         buildCard([
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor().withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        _getStatusIcon(),
-                        color: _getStatusColor(),
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 18),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _errorMessage.isNotEmpty
-                                ? 'Update Check Failed'
-                                : (_hasUpdate
-                                      ? 'Version $_updateVersion Available'
-                                      : (_isChecking
-                                            ? 'Checking for Updates...'
-                                            : (_checked
-                                                  ? 'BreakMate is Up to Date'
-                                                  : 'Software Update'))),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
-                              fontFamily: 'Inter',
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _errorMessage.isNotEmpty
-                                ? 'An error occurred while connecting to the server.'
-                                : (_hasUpdate
-                                      ? 'A newer version is ready to be installed.'
-                                      : (_isChecking
-                                            ? 'Connecting to update server...'
-                                            : (_checked
-                                                  ? 'Everything is running smoothly.'
-                                                  : 'Keep your app modern and stable.'))),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.textSecondary,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!_isChecking && !_hasUpdate)
-                      MinimalButton(
-                        onPressed: _checkForUpdates,
-                        isSecondary: true,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textPrimary,
                         ),
-                        borderRadius: BorderRadius.circular(10),
-                        child: const Text(
-                          'Check Now',
+                      ),
+                      if (helper.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          helper,
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: _errorMessage.isNotEmpty
+                                ? AppTheme.error
+                                : AppTheme.textSecondary,
                           ),
                         ),
-                      )
-                    else if (_isChecking)
-                      SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppTheme.accentColor,
-                          ),
-                        ),
-                      ),
-                  ],
+                      ],
+                    ],
+                  ),
                 ),
-
-                if (_errorMessage.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.error.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppTheme.error.withValues(alpha: 0.15),
-                      ),
-                    ),
+                const SizedBox(width: 16),
+                if (_hasUpdate)
+                  MinimalButton(
+                    onPressed: _startUpdate,
+                    backgroundColor: AppTheme.accentColor,
                     child: Text(
-                      _errorMessage,
-                      style: const TextStyle(
-                        color: AppTheme.error,
-                        fontSize: 13,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ),
-                ],
-
-                if (_hasUpdate) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: Text(
-                      'Release notes are shown in the update window when you install.',
+                      'Install and restart',
                       style: TextStyle(
+                        color: AppTheme.onAccent,
                         fontSize: 13,
-                        color: AppTheme.textSecondary,
-                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
+                  )
+                else if (_isChecking)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  MinimalButton(
+                    onPressed: _checkForUpdates,
+                    isSecondary: true,
+                    child: const Text('Check now'),
                   ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: MinimalButton(
-                      onPressed: _startUpdate,
-                      backgroundColor: AppTheme.accentColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            CupertinoIcons.arrow_down_doc_fill,
-                            color: AppTheme.onAccent,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Install and Restart Now',
-                            style: TextStyle(
-                              color: AppTheme.onAccent,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
         ]),
-        const SizedBox(height: 32),
       ],
     );
-  }
-
-  Color _getStatusColor() {
-    if (_errorMessage.isNotEmpty) {
-      return AppTheme.error;
-    }
-    if (_hasUpdate) {
-      return AppTheme.accentColor;
-    }
-    if (_checked && !_hasUpdate) {
-      return AppTheme.success;
-    }
-    return AppTheme.accentColor;
-  }
-
-  IconData _getStatusIcon() {
-    if (_errorMessage.isNotEmpty) {
-      return CupertinoIcons.exclamationmark_triangle_fill;
-    }
-    if (_hasUpdate) {
-      return CupertinoIcons.arrow_down_circle_fill;
-    }
-    if (_checked && !_hasUpdate) {
-      return CupertinoIcons.checkmark_seal_fill;
-    }
-    return CupertinoIcons.arrow_2_circlepath;
   }
 }

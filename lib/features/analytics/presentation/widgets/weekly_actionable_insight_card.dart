@@ -1,10 +1,10 @@
-import '../../../settings/widgets/settings_group.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import '../../weekly_actionable_insight.dart';
 import '../../stats_service.dart' show DailyStats;
 import '../../../settings/settings_model.dart';
 import '../../../feedback/timing_suggestion_dialog.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class WeeklyActionableInsightCard extends StatelessWidget {
   final List<DailyStats> days;
@@ -25,33 +25,42 @@ class WeeklyActionableInsightCard extends StatelessWidget {
       settings,
       clock.now(),
     );
-    return SettingsGroup(
-      margin: const EdgeInsets.only(top: 20, bottom: 8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SettingsField(
-          title: 'One thing from this week',
+        Text(
+          'One thing from this week',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textMuted,
+          ),
+        ),
+        const SizedBox(height: AppTheme.space8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
           child: Text(
             insight.observation,
             style: TextStyle(
-              fontSize: 13,
-              height: 1.6,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontFeatures: AppTheme.tabular,
+              fontSize: 16,
+              height: 1.5,
+              color: AppTheme.textPrimary,
             ),
           ),
         ),
-        if (insight.suggestion != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: OutlinedButton(
-              onPressed: () => showTimingSuggestion(
-                context,
-                insight.suggestion,
-                currentSettings: currentSettings,
-                onApply: onApply,
-              ),
-              child: const Text('Review suggested adjustment'),
+        if (insight.suggestion != null) ...[
+          const SizedBox(height: AppTheme.space12),
+          TextButton(
+            onPressed: () => showTimingSuggestion(
+              context,
+              insight.suggestion,
+              currentSettings: currentSettings,
+              onApply: onApply,
             ),
+            child: const Text('Review adjustment'),
           ),
+        ],
       ],
     );
   }

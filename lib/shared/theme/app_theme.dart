@@ -65,13 +65,17 @@ class AppTheme {
 
   static Color get border => highContrast
       ? _contrastText
-      : Color.lerp(_activePreset.border, _activePreset.textPrimary, 0.12)!;
+      : Color.lerp(
+          _activePreset.border,
+          _activePreset.textPrimary,
+          _activePreset.isDark ? 0.15 : 0.32,
+        )!;
   static Color get borderSubtle => highContrast
       ? _contrastText
       : Color.lerp(
           _activePreset.borderSubtle,
           _activePreset.textPrimary,
-          0.07,
+          _activePreset.isDark ? 0.13 : 0.22,
         )!;
 
   static Color get textPrimary =>
@@ -81,10 +85,14 @@ class AppTheme {
   static Color get textMuted =>
       highContrast ? _contrastText : _activePreset.textMuted;
 
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color info = Color(0xFF3B82F6);
+  static Color get success =>
+      _activePreset.isDark ? const Color(0xFF10B981) : const Color(0xFF047857);
+  static Color get warning =>
+      _activePreset.isDark ? const Color(0xFFF59E0B) : const Color(0xFFB45309);
+  static Color get error =>
+      _activePreset.isDark ? const Color(0xFFEF4444) : const Color(0xFFB91C1C);
+  static Color get info =>
+      _activePreset.isDark ? const Color(0xFF3B82F6) : const Color(0xFF1D4ED8);
 
   static Color get shortBreak => _activePreset.shortBreak;
   static Color get longBreak => _activePreset.longBreak;
@@ -94,6 +102,18 @@ class AppTheme {
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
   static const double radiusXl = 24.0;
+
+  static const double space4 = 4;
+  static const double space8 = 8;
+  static const double space12 = 12;
+  static const double space16 = 16;
+  static const double space24 = 24;
+  static const double space32 = 32;
+  static const double space40 = 40;
+
+  static const Color scrim = Color(0x99000000);
+
+  static const List<FontFeature> tabular = [FontFeature.tabularFigures()];
 
   static MacosThemeData get macosTheme {
     final base = _activePreset.isDark
@@ -107,20 +127,17 @@ class AppTheme {
         color: textPrimary,
         title1: base.typography.title1.copyWith(
           fontFamily: 'Inter',
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.5,
+          fontWeight: FontWeight.w500,
           color: textPrimary,
         ),
         title2: base.typography.title2.copyWith(
           fontFamily: 'Inter',
           fontWeight: FontWeight.w500,
-          letterSpacing: -0.3,
           color: textPrimary,
         ),
         title3: base.typography.title3.copyWith(
           fontFamily: 'Inter',
           fontWeight: FontWeight.w500,
-          letterSpacing: -0.2,
           color: textPrimary,
         ),
         headline: base.typography.headline.copyWith(
@@ -202,7 +219,7 @@ class AppTheme {
           fontFamily: 'Inter',
           color: textPrimary,
           fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
         side: WidgetStateBorderSide.resolveWith(
           (states) => BorderSide(
@@ -245,7 +262,7 @@ class AppTheme {
           color: textPrimary,
           fontFamily: 'Inter',
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
         contentTextStyle: TextStyle(
           color: textSecondary,
@@ -285,22 +302,19 @@ class AppTheme {
         displayLarge: TextStyle(
           color: textPrimary,
           fontSize: 32,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.8,
+          fontWeight: FontWeight.w500,
           fontFamily: 'Inter',
         ),
         headlineLarge: TextStyle(
           color: textPrimary,
           fontSize: 24,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.5,
+          fontWeight: FontWeight.w500,
           fontFamily: 'Inter',
         ),
         headlineMedium: TextStyle(
           color: textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w500,
-          letterSpacing: -0.3,
           fontFamily: 'Inter',
         ),
         titleLarge: TextStyle(
@@ -374,15 +388,13 @@ class AppTheme {
     fontSize: 13,
     fontWeight: FontWeight.w500,
     color: textPrimary,
-    letterSpacing: -0.1,
     fontFamily: 'Inter',
   );
 
   static TextStyle get sectionTitle => TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     color: textPrimary,
-    letterSpacing: -0.2,
     fontFamily: 'Inter',
   );
 
@@ -396,9 +408,8 @@ class AppTheme {
 
   static TextStyle get headerStyle => TextStyle(
     fontSize: 22,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     color: textPrimary,
-    letterSpacing: -0.5,
     fontFamily: 'Inter',
   );
 
@@ -406,15 +417,13 @@ class AppTheme {
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: textSecondary,
-    letterSpacing: -0.1,
     fontFamily: 'Inter',
   );
 
   static TextStyle get breakTitleStyle => TextStyle(
     fontSize: 32,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w500,
     color: textPrimary,
-    letterSpacing: -0.8,
     fontFamily: 'Inter',
   );
 

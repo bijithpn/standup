@@ -49,13 +49,13 @@ class _TemplateCardState extends State<_TemplateCard> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppTheme.contentBackground,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             border: Border.all(
               color: selected
                   ? AppTheme.accentColor
                   : _hovered
                   ? AppTheme.textSecondary.withValues(alpha: 0.5)
-                  : AppTheme.borderColor,
+                  : AppTheme.borderSubtle,
               width: selected ? 2 : 1,
             ),
           ),
@@ -88,13 +88,13 @@ class _TemplateCardState extends State<_TemplateCard> {
                       style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                   if (selected)
                     Icon(
-                      CupertinoIcons.checkmark_circle_fill,
+                      CupertinoIcons.checkmark_alt,
                       size: 16,
                       color: AppTheme.accentColor,
                     ),
@@ -162,8 +162,7 @@ extension _TemplateGallery on _BreakAppearanceSettingsState {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.contentBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderColor),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Center(
         child: ConstrainedBox(
@@ -173,13 +172,15 @@ extension _TemplateGallery on _BreakAppearanceSettingsState {
             tier: tier,
             builder: (c, clock) => _compactPreview
                 ? Align(
-                    child: SizedBox(
-                      width: 340,
-                      height: 244,
-                      child: CompactBreakCard(
-                        template: t,
-                        session: session,
-                        clock: clock,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 340),
+                      child: AspectRatio(
+                        aspectRatio: 340 / 244,
+                        child: CompactBreakCard(
+                          template: t,
+                          session: session,
+                          clock: clock,
+                        ),
                       ),
                     ),
                   )

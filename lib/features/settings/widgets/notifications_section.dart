@@ -1,5 +1,4 @@
 import 'settings_group.dart';
-import 'advanced_settings.dart';
 import 'notification_intensity_picker.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'dart:io';
@@ -37,169 +36,129 @@ class NotificationsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Reminder Intensity'),
+        sectionHeader('Reminder intensity'),
         NotificationIntensityPicker(settings: settings, onChanged: onSave),
-        const SizedBox(height: 8),
-        sectionHeader('Notifications'),
+        sectionHeader('Alerts'),
         SettingsGroup(
           children: [_buildSoundEnabled(), _buildNotificationsEnabled()],
         ),
-        const SizedBox(height: 8),
-        sectionHeader('Health Reminders'),
+        sectionHeader('Health reminders'),
         SettingsGroup(
+          margin: const EdgeInsets.only(bottom: AppTheme.space8),
           children: [
             toggleRow(
               'Health reminders',
-              'Gentle nudges for your eyes, posture, water, stretching and '
-                  'standing up — shown one at a time, at varied moments.',
+              'Nudges for eyes, posture, water and standing up',
               settings.healthRemindersEnabled,
               (v) => onSave(settings.copyWith(healthRemindersEnabled: v)),
             ),
             if (settings.healthRemindersEnabled) ...[
               _buildReminderPreviewRow(onPreview: _previewRandom),
-              AdvancedSettings(
-                title: 'More health reminder options',
-                children: [
-                  if (Platform.isMacOS) ...[
-                    divider(),
-                    toggleRow(
-                      'Dismiss on mouse movement',
-                      settings.dismissReminderOnMouseMove
-                          ? 'On: moving the mouse dismisses new reminders after a brief pause.'
-                          : 'Off: reminders stay visible for their full duration.',
-                      settings.dismissReminderOnMouseMove,
-                      (v) => onSave(
-                        settings.copyWith(dismissReminderOnMouseMove: v),
-                      ),
-                    ),
-                  ],
-                  if (kDebugMode && Platform.isMacOS) ...[
-                    divider(),
-                    _buildReminderPreviewRow(
-                      label: 'Preview posture reminder (debug)',
-                      onPreview: () => _showPreview('posture'),
-                    ),
-                    divider(),
-                    _buildReminderPreviewRow(
-                      label: 'Preview water reminder (debug)',
-                      onPreview: () => _showPreview('hydration'),
-                    ),
-                    divider(),
-                    _buildReminderPreviewRow(
-                      label: 'Preview notification toast (debug)',
-                      onPreview: () =>
-                          NativeEnhancementsService.instance.showToast(
-                            title: 'Time for a break',
-                            body: 'Eye Rest',
-                            sound: settings.soundEnabled,
-                          ),
-                    ),
-                  ],
-                  divider(),
-                  toggleRow(
-                    'Blink & screen-distance reminders',
-                    'An extra, more frequent nudge to blink fully and keep the '
-                        'screen an arm\'s length away.',
-                    settings.blinkRemindersEnabled,
-                    (v) => onSave(settings.copyWith(blinkRemindersEnabled: v)),
-                  ),
-                ],
+              toggleRow(
+                'Blink and screen-distance reminders',
+                'A more frequent nudge to blink and sit back',
+                settings.blinkRemindersEnabled,
+                (v) => onSave(settings.copyWith(blinkRemindersEnabled: v)),
               ),
-            ],
-            AdvancedSettings(
-              title: 'Focus and evening options',
-              children: [
-                if (settings.avoidBreakHour >= 0) ...[
-                  divider(),
-                  toggleRow(
-                    'Avoid breaks around ${formatHourLabel(settings.avoidBreakHour)}',
-                    'Breaks due in that hour wait until the next one. Turn off to '
-                        'restore normal timing.',
-                    true,
-                    (_) => onSave(settings.copyWith(avoidBreakHour: -1)),
-                  ),
-                ],
-                divider(),
+              if (Platform.isMacOS)
                 toggleRow(
-                  'Do Not Disturb in focus sessions',
-                  'macOS only. Create two Shortcuts named "BreakMate Focus On" and '
-                      '"BreakMate Focus Off" that set your Focus mode.',
-                  settings.focusDndEnabled,
-                  (v) => onSave(settings.copyWith(focusDndEnabled: v)),
+                  'Dismiss on mouse movement',
+                  'Moving the mouse closes a new reminder after a short pause',
+                  settings.dismissReminderOnMouseMove,
+                  (v) =>
+                      onSave(settings.copyWith(dismissReminderOnMouseMove: v)),
                 ),
-                divider(),
-                toggleRow(
-                  'Evening eye care',
-                  'At 8 pm, turn on Night Shift (macOS) and nudge you to lower brightness.',
-                  settings.eveningEyeCare,
-                  (v) => onSave(settings.copyWith(eveningEyeCare: v)),
+              if (kDebugMode && Platform.isMacOS) ...[
+                _buildReminderPreviewRow(
+                  label: 'Preview posture reminder (debug)',
+                  onPreview: () => _showPreview('posture'),
+                ),
+                _buildReminderPreviewRow(
+                  label: 'Preview water reminder (debug)',
+                  onPreview: () => _showPreview('hydration'),
+                ),
+                _buildReminderPreviewRow(
+                  label: 'Preview notification toast (debug)',
+                  onPreview: () => NativeEnhancementsService.instance.showToast(
+                    title: 'Time for a break',
+                    body: 'Eye Rest',
+                    sound: settings.soundEnabled,
+                  ),
                 ),
               ],
-            ),
+            ],
           ],
         ),
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          padding: const EdgeInsets.only(
+            left: 4,
+            right: 4,
+            bottom: AppTheme.space24,
+          ),
           child: Text(
-            'Which reminder appears is random and follows how you work: the '
-            'more you have worked today, the more often they come; light days '
-            'get fewer. They hold back during meetings, right around breaks, '
-            'and after you step away. At most 4 per hour (5 on very busy '
-            'days), and ones you keep ignoring are spaced further apart.',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.4,
-              color: AppTheme.textSecondary,
-            ),
+            'One reminder at a time, more often on busy days, at most 4 an '
+            'hour. They hold back during meetings and around breaks.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
           ),
         ),
-        const SizedBox(height: 8),
-        AdvancedSettings(
-          title: 'Custom reminders',
-          subtitle: 'Add and manage your own recurring nudges',
+        sectionHeader('Focus and evening'),
+        SettingsGroup(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final r in settings.customReminders) ...[
-                  ListTile(
-                    dense: true,
-                    title: Text(
-                      r.title,
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+            if (settings.avoidBreakHour >= 0)
+              toggleRow(
+                'Avoid breaks around ${formatHourLabel(settings.avoidBreakHour)}',
+                'Breaks due in that hour wait until the next one',
+                true,
+                (_) => onSave(settings.copyWith(avoidBreakHour: -1)),
+              ),
+            toggleRow(
+              'Do Not Disturb in focus sessions',
+              'macOS only. Needs Shortcuts named "BreakMate Focus On" and "BreakMate Focus Off"',
+              settings.focusDndEnabled,
+              (v) => onSave(settings.copyWith(focusDndEnabled: v)),
+            ),
+            toggleRow(
+              'Evening eye care',
+              'At 8 pm, turns on Night Shift (macOS) and suggests lower brightness',
+              settings.eveningEyeCare,
+              (v) => onSave(settings.copyWith(eveningEyeCare: v)),
+            ),
+          ],
+        ),
+        sectionHeader('Custom reminders'),
+        SettingsGroup(
+          children: [
+            for (final r in settings.customReminders)
+              buildListRow(
+                r.title,
+                'Every ${r.minutes} min',
+                null,
+                null,
+                trailing: Tooltip(
+                  message: 'Remove',
+                  child: MinimalButton(
+                    isGhost: true,
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      CupertinoIcons.delete,
+                      size: 16,
+                      color: AppTheme.textSecondary,
                     ),
-                    subtitle: Text(
-                      'Every ${r.minutes} min',
-                      style: TextStyle(color: AppTheme.textSecondary),
-                    ),
-                    trailing: IconButton(
-                      tooltip: 'Remove',
-                      icon: Icon(
-                        CupertinoIcons.delete,
-                        size: 16,
-                        color: AppTheme.textSecondary,
+                    onPressed: () => onSave(
+                      settings.copyWith(
+                        customReminders: [...settings.customReminders]
+                          ..remove(r),
                       ),
-                      onPressed: () => onSave(
-                        settings.copyWith(
-                          customReminders: [...settings.customReminders]
-                            ..remove(r),
-                        ),
-                      ),
-                    ),
-                  ),
-                  divider(),
-                ],
-                _CustomReminderForm(
-                  onAdd: (r) => onSave(
-                    settings.copyWith(
-                      customReminders: [...settings.customReminders, r],
                     ),
                   ),
                 ),
-              ],
+              ),
+            _CustomReminderForm(
+              onAdd: (r) => onSave(
+                settings.copyWith(
+                  customReminders: [...settings.customReminders, r],
+                ),
+              ),
             ),
           ],
         ),
@@ -210,7 +169,7 @@ class NotificationsSection extends StatelessWidget {
   Widget _buildSoundEnabled() {
     return toggleRow(
       'Sound',
-      'Play sound notifications for breaks and a distinct tone for each reminder',
+      'A distinct tone for breaks and each reminder',
       settings.soundEnabled,
       (v) {
         onSave(settings.copyWith(soundEnabled: v));
@@ -221,8 +180,8 @@ class NotificationsSection extends StatelessWidget {
 
   Widget _buildNotificationsEnabled() {
     return toggleRow(
-      'System Notifications',
-      'Show system notifications for breaks',
+      'System notifications',
+      'Show a notification when a break is due',
       settings.notificationsEnabled,
       (v) {
         onSave(settings.copyWith(notificationsEnabled: v));
@@ -278,59 +237,12 @@ class NotificationsSection extends StatelessWidget {
   Widget _buildReminderPreviewRow({
     required VoidCallback onPreview,
     String label = 'Preview a random reminder',
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-            ),
-          ),
-          const SizedBox(width: 12),
-          TapTarget(
-            onTap: onPreview,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceElevated,
-                  border: Border.all(color: AppTheme.border),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      CupertinoIcons.play_fill,
-                      size: 14,
-                      color: AppTheme.textPrimary,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Preview',
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  }) => actionRow(
+    label: label,
+    subtitle: '',
+    buttonText: 'Preview',
+    onPressed: onPreview,
+  );
 }
 
 // Adds a reminder only when the title is non-empty and interval is at least 1 minute.
@@ -372,7 +284,7 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
 
   InputDecoration _decoration(String label, {String? hint, String? suffix}) {
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       borderSide: BorderSide(color: AppTheme.border),
     );
     return InputDecoration(
@@ -389,11 +301,11 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
       suffixStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
       filled: true,
       fillColor: AppTheme.surfaceElevated,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: border,
       border: border,
       focusedBorder: border.copyWith(
-        borderSide: BorderSide(color: AppTheme.accentColor, width: 2),
+        borderSide: BorderSide(color: AppTheme.accentColor),
       ),
     );
   }
@@ -428,20 +340,20 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
         onSubmitted: (_) => _add(),
       ),
     );
-    final add = OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppTheme.textPrimary,
-        backgroundColor: AppTheme.surfaceElevated,
-        side: BorderSide(color: AppTheme.border),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      icon: const Icon(CupertinoIcons.add, size: 16),
-      label: const Text('Add reminder'),
+    final add = MinimalButton(
+      isSecondary: true,
       onPressed: _add,
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(CupertinoIcons.add, size: 16),
+          SizedBox(width: 8),
+          Text('Add reminder'),
+        ],
+      ),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -474,7 +386,7 @@ class _CustomReminderFormState extends State<_CustomReminderForm> {
             },
           ),
           if (_error != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Semantics(
               liveRegion: true,
               child: Text(

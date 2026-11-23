@@ -210,11 +210,6 @@ abstract final class BreakOverlayTheme {
   static const Color eyeRest = Color(0xFF7EC8E3);
   static const Color recovery = Color(0xFF86EFAC);
   static const Color amber = Color(0xFFD4A55A);
-  static const Color nature = Color(0xFF74C69D);
-  static const Color mint = Color(0xFF6EE7B7);
-  static const Color sage = Color(0xFF5BB898);
-  static const Color sky = Color(0xFF93C5FD);
-  static const Color dusk = Color(0xFFC4B5FD);
 
   static const double radiusSm = 8;
   static const double radiusMd = 14;
@@ -230,7 +225,6 @@ abstract final class BreakOverlayTheme {
     fontFamily: fontFamily,
     fontSize: 64,
     fontWeight: FontWeight.w300,
-    letterSpacing: -2,
     height: 1.0,
     fontFeatures: tabular,
   );
@@ -238,13 +232,12 @@ abstract final class BreakOverlayTheme {
     fontFamily: fontFamily,
     fontSize: 40,
     fontWeight: FontWeight.w300,
-    letterSpacing: -1,
     fontFeatures: tabular,
   );
   static const TextStyle title = TextStyle(
     fontFamily: fontFamily,
     fontSize: 20,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     fontFeatures: tabular,
   );
   static const TextStyle body = TextStyle(
@@ -257,7 +250,6 @@ abstract final class BreakOverlayTheme {
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    letterSpacing: 0.6,
   );
 
   static const TextStyle serif = TextStyle(

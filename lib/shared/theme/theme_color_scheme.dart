@@ -17,7 +17,12 @@ ColorScheme themeColorScheme({
       ? Colors.black
       : Colors.white;
   final selected = Color.alphaBlend(accent.withValues(alpha: 0.12), card);
-  const error = Color(0xFFEF4444);
+  final error = brightness == Brightness.light
+      ? const Color(0xFFB91C1C)
+      : const Color(0xFFEF4444);
+  final onError = error.computeLuminance() > 0.179
+      ? Colors.black
+      : Colors.white;
   return ColorScheme(
     brightness: brightness,
     primary: accent,
@@ -33,7 +38,7 @@ ColorScheme themeColorScheme({
     tertiaryContainer: selected,
     onTertiaryContainer: text,
     error: error,
-    onError: Colors.white,
+    onError: onError,
     errorContainer: Color.alphaBlend(error.withValues(alpha: 0.12), card),
     onErrorContainer: text,
     surface: card,

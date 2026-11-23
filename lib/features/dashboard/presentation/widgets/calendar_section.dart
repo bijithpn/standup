@@ -1,4 +1,5 @@
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -28,65 +29,51 @@ class CalendarSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.calendar_today_rounded,
-                      size: 16,
-                      color: AppTheme.accent,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Upcoming Events',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Up next',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
               ),
-              if (loading)
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppTheme.accent,
-                  ),
-                )
-              else
-                TapTarget(
+            ),
+            if (loading)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppTheme.accent,
+                ),
+              )
+            else
+              Tooltip(
+                message: 'Refresh calendar events',
+                child: TapTarget(
                   semanticLabel: 'Refresh calendar events',
                   onTap: onLoadEvents,
-                  child: Icon(
-                    Icons.refresh_rounded,
-                    size: 18,
-                    color: AppTheme.textMuted,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppTheme.space8),
+                    child: Icon(
+                      CupertinoIcons.refresh,
+                      size: 16,
+                      color: AppTheme.textMuted,
+                    ),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildCalendarContent(),
-        ],
-      ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppTheme.space8),
+        _buildCalendarContent(),
+      ],
     );
   }
 
@@ -103,20 +90,10 @@ class CalendarSection extends StatelessWidget {
 
     if (events == null || events.isEmpty) {
       return Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_outline_rounded,
-              size: 18,
-              color: AppTheme.textMuted,
-            ),
-            SizedBox(width: 10),
-            Text(
-              'No events in the next 8 hours — focus time!',
-              style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
-            ),
-          ],
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
+        child: Text(
+          'No events in the next 8 hours — focus time!',
+          style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
         ),
       );
     }
@@ -139,18 +116,17 @@ class CalendarSection extends StatelessWidget {
       children: [
         if (conflict != null) ...[
           CalendarActionCard(event: conflict),
-          const SizedBox(height: 24),
+          Divider(height: 1, color: AppTheme.borderSubtle),
         ],
         for (var date in sortedDates) ...[
           Padding(
-            padding: const EdgeInsets.only(bottom: 12, top: 4),
+            padding: const EdgeInsets.only(bottom: 4, top: 12),
             child: Text(
               _formatDate(date),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 color: AppTheme.textSecondary,
-                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -159,14 +135,10 @@ class CalendarSection extends StatelessWidget {
               children: [
                 CalendarEventRow(event: event),
                 if (event != groupedEvents[date]!.last)
-                  Padding(
-                    padding: EdgeInsets.only(left: 54),
-                    child: Divider(height: 1, color: AppTheme.border),
-                  ),
+                  Divider(height: 1, color: AppTheme.borderSubtle),
               ],
             );
           }),
-          if (date != sortedDates.last) const SizedBox(height: 16),
         ],
       ],
     );
@@ -192,8 +164,8 @@ class CalendarSection extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
 
-    if (date == today) return 'TODAY';
-    if (date == tomorrow) return 'TOMORROW';
+    if (date == today) return 'Today';
+    if (date == tomorrow) return 'Tomorrow';
 
     final months = [
       'JAN',
@@ -220,18 +192,12 @@ class CalendarSection extends StatelessWidget {
         ? 'Please enable calendar access in System Settings to see your events. If already enabled, toggle it OFF and ON again to refresh the system cache.'
         : 'Calendar access required to show upcoming events and avoid interrupting your meetings.';
     final icon = permissionDenied
-        ? Icons.error_outline_rounded
-        : Icons.lock_outline_rounded;
+        ? CupertinoIcons.exclamationmark_circle
+        : CupertinoIcons.lock;
     final color = permissionDenied ? AppTheme.error : AppTheme.warning;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -239,7 +205,7 @@ class CalendarSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(icon, size: 16, color: color),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppTheme.space8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,19 +214,17 @@ class CalendarSection extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: AppTheme.space4),
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         color: AppTheme.textSecondary,
                         height: 1.4,
-                        fontFamily: 'Inter',
                       ),
                     ),
                   ],
@@ -268,82 +232,25 @@ class CalendarSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          const SizedBox(height: AppTheme.space12),
+          Wrap(
+            spacing: AppTheme.space8,
+            runSpacing: AppTheme.space8,
             children: [
-              TapTarget(
-                onTap: isRequestingPermission ? null : onRequestAccess,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(
-                      0xFF6366F1,
-                    ).withValues(alpha: isRequestingPermission ? 0.05 : 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppTheme.accent.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isRequestingPermission) ...[
-                        SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 1.5,
-                            color: AppTheme.accent,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Text(
-                        isRequestingPermission
-                            ? 'Requesting...'
-                            : (permissionDenied ? 'Try Again' : 'Grant Access'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.accent,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
+              MinimalButton(
+                onPressed: isRequestingPermission ? null : onRequestAccess,
+                child: Text(
+                  isRequestingPermission
+                      ? 'Requesting...'
+                      : (permissionDenied ? 'Try Again' : 'Grant Access'),
                 ),
               ),
-              if (permissionDenied && !isRequestingPermission) ...[
-                const SizedBox(width: 8),
-                TapTarget(
-                  onTap: () => sl<CalendarService>().openSettings(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.textSecondary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppTheme.textSecondary.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Text(
-                      'Open Settings',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ),
+              if (permissionDenied && !isRequestingPermission)
+                MinimalButton(
+                  isSecondary: true,
+                  onPressed: () => sl<CalendarService>().openSettings(),
+                  child: const Text('Open Settings'),
                 ),
-              ],
             ],
           ),
         ],
@@ -359,15 +266,13 @@ class CalendarSection extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: [
-              _SkeletonBox(width: 40, height: 40, radius: 8),
-              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SkeletonBox(width: double.infinity, height: 14, radius: 4),
-                    SizedBox(height: 6),
-                    _SkeletonBox(width: 120, height: 11, radius: 4),
+                    _SkeletonBox(width: double.infinity, height: 16, radius: 4),
+                    SizedBox(height: 8),
+                    _SkeletonBox(width: 120, height: 12, radius: 4),
                   ],
                 ),
               ),

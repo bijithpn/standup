@@ -1,6 +1,8 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/features/settings/notification_intensity.dart';
 import 'first_break_demo.dart';
 import 'package:breakmate/features/settings/widgets/notification_intensity_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -62,9 +64,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not save setup. Please try again.'),
-          ),
+          const SnackBar(content: Text('Could not save setup. Try again.')),
         );
       }
     } finally {
@@ -111,7 +111,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (_currentPage > 0)
-            TextButton(
+            MinimalButton(
+              isGhost: true,
               onPressed: () => _pageController.previousPage(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -153,11 +154,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: isActive ? 24 : 6,
-      height: 6,
+      width: 8,
+      height: 8,
       decoration: BoxDecoration(
         color: isActive ? AppTheme.accent : AppTheme.border,
-        borderRadius: BorderRadius.circular(3),
+        shape: BoxShape.circle,
       ),
     );
   }
@@ -171,7 +172,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 100),
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 96),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -180,9 +181,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 32,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
-                  letterSpacing: -1,
                 ),
               ),
               const SizedBox(height: 12),
@@ -353,13 +353,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 20),
-        FilledButton.icon(
+        MinimalButton(
+          backgroundColor: AppTheme.accent,
           onPressed: () => showDialog<void>(
             context: context,
             builder: (_) => const FirstBreakDemo(),
           ),
-          icon: const Icon(Icons.visibility_outlined),
-          label: const Text('Try a 20-second demo'),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(CupertinoIcons.eye, size: 16),
+              SizedBox(width: 8),
+              Text('Try a 20-second demo'),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         const Text(
@@ -378,8 +385,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _PetOption(
-            icon: Icons.pets_rounded,
-            label: 'Enable Companion',
+            icon: CupertinoIcons.paw,
+            label: 'Enable companion',
             isSelected: _pendingSettings.companionEnabled,
             onTap: () => setState(
               () => _pendingSettings = _pendingSettings.copyWith(
@@ -389,8 +396,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           const SizedBox(width: 24),
           _PetOption(
-            icon: Icons.close_rounded,
-            label: 'No Thanks',
+            icon: CupertinoIcons.xmark,
+            label: 'No thanks',
             isSelected: !_pendingSettings.companionEnabled,
             onTap: () => setState(
               () => _pendingSettings = _pendingSettings.copyWith(
@@ -431,8 +438,8 @@ class _ProfileOption extends StatelessWidget {
               : AppTheme.surfaceElevated,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppTheme.accent : AppTheme.border,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? AppTheme.accent : AppTheme.borderSubtle,
+            width: 2,
           ),
         ),
         child: Row(
@@ -445,7 +452,7 @@ class _ProfileOption extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: isSelected
                           ? AppTheme.accent
                           : AppTheme.textPrimary,
@@ -463,7 +470,7 @@ class _ProfileOption extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              Icon(Icons.check_circle_rounded, color: AppTheme.accent),
+              Icon(CupertinoIcons.checkmark_circle, color: AppTheme.accent),
           ],
         ),
       ),
@@ -500,8 +507,8 @@ class _PetOption extends StatelessWidget {
                   : AppTheme.surfaceElevated,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? AppTheme.accent : AppTheme.border,
-                width: isSelected ? 2 : 1,
+                color: isSelected ? AppTheme.accent : AppTheme.borderSubtle,
+                width: 2,
               ),
             ),
             child: Icon(
@@ -515,7 +522,7 @@ class _PetOption extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              fontWeight: FontWeight.w500,
               color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
             ),
           ),
@@ -533,31 +540,18 @@ class _PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppTheme.accent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.accent.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: AppTheme.onAccent,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+    return FilledButton(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: AppTheme.accent,
+        foregroundColor: AppTheme.onAccent,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
       ),
+      child: Text(label),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:breakmate/features/settings/presentation/sections/breaks/break_a
 import 'package:breakmate/features/settings/presentation/sections/breaks/break_intensity_settings.dart';
 import 'package:breakmate/features/settings/presentation/sections/breaks/break_profile_selector.dart';
 import 'package:breakmate/features/settings/presentation/sections/breaks/custom_intervals_editor.dart';
+import 'package:breakmate/features/settings/presentation/sections/breaks/skip_and_schedule_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
@@ -33,21 +34,14 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            sectionHeader(
-              'Break Configuration',
-              subtitle:
-                  'Pick a rhythm, fine-tune the timings, choose what a break shows, and style it.',
-            ),
-            const SizedBox(height: 12),
-
             segmentedControl(
-              ['Profiles', 'Intervals', 'Options', 'Themes', 'Exercises'],
+              ['Profiles', 'Intervals', 'Behavior', 'Appearance', 'Exercises'],
               _breaksSubTab,
               (i) => setState(() => _breaksSubTab = i),
               isSmall: isSmallScreen,
             ),
 
-            SizedBox(height: isSmallScreen ? 24 : 32),
+            const SizedBox(height: 24),
 
             if (_breaksSubTab == 0)
               BreakProfileSelector(
@@ -59,11 +53,13 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                 settings: widget.settings,
                 onSave: widget.onSave,
               ),
-            if (_breaksSubTab == 2)
+            if (_breaksSubTab == 2) ...[
               BreakIntensitySettings(
                 settings: widget.settings,
                 onSave: widget.onSave,
               ),
+              const SkipAndScheduleSettings(),
+            ],
             if (_breaksSubTab == 4)
               ExercisePreferencesSection(
                 settings: widget.settings,

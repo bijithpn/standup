@@ -60,7 +60,7 @@ void main() {
       ..fakePermission = CalendarPermissionStatus.permanentlyDenied;
     await pump(t);
     expect(find.text('Calendar access blocked'), findsOneWidget);
-    await t.tap(find.text('Open System Settings'));
+    await t.tap(find.text('Open system settings'));
     expect(controller.openSettingsCalls, 1);
     expect(find.text('Recheck'), findsOneWidget);
   });
@@ -81,6 +81,6 @@ void main() {
 
   testWidgets('meeting preference is explained when not connected', (t) async {
     await pump(t);
-    expect(find.text('Connect your calendar to use this.'), findsOneWidget);
+    expect(find.text('Connect your calendar to use this'), findsOneWidget);
   });
 }

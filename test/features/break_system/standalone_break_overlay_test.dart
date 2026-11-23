@@ -458,6 +458,57 @@ void main() {
       },
     );
 
+    Future<void> pumpBreak(
+      WidgetTester tester,
+      Map<String, Object> extra,
+    ) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(desktopBridgeChannel, (
+            MethodCall methodCall,
+          ) async {
+            if (methodCall.method == 'getOverlayData') {
+              return {
+                'overlayType': 'breakScreen',
+                'title': 'Break',
+                'tip': 'Rest.',
+                'durationSeconds': 120,
+                'remainingSeconds': 120,
+                'enableAnimations': false,
+                'breakTemplate': 'minimal',
+                'breaksCompleted': 5,
+                ...extra,
+              };
+            }
+            return null;
+          });
+      await tester.pumpWidget(
+        const MaterialApp(home: StandaloneBreakOverlay()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    testWidgets('hides the skip affordance once the daily skip limit is hit', (
+      tester,
+    ) async {
+      await pumpBreak(tester, {'skipLocked': true});
+      expect(find.text('Skip'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('asks for a reason instead of skipping right away', (
+      tester,
+    ) async {
+      await pumpBreak(tester, {'askSkipReason': true});
+      await tester.tap(find.text('Skip'));
+      await tester.pump();
+      expect(find.text('Why skip this break?'), findsOneWidget);
+
+      await tester.tap(find.text('Back to break'));
+      await tester.pump();
+      expect(find.text('Why skip this break?'), findsNothing);
+    });
+
     testWidgets('tearing down the overlay mid-break (dispose) does not throw', (
       WidgetTester tester,
     ) async {

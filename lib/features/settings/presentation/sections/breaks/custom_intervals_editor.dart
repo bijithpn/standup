@@ -18,20 +18,16 @@ class CustomIntervalsEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Break intervals',
-          subtitle:
-              'The exact timings behind your profile. Picking a profile sets '
-              'these for you; change them here for a rhythm of your own.',
-        ),
+        sectionHeader('Break intervals'),
         buildCard([
           inputRow(
-            'Short Break Every',
+            'Short break every',
             '${settings.shortBreakIntervalMinutes} min',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Short Break Interval',
+                title: 'Short break interval',
+                selected: '${settings.shortBreakIntervalMinutes}',
                 options: List.generate(180, (i) => '${i + 1}'),
                 suffix: ' min',
                 onSelected: (v) => onSave(
@@ -42,12 +38,13 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Short Break Duration',
+            'Short break duration',
             '${settings.shortBreakDurationSeconds} sec',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Short Break Duration',
+                title: 'Short break duration',
+                selected: '${settings.shortBreakDurationSeconds}',
                 options: [
                   ...List.generate(12, (i) => '${(i + 1) * 5}'),
                   '75',
@@ -65,12 +62,13 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Preparation Warning',
+            'Preparation warning',
             '${settings.preBreakWarningSeconds} sec',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Heads-up Notification',
+                title: 'Heads-up notification',
+                selected: '${settings.preBreakWarningSeconds}',
                 options: ['0', '2', '3', '5', '10', '15', '20', '30'],
                 suffix: ' sec',
                 onSelected: (v) => onSave(
@@ -81,12 +79,13 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Long Break Every',
+            'Long break every',
             '${settings.longBreakIntervalMinutes} min',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Long Break Interval',
+                title: 'Long break interval',
+                selected: '${settings.longBreakIntervalMinutes}',
                 options: List.generate(46, (i) => '${15 + (i * 5)}'),
                 suffix: ' min',
                 onSelected: (v) => onSave(
@@ -97,12 +96,13 @@ class CustomIntervalsEditor extends StatelessWidget {
           ),
           divider(),
           inputRow(
-            'Long Break Duration',
+            'Long break duration',
             '${settings.longBreakDurationMinutes} min',
             onTap: () {
               showPicker(
                 context: context,
-                title: 'Long Break Duration',
+                title: 'Long break duration',
+                selected: '${settings.longBreakDurationMinutes}',
                 options: List.generate(30, (i) => '${i + 1}'),
                 suffix: ' min',
                 onSelected: (v) => onSave(

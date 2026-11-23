@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/core/services/timer_explanation.dart';
@@ -65,7 +66,7 @@ class _ExplanationPanel extends StatelessWidget {
             child: GestureDetector(
               onTap: () {},
               child: Container(
-                width: 320,
+                constraints: const BoxConstraints(maxWidth: 320),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2C2C2E),
@@ -85,7 +86,7 @@ class _ExplanationPanel extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(
-                          Icons.info_outline,
+                          CupertinoIcons.info,
                           size: 18,
                           color: Colors.white70,
                         ),
@@ -95,7 +96,7 @@ class _ExplanationPanel extends StatelessWidget {
                             explanation.stateSummary,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               fontSize: 14,
                               fontFamily: 'Inter',
                             ),
@@ -104,7 +105,7 @@ class _ExplanationPanel extends StatelessWidget {
                         GestureDetector(
                           onTap: onDismiss,
                           child: const Icon(
-                            Icons.close,
+                            CupertinoIcons.xmark,
                             size: 16,
                             color: Colors.white54,
                           ),

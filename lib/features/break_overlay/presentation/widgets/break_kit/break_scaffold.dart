@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_skip_button.dart';
 
@@ -82,23 +81,16 @@ class BreakScaffold extends StatelessWidget {
           Positioned(
             bottom: BreakOverlayTheme.skipBottom,
             right: BreakOverlayTheme.skipRight,
-            child: BreakSkipButton(onPressed: onSkip!, accent: accent),
+            child: Tooltip(
+              message: 'Skip break (Esc)',
+              child: BreakSkipButton(onPressed: onSkip!, accent: accent),
+            ),
           ),
       ],
     );
 
     if (_canSkip) {
-      stack = CallbackShortcuts(
-        bindings: {
-          const SingleActivator(LogicalKeyboardKey.escape): () => onSkip!(),
-        },
-
-        child: Focus(
-          autofocus: !preview,
-          includeSemantics: false,
-          child: stack,
-        ),
-      );
+      stack = Focus(autofocus: !preview, includeSemantics: false, child: stack);
     }
 
     return BreakPaletteScope(

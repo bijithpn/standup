@@ -32,7 +32,7 @@ Widget _labelledDropdown(
   Map<String, String> options,
   ValueChanged<String> onChanged,
 ) => Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+  padding: const EdgeInsets.symmetric(vertical: 12),
   child: Row(
     children: [
       Expanded(
@@ -41,7 +41,7 @@ Widget _labelledDropdown(
           style: TextStyle(
             fontWeight: FontWeight.w500,
             fontSize: 14,
-            color: AppTheme.textPrimary.withValues(alpha: 0.9),
+            color: AppTheme.textPrimary,
           ),
         ),
       ),
@@ -64,7 +64,7 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
     final s = widget.settings;
     final intensity = _intensity ?? s.motionIntensity;
     return [
-      sectionHeader('Motion and sound', subtitle: 'Applies to every template.'),
+      sectionHeader('Motion and sound'),
       buildCard([
         sliderRow(
           'Motion intensity · ${_intensityLabel(intensity)}',
@@ -95,7 +95,6 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
           ),
         ],
       ]),
-      const SizedBox(height: 28),
       sectionHeader('Display'),
       buildCard([
         _labelledDropdown(
@@ -108,7 +107,7 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
           divider(),
           toggleRow(
             'Use full screen for long breaks',
-            'Short breaks stay compact.',
+            'Short breaks stay compact',
             s.longBreaksImmersive,
             (v) => widget.onSave(s.copyWith(longBreaksImmersive: v)),
           ),
@@ -116,55 +115,40 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
         divider(),
         toggleRow(
           'Follow the time of day',
-          'Colors warm slightly in the evening.',
+          'Colors warm slightly in the evening',
           s.adaptToTimeOfDay,
           (v) => widget.onSave(s.copyWith(adaptToTimeOfDay: v)),
         ),
         divider(),
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        SettingsField(
+          title: 'Compact corner',
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Text(
-                'Compact corner',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                  color: AppTheme.textPrimary.withValues(alpha: 0.9),
+              for (final e in _cornerLabels.entries)
+                ChoiceChip(
+                  label: Text(e.value),
+                  selected: s.compactCorner == e.key,
+                  onSelected: (_) =>
+                      widget.onSave(s.copyWith(compactCorner: e.key)),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final e in _cornerLabels.entries)
-                    ChoiceChip(
-                      label: Text(e.value),
-                      selected: s.compactCorner == e.key,
-                      onSelected: (_) =>
-                          widget.onSave(s.copyWith(compactCorner: e.key)),
-                    ),
-                ],
-              ),
             ],
           ),
         ),
       ]),
-      const SizedBox(height: 28),
       sectionHeader('Break preferences'),
       buildCard([
         toggleRow(
           'Completion chime',
-          'Play a soft sound when a break finishes.',
+          '',
           s.breakChimeEnabled,
           (v) => widget.onSave(s.copyWith(breakChimeEnabled: v)),
         ),
         divider(),
         toggleRow(
           'Eye-rest confirmation',
-          'Show an “I looked away” button during eye-rest breaks.',
+          'Adds an “I looked away” button to eye-rest breaks',
           s.lookedAwayPromptEnabled,
           (v) => widget.onSave(s.copyWith(lookedAwayPromptEnabled: v)),
         ),

@@ -41,32 +41,19 @@ class _BlobatarCompanionWidgetState extends State<BlobatarCompanionWidget>
     super.initState();
     _bounceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 160),
     );
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.12,
-        ).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 40,
+        tween: Tween<double>(begin: 1.0, end: 1.06),
+        weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.12,
-          end: 0.95,
-        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
-        weight: 35,
+        tween: Tween<double>(begin: 1.06, end: 1.0),
+        weight: 50,
       ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.95,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 25,
-      ),
-    ]).animate(_bounceController);
+    ]).chain(CurveTween(curve: Curves.easeOutCubic)).animate(_bounceController);
   }
 
   @override
@@ -120,13 +107,17 @@ class _BlobatarCompanionWidgetState extends State<BlobatarCompanionWidget>
       return child;
     }
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _handleTap,
-        onDoubleTap: widget.onDoubleTap,
-        child: child,
+    return Semantics(
+      button: true,
+      label: 'Pet $effectiveName',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _handleTap,
+          onDoubleTap: widget.onDoubleTap,
+          child: child,
+        ),
       ),
     );
   }

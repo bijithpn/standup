@@ -14,6 +14,7 @@ class BreakOverlayContent extends StatelessWidget {
   final AnimationController fadeAnimation;
   final ValueNotifier<int> remainingSecondsNotifier;
   final VoidCallback onSkip;
+  final VoidCallback onSnooze;
   final bool canDismiss;
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -26,6 +27,7 @@ class BreakOverlayContent extends StatelessWidget {
     required this.fadeAnimation,
     required this.remainingSecondsNotifier,
     required this.onSkip,
+    required this.onSnooze,
     required this.canDismiss,
     required this.breakInfo,
     required this.settings,
@@ -54,7 +56,8 @@ class BreakOverlayContent extends StatelessWidget {
         title: config.title,
         durationSeconds: config.durationSeconds,
         remainingSecondsNotifier: remainingSecondsNotifier,
-        onSkip: onSkip,
+        onSkip: canDismiss ? onSkip : null,
+        onSnooze: canDismiss && !config.snoozeLocked ? onSnooze : null,
         allowFullPoster:
             config.overlayType == 'quickReminder' && config.allowFullPoster,
         templateId: config.breakTemplate,
@@ -95,7 +98,7 @@ class BreakOverlayContent extends StatelessWidget {
           ),
           if (handler != null && !_compact)
             Positioned(
-              top: 28,
+              top: 32,
               left: 0,
               right: 0,
               child: Center(
@@ -111,16 +114,7 @@ class BreakOverlayContent extends StatelessWidget {
       );
     }
 
-    return GestureDetector(
-      // Swipe up to dismiss, only when dismissing is allowed and the surface is full screen.
-      onVerticalDragUpdate: (details) {
-        if (canDismiss && !_compact && details.delta.dy < -10) {
-          onSkip();
-        }
-      },
-      onHorizontalDragUpdate: (_) {},
-      child: content,
-    );
+    return content;
   }
 
   VoidCallback? get _lookedAwayHandler =>

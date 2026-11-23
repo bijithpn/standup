@@ -11,7 +11,10 @@ import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/core/services/native_enhancements_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
+import 'package:breakmate/features/break_system/application/skip_policy.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/break_profile.dart';
 import 'package:breakmate/core/utils/logger.dart';
@@ -53,6 +56,7 @@ class BreakController extends ChangeNotifier {
 
   TimerState? _lastOverlayState;
   bool _hasShownPreBreakWarning = false;
+  DayPart? _scheduledPeriod;
   bool _hasShownMeetingBreakNotice = false;
 
   BreakController({
@@ -85,7 +89,28 @@ class BreakController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Applies the per-period profile without saving it, so the user's base profile stays untouched.
+  void _applyScheduledProfile() {
+    final now = DateTime.now();
+    _scheduledPeriod = TimeOfDayProfiles.periodAt(now);
+    final profile = TimeOfDayProfiles.activeAt(now);
+    if (profile == null) return;
+    _timerEngine.updateSettings(
+      shortIntervalMinutes: profile.shortIntervalMinutes,
+      shortDurationSeconds: profile.shortDurationSeconds,
+      longIntervalMinutes: profile.longIntervalMinutes,
+      longDurationSeconds: profile.longDurationMinutes * 60,
+    );
+  }
+
+  /// Re-applies the base profile or the current time-of-day profile after the schedule settings change.
+  void refreshScheduledProfile() => _applySettings();
+
   void _onTimerChanged() {
+    if (TimeOfDayProfiles.enabled &&
+        TimeOfDayProfiles.periodAt(DateTime.now()) != _scheduledPeriod) {
+      _applyScheduledProfile();
+    }
     if (!isPaused) _snoozeTimer.cancel();
     notifyListeners();
   }
@@ -160,9 +185,11 @@ class BreakController extends ChangeNotifier {
       _startSoundscape(settings);
     } else if (shouldShowWarning &&
         !_hasShownPreBreakWarning &&
+        !isPaused &&
         !overlayService.isOverlayVisible) {
       if (_timerEngine.countdownSeconds > 0) {
         _hasShownPreBreakWarning = true;
+        NativeEnhancementsService.instance.hideCursorCountdown();
         overlayService.showOverlay(
           type: OverlayType.preBreakWarning,
           builder: (_) => const SizedBox.shrink(),
@@ -170,6 +197,9 @@ class BreakController extends ChangeNotifier {
           overlayData: {
             'overlayType': 'preBreakWarning',
             'type': 'preBreakWarning',
+            ...?_skipFlags(),
+            'warningWidth': 380,
+            'warningHeight': 100,
             'secondsRemaining': _timerEngine.countdownSeconds,
             'remainingSeconds': _timerEngine.countdownSeconds,
             'durationSeconds': _timerEngine.countdownSeconds,
@@ -238,6 +268,19 @@ class BreakController extends ChangeNotifier {
           _breakStartedAtMs ?? DateTime.now().millisecondsSinceEpoch,
       'paused': _timerEngine.systemSleepPaused,
       'breakFocus': focus,
+      ...?_skipFlags(preview: preview),
+    };
+  }
+
+  Map<String, dynamic>? _skipFlags({bool preview = false}) {
+    if (preview) return null;
+    return {
+      'skipLocked': SkipPolicy.isLocked(
+        sl<BreakHistoryService>().events,
+        DateTime.now(),
+      ),
+      'askSkipReason': SkipPolicy.reasonsEnabled,
+      'snoozeLocked': SkipPolicy.isSnoozeLocked(DateTime.now()),
     };
   }
 
@@ -460,6 +503,7 @@ class BreakController extends ChangeNotifier {
       pauseAfterMinutes: settings.pauseTimerAfterMinutes,
       resetAfterMinutes: settings.resetTimerAfterMinutes,
     );
+    _applyScheduledProfile();
     _timerEngine.updateMenuStyle(settings.menuBarStyle);
     sl<NotificationService>().setNotificationsEnabled(
       settings.notificationsEnabled,
@@ -515,6 +559,13 @@ class BreakController extends ChangeNotifier {
       isManualPause: _timerEngine.isManuallyPaused,
     );
     TimerExplanationOverlayService.show(explanation);
+  }
+
+  /// Delays the upcoming break by [minutes]; the warning shows again once timers resume.
+  void snoozeUpcomingBreak({int minutes = SkipPolicy.snoozeMinutes}) {
+    SkipPolicy.recordSnooze(DateTime.now());
+    _hasShownPreBreakWarning = false;
+    snooze(minutes: minutes);
   }
 
   /// Manually pauses timers for [minutes] and auto-resumes unless the user resumed earlier.
@@ -723,6 +774,12 @@ class BreakController extends ChangeNotifier {
 
   /// Ends the break as skipped (counts toward skipped stats).
   Future<void> skipCurrentBreak() async {
+    if (_timerEngine.isPreBreak &&
+        _timerEngine.state != TimerState.breakActive) {
+      NativeEnhancementsService.instance.hideCursorCountdown();
+      skipNextBreak();
+      return;
+    }
     _microExercise = null;
     await _timerEngine.finishBreak(skipped: true);
     notifyListeners();

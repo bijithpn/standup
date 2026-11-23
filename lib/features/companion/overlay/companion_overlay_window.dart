@@ -12,6 +12,7 @@ import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 import 'package:breakmate/core/ipc/overlay_config.dart';
 
@@ -244,7 +245,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
             ),
             if (_speechText != null)
               Positioned(
-                top: 20,
+                top: AppTheme.space24,
                 child: _SpeechBubble(
                   text: _speechText!,
                   onDismiss: _dismissSpeech,
@@ -267,30 +268,28 @@ class _SpeechBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       liveRegion: true,
-      label: 'Companion tip: $text. Double-tap to dismiss.',
+      label: 'Companion tip: $text. Tap to dismiss.',
+      onTap: onDismiss,
       child: GestureDetector(
         onTap: onDismiss,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 240),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.space16,
+              vertical: AppTheme.space8,
+            ),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
+              color: AppTheme.surfaceElevated,
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(color: AppTheme.border),
             ),
             child: ExcludeSemantics(
               child: Text(
                 text,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black87,
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   height: 1.3,

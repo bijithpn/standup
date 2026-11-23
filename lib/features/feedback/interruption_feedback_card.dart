@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import '../settings/widgets/settings_group.dart';
 import 'package:flutter/material.dart';
 import '../settings/settings_repository.dart';
@@ -10,15 +11,16 @@ class InterruptionFeedbackCard extends StatelessWidget {
   const InterruptionFeedbackCard({super.key, required this.repository});
   @override
   Widget build(BuildContext context) => AdvancedSettings(
-    title: 'How are reminders working for you?',
+    title: 'Were these reminders well timed?',
     subtitle:
         'Optional feedback · review a suggestion before changing anything',
     children: [
       Wrap(
-        spacing: 10,
+        spacing: 8,
         runSpacing: 10,
         children: [
-          OutlinedButton(
+          MinimalButton(
+            isSecondary: true,
             onPressed: () => showTimingSuggestion(
               context,
               TimingSuggestion.badTiming(repository.currentSettings),
@@ -27,7 +29,8 @@ class InterruptionFeedbackCard extends StatelessWidget {
             ),
             child: const Text('Bad timing'),
           ),
-          OutlinedButton(
+          MinimalButton(
+            isSecondary: true,
             onPressed: () => showTimingSuggestion(
               context,
               TimingSuggestion.tooFrequent(repository.currentSettings),

@@ -75,8 +75,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
       callbackTriggered = true;
       if (isInternalPreview) {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': true});
-      } else if (overlayType == 'preBreakWarning' ||
-          overlayType == 'quickReminder') {
+      } else if (overlayType == 'quickReminder') {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
         bridgeChannel.invokeMethod('completeBreak', {'lookedAway': lookedAway});
@@ -95,8 +94,9 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
   void skipBreak(
     bool isInternalPreview,
     String overlayType,
-    AnimationController fadeController,
-  ) {
+    AnimationController fadeController, {
+    String? reason,
+  }) {
     if (isDismissing) return;
     isDismissing = true;
 
@@ -106,11 +106,19 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
       callbackTriggered = true;
       if (isInternalPreview) {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': true});
-      } else if (overlayType == 'preBreakWarning' ||
-          overlayType == 'quickReminder') {
+      } else if (overlayType == 'quickReminder') {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
-        NativeBridge.skipBreak();
+        if (overlayType == 'preBreakWarning') {
+          bridgeChannel.invokeMethod('hideOverlay', {
+            'restoreMainWindow': false,
+          });
+        }
+        if (reason != null) {
+          bridgeChannel.invokeMethod('skipBreak', {'reason': reason});
+        } else {
+          NativeBridge.skipBreak();
+        }
       }
     }
 
@@ -118,6 +126,15 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
 
     fadeController.reverse().then((_) {
       triggerDismiss();
+    });
+  }
+
+  /// Delays the upcoming break: hides the warning and has the main app pause timers for a few minutes.
+  void snoozeBreak(AnimationController fadeController) {
+    if (isDismissing) return;
+    isDismissing = true;
+    fadeController.reverse().whenComplete(() {
+      bridgeChannel.invokeMethod('snoozeBreak');
     });
   }
 

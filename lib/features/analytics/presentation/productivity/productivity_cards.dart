@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_format.dart';
@@ -27,7 +28,7 @@ class ProductivitySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+          padding: const EdgeInsets.only(bottom: AppTheme.space12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
@@ -38,10 +39,10 @@ class ProductivitySection extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
+                        fontFeatures: AppTheme.tabular,
                         fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.1,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimary,
                       ),
                     ),
@@ -50,8 +51,9 @@ class ProductivitySection extends StatelessWidget {
                       Text(
                         subtitle!,
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           fontFamily: 'Inter',
-                          fontSize: 11.5,
+                          fontSize: 12,
                           color: AppTheme.textMuted,
                         ),
                       ),
@@ -123,128 +125,117 @@ class ProductivityOverviewCard extends StatelessWidget {
         : (activeSeconds / goal).clamp(0.0, 1.0);
     final verdict = switchingVerdict(switchesPerHour, contextSwitches);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: <Widget>[
-              Text(
-                formatDuration(activeSeconds),
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -1.2,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'active',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              const Spacer(),
-              if (goal != null && goalRatio != null)
-                _GoalPill(
-                  reached: activeSeconds >= goal,
-                  label: activeSeconds >= goal
-                      ? 'Goal reached'
-                      : '${(goalRatio * 100).round()}% of ${formatDuration(goal)} goal',
-                ),
-            ],
-          ),
-          if (caption != null) ...<Widget>[
-            const SizedBox(height: 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: <Widget>[
+            // TODO(no-data): comparison baseline needs previous-period stats
             Text(
-              caption!,
+              formatDuration(activeSeconds),
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontFamily: 'Inter',
-                fontSize: 11.5,
-                color: AppTheme.textMuted,
+                fontSize: 40,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.accent,
               ),
             ),
-          ],
-          const SizedBox(height: 10),
-          Text(
-            summarySentence(
-              activeSeconds: activeSeconds,
-              breakSeconds: breakSeconds,
-              idleSeconds: idleSeconds,
+            const SizedBox(width: 8),
+            Text(
+              'active',
+              style: TextStyle(
+                fontFeatures: AppTheme.tabular,
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
             ),
+            const Spacer(),
+            if (goal != null && goalRatio != null)
+              _GoalPill(
+                reached: activeSeconds >= goal,
+                label: activeSeconds >= goal
+                    ? 'Goal reached'
+                    : '${(goalRatio * 100).round()}% of ${formatDuration(goal)} goal',
+              ),
+          ],
+        ),
+        if (caption != null) ...<Widget>[
+          const SizedBox(height: 2),
+          Text(
+            caption!,
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
-              fontSize: 13,
-              height: 1.4,
-              color: AppTheme.textSecondary,
+              fontSize: 12,
+              color: AppTheme.textMuted,
             ),
           ),
-          if (total > 0) ...<Widget>[
-            const SizedBox(height: 18),
-            _SplitBar(
-              active: activeSeconds,
-              onBreak: breakSeconds,
-              idle: idleSeconds,
-            ),
-            const SizedBox(height: 14),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final stats = <Widget>[
-                  _Stat(
-                    label: 'Working',
-                    value: formatDuration(activeSeconds),
-                    color: AppTheme.accent,
-                    footnote: '${(activeSeconds / total * 100).round()}%',
-                  ),
-                  _Stat(
-                    label: 'Breaks',
-                    value: formatDuration(breakSeconds),
-                    color: AppTheme.success,
-                    footnote: '${(breakSeconds / total * 100).round()}%',
-                  ),
-                  _Stat(
-                    label: 'Away',
-                    value: formatDuration(idleSeconds),
-                    color: AppTheme.gray500,
-                    footnote: '${(idleSeconds / total * 100).round()}%',
-                  ),
-                  _Stat(
-                    label: 'App switches',
-                    value: contextSwitches == 0 ? '—' : '$contextSwitches',
-                    color: AppTheme.warning,
-                    footnote:
-                        verdict ??
-                        (switchesPerHour == null || contextSwitches == 0
-                            ? null
-                            : '${switchesPerHour!.toStringAsFixed(1)}/hr'),
-                  ),
-                ];
-
-                final columns = constraints.maxWidth >= 440 ? 4 : 2;
-                final gap = 12.0;
-                final width =
-                    (constraints.maxWidth - gap * (columns - 1)) / columns;
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: 14,
-                  children: <Widget>[
-                    for (final stat in stats)
-                      SizedBox(width: width, child: stat),
-                  ],
-                );
-              },
-            ),
-          ],
         ],
-      ),
+        const SizedBox(height: 10),
+        Text(
+          summarySentence(
+            activeSeconds: activeSeconds,
+            breakSeconds: breakSeconds,
+            idleSeconds: idleSeconds,
+          ),
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            fontFamily: 'Inter',
+            fontSize: 13,
+            height: 1.4,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        if (total > 0) ...<Widget>[
+          const SizedBox(height: 16),
+          _SplitBar(
+            active: activeSeconds,
+            onBreak: breakSeconds,
+            idle: idleSeconds,
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stats = <Widget>[
+                _Stat(label: 'Working', value: formatDuration(activeSeconds)),
+                _Stat(label: 'Breaks', value: formatDuration(breakSeconds)),
+                _Stat(label: 'Away', value: formatDuration(idleSeconds)),
+                _Stat(
+                  label: 'App switches',
+                  value: contextSwitches == 0 ? '—' : '$contextSwitches',
+                  footnote:
+                      verdict ??
+                      (switchesPerHour == null || contextSwitches == 0
+                          ? null
+                          : '${switchesPerHour!.toStringAsFixed(1)}/hr'),
+                ),
+              ];
+
+              final columns = constraints.maxWidth >= 440 ? 4 : 2;
+              return Column(
+                children: <Widget>[
+                  for (var r = 0; r < stats.length; r += columns) ...<Widget>[
+                    if (r > 0) const SizedBox(height: AppTheme.space16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        for (var i = r; i < r + columns; i++) ...<Widget>[
+                          if (i > r) const SizedBox(width: AppTheme.space16),
+                          Expanded(child: stats[i]),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ],
     );
   }
 }
@@ -257,21 +248,14 @@ class _GoalPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = reached ? AppTheme.success : AppTheme.accent;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
+    return Text(
+      label,
+      style: TextStyle(
+        fontFeatures: AppTheme.tabular,
+        fontFamily: 'Inter',
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: reached ? AppTheme.success : AppTheme.textSecondary,
       ),
     );
   }
@@ -293,24 +277,23 @@ class _SplitBar extends StatelessWidget {
     int flex(int v) => v <= 0 ? 0 : (v < 1 ? 1 : v);
     final segments = <(int, Color)>[
       (flex(active), AppTheme.accent),
-      (flex(onBreak), AppTheme.success),
+      (flex(onBreak), AppTheme.gray400),
       (flex(idle), AppTheme.gray500),
     ].where((e) => e.$1 > 0).toList();
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(4),
       child: SizedBox(
-        height: 12,
+        height: 8,
         child: Row(
           children: <Widget>[
-            for (final (weight, color) in segments)
+            for (var i = 0; i < segments.length; i++) ...<Widget>[
+              if (i > 0) const SizedBox(width: 2),
               Expanded(
-                flex: weight,
-                child: Container(
-                  margin: const EdgeInsets.only(right: 1.5),
-                  color: color,
-                ),
+                flex: segments[i].$1,
+                child: ColoredBox(color: segments[i].$2),
               ),
+            ],
           ],
         ),
       ),
@@ -319,16 +302,10 @@ class _SplitBar extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({
-    required this.label,
-    required this.value,
-    required this.color,
-    this.footnote,
-  });
+  const _Stat({required this.label, required this.value, this.footnote});
 
   final String label;
   final String value;
-  final Color color;
   final String? footnote;
 
   @override
@@ -336,31 +313,23 @@ class _Stat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 11,
-                color: AppTheme.textMuted,
-              ),
-            ),
-          ],
+        Text(
+          label,
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: AppTheme.textMuted,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontSize: 24,
+            fontWeight: FontWeight.w400,
             color: AppTheme.textPrimary,
           ),
         ),
@@ -368,8 +337,9 @@ class _Stat extends StatelessWidget {
           Text(
             footnote!,
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
-              fontSize: 10.5,
+              fontSize: 12,
               color: AppTheme.textMuted,
             ),
           ),
@@ -383,27 +353,6 @@ class InsightCard extends StatelessWidget {
   const InsightCard({super.key, required this.insight});
 
   final ProductivityInsight insight;
-
-  IconData get _icon {
-    switch (insight.type) {
-      case InsightType.focusWindow:
-        return Icons.schedule_rounded;
-      case InsightType.contextSwitching:
-        return Icons.swap_horiz_rounded;
-      case InsightType.applicationPattern:
-        return Icons.apps_rounded;
-      case InsightType.breakPattern:
-        return Icons.coffee_rounded;
-      case InsightType.idleTime:
-        return Icons.pause_circle_outline_rounded;
-      case InsightType.focusOpportunity:
-        return Icons.lightbulb_outline_rounded;
-      case InsightType.goalProgress:
-        return Icons.flag_rounded;
-      case InsightType.comparison:
-        return Icons.compare_arrows_rounded;
-    }
-  }
 
   String get _kind {
     switch (insight.type) {
@@ -426,39 +375,16 @@ class InsightCard extends StatelessWidget {
     }
   }
 
-  Color get _accent {
-    switch (insight.type) {
-      case InsightType.breakPattern:
-        return AppTheme.success;
-      case InsightType.contextSwitching:
-        return AppTheme.warning;
-      case InsightType.goalProgress:
-        return AppTheme.info;
-      case InsightType.idleTime:
-        return AppTheme.gray500;
-      default:
-        return insight.confidence == InsightConfidence.low
-            ? AppTheme.gray500
-            : AppTheme.accent;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final accent = _accent;
     final suggestion = insight.suggestion;
     final low = insight.confidence == InsightConfidence.low;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.space12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(_icon, size: 18, color: accent),
-          ),
-          const SizedBox(width: 14),
           Expanded(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
@@ -468,9 +394,10 @@ class InsightCard extends StatelessWidget {
                   Text(
                     low ? 'Possible pattern: ${insight.title}' : insight.title,
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontFamily: 'Inter',
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: AppTheme.textPrimary,
                     ),
                   ),
@@ -478,6 +405,7 @@ class InsightCard extends StatelessWidget {
                   Text(
                     insight.description,
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontFamily: 'Inter',
                       fontSize: 13,
                       height: 1.5,
@@ -492,7 +420,7 @@ class InsightCard extends StatelessWidget {
                           TextSpan(
                             text: 'Try this: ',
                             style: TextStyle(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               color: AppTheme.textPrimary,
                             ),
                           ),
@@ -500,6 +428,7 @@ class InsightCard extends StatelessWidget {
                         ],
                       ),
                       style: TextStyle(
+                        fontFeatures: AppTheme.tabular,
                         fontFamily: 'Inter',
                         fontSize: 13,
                         height: 1.5,
@@ -517,8 +446,9 @@ class InsightCard extends StatelessWidget {
                             ' of activity',
                     ].join(', '),
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontFamily: 'Inter',
-                      fontSize: 11.5,
+                      fontSize: 12,
                       color: AppTheme.textMuted,
                     ),
                   ),
@@ -554,8 +484,8 @@ class ProductivityEmptyState extends StatelessWidget {
             children: <Widget>[
               Icon(
                 trackingEnabled
-                    ? Icons.hourglass_empty_rounded
-                    : Icons.visibility_off_outlined,
+                    ? CupertinoIcons.hourglass
+                    : CupertinoIcons.eye_slash,
                 size: 36,
                 color: AppTheme.textMuted,
               ),
@@ -566,9 +496,10 @@ class ProductivityEmptyState extends StatelessWidget {
                     : 'Activity tracking is off',
                 textAlign: TextAlign.center,
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontFamily: 'Inter',
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
@@ -584,8 +515,9 @@ class ProductivityEmptyState extends StatelessWidget {
                           'never read.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontFamily: 'Inter',
-                  fontSize: 12.5,
+                  fontSize: 12,
                   height: 1.6,
                   color: AppTheme.textSecondary,
                 ),
@@ -602,9 +534,10 @@ class ProductivityEmptyState extends StatelessWidget {
                       vertical: 14,
                     ),
                     textStyle: const TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontFamily: 'Inter',
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   child: const Text('Turn on activity tracking'),

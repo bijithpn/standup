@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -137,10 +138,13 @@ void main() {
 
     testWidgets('shows the facts, hour bars and the legend', (tester) async {
       await pump(tester, [entry(600, 640), entry(700, 760)]);
-      expect(find.text('Started '), findsOneWidget);
-      expect(find.text('10:00'), findsOneWidget);
-      expect(find.text('Latest '), findsOneWidget);
-      expect(find.text('Longest focus '), findsOneWidget);
+      for (final fact in ['Started 10:00', 'Latest ', 'Longest focus ']) {
+        expect(
+          find.textContaining(fact, findRichText: true),
+          findsOneWidget,
+          reason: fact,
+        );
+      }
       expect(find.text('Active time per hour'), findsOneWidget);
       expect(find.text('Empty = not recorded'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -304,7 +308,7 @@ void main() {
           evidenceDayCount: 1,
         ),
       );
-      expect(find.byIcon(Icons.lightbulb_outline_rounded), findsNothing);
+      expect(find.byIcon(CupertinoIcons.lightbulb), findsNothing);
     });
   });
 }

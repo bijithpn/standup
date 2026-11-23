@@ -30,12 +30,19 @@ Widget host(
   textDirection: TextDirection.ltr,
   child: MediaQuery(
     data: const MediaQueryData(size: Size(1280, 800)),
-    child: Material(
-      child: WellnessOverlayView(
-        config: c,
-        remainingSecondsNotifier: remaining,
-        onSkip: onSkip,
-      ),
+    child: Overlay(
+      key: UniqueKey(),
+      initialEntries: [
+        OverlayEntry(
+          builder: (_) => Material(
+            child: WellnessOverlayView(
+              config: c,
+              remainingSecondsNotifier: remaining,
+              onSkip: onSkip,
+            ),
+          ),
+        ),
+      ],
     ),
   ),
 );

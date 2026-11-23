@@ -27,7 +27,7 @@ class AppUsageSection extends StatelessWidget {
     required this.categoryTotals,
     required this.iconCache,
     required this.onEnable,
-    this.listTitle = 'Top Apps',
+    this.listTitle = 'Top apps',
     this.budgetMinutes = const {},
   });
 
@@ -51,14 +51,15 @@ class AppUsageSection extends StatelessWidget {
               Icon(
                 CupertinoIcons.app_badge,
                 size: 20,
-                color: AppTheme.accentColor,
+                color: AppTheme.textSecondary,
               ),
               const SizedBox(width: 8),
               Text(
-                'App Usage',
+                'App usage',
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
@@ -66,21 +67,26 @@ class AppUsageSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'See which apps you spend time in — like Digital Wellbeing. '
+            'See which apps you spend time in. '
             'Only app names and time spent are stored, locally.',
-            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            style: TextStyle(
+              fontFeatures: AppTheme.tabular,
+              fontSize: 13,
+              color: AppTheme.textSecondary,
+            ),
           ),
           const SizedBox(height: 12),
           MinimalButton(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             backgroundColor: AppTheme.accentColor,
             borderRadius: BorderRadius.circular(8),
             onPressed: onEnable,
             child: Text(
               'Enable',
               style: TextStyle(
+                fontFeatures: AppTheme.tabular,
                 fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 color: AppTheme.onAccent,
                 fontFamily: 'Inter',
               ),
@@ -97,8 +103,12 @@ class AppUsageSection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: AppTheme.cardDecoration(),
       child: Text(
-        'Still gathering data for this period — check back in a bit.',
-        style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+        'No app time recorded for this period.',
+        style: TextStyle(
+          fontFeatures: AppTheme.tabular,
+          fontSize: 13,
+          color: AppTheme.textSecondary,
+        ),
       ),
     );
   }
@@ -125,14 +135,19 @@ class AppUsageSection extends StatelessWidget {
               Text(
                 listTitle,
                 style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
               Text(
                 '${topApps.length} app${topApps.length == 1 ? '' : 's'}',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
+                  fontSize: 12,
+                  color: AppTheme.textMuted,
+                ),
               ),
             ],
           ),
@@ -140,16 +155,17 @@ class AppUsageSection extends StatelessWidget {
           ...topApps.map((entry) => _buildAppRow(entry, maxSeconds)),
           const SizedBox(height: 16),
           Text(
-            'By Category',
+            'By category',
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontSize: 15,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Wrap(
-            spacing: 8,
+            spacing: 16,
             runSpacing: 8,
             children: [
               for (final category in AppCategory.values)
@@ -165,8 +181,8 @@ class AppUsageSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.borderSubtle),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,13 +190,14 @@ class AppUsageSection extends StatelessWidget {
                 Icon(
                   CupertinoIcons.lightbulb,
                   size: 16,
-                  color: AppTheme.accentColor,
+                  color: AppTheme.textSecondary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     tip,
                     style: TextStyle(
+                      fontFeatures: AppTheme.tabular,
                       fontSize: 12,
                       color: AppTheme.textSecondary,
                     ),
@@ -209,18 +226,22 @@ class AppUsageSection extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.warning.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.borderSubtle),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(CupertinoIcons.timer, size: 16, color: AppTheme.warning),
+            Icon(CupertinoIcons.timer, size: 16, color: AppTheme.textSecondary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 "You've reached today's budget for $names. Just a note — nothing is blocked.",
-                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
               ),
             ),
           ],
@@ -248,7 +269,7 @@ class AppUsageSection extends StatelessWidget {
       child: Row(
         children: [
           _buildIcon(entry),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,6 +277,7 @@ class AppUsageSection extends StatelessWidget {
                 Text(
                   entry.name,
                   style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimary,
@@ -263,14 +285,12 @@ class AppUsageSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(2),
                   child: LinearProgressIndicator(
                     value: fraction.clamp(0.05, 1.0),
                     minHeight: 4,
-                    backgroundColor: entry.category.color.withValues(
-                      alpha: 0.12,
-                    ),
-                    valueColor: AlwaysStoppedAnimation(entry.category.color),
+                    backgroundColor: AppTheme.border,
+                    color: fraction >= 1 ? AppTheme.accent : AppTheme.textMuted,
                   ),
                 ),
               ],
@@ -280,8 +300,9 @@ class AppUsageSection extends StatelessWidget {
           Text(
             formatUsageDuration(entry.seconds),
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: AppTheme.textSecondary,
             ),
           ),
@@ -306,27 +327,28 @@ class AppUsageSection extends StatelessWidget {
             ),
           );
         }
-        return _buildInitialsAvatar(entry.name, entry.category.color);
+        return _buildInitialsAvatar(entry.name);
       },
     );
   }
 
-  Widget _buildInitialsAvatar(String name, Color color) {
+  Widget _buildInitialsAvatar(String name) {
     final letter = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return Container(
       width: 28,
       height: 28,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        shape: BoxShape.circle,
+        color: AppTheme.surfaceElevated,
+        borderRadius: BorderRadius.circular(6),
       ),
       alignment: Alignment.center,
       child: Text(
         letter,
         style: TextStyle(
+          fontFeatures: AppTheme.tabular,
           fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: color,
+          fontWeight: FontWeight.w500,
+          color: AppTheme.textSecondary,
         ),
       ),
     );
@@ -340,27 +362,20 @@ class AppUsageSection extends StatelessWidget {
     final percent = totalSeconds > 0
         ? (seconds / totalSeconds * 100).round()
         : 0;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: category.color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(category.icon, size: 12, color: category.color),
-          const SizedBox(width: 6),
-          Text(
-            '${category.label} · ${formatUsageDuration(seconds)} ($percent%)',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: category.color,
-            ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(category.icon, size: 16, color: AppTheme.textSecondary),
+        const SizedBox(width: 8),
+        Text(
+          '${category.label} · ${formatUsageDuration(seconds)} ($percent%)',
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            fontSize: 12,
+            color: AppTheme.textSecondary,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -31,7 +31,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text(AppStrings.continueButton));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('No Thanks'));
+      await tester.tap(find.text('No thanks'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(AppStrings.continueButton));
       await tester.pumpAndSettle();

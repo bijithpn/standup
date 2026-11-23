@@ -56,6 +56,20 @@ static RECT CompactRect(HMONITOR monitor, const ArgMap& args) {
   return RECT{left, top, left + w, top + h};
 }
 
+static bool IsPreBreakWarning(const ArgMap& args) {
+  return StringArg(args, "type", StringArg(args, "overlayType", "breakScreen").c_str()) == "preBreakWarning";
+}
+
+// Card-sized and centered, so Skip is clickable without blocking the rest of the screen.
+static RECT WarningRect(const RECT& monitor, HMONITOR hMonitor, const ArgMap& args) {
+  double scale = FlutterDesktopGetDpiForMonitor(hMonitor) / 96.0;
+  int w = static_cast<int>(NumberArg(args, "warningWidth", 380) * scale);
+  int h = static_cast<int>(NumberArg(args, "warningHeight", 100) * scale);
+  int left = (monitor.left + monitor.right - w) / 2;
+  int top = (monitor.top + monitor.bottom - h) / 2;
+  return RECT{left, top, left + w, top + h};
+}
+
 static flutter::EncodableMap ToEncodableMap(const ArgMap& args) {
   flutter::EncodableMap map;
   for (const auto& [key, value] : args) map[flutter::EncodableValue(key)] = value;
@@ -77,6 +91,7 @@ struct OverlayEnumData {
   bool ignore_mouse;
   bool is_strict_mode;
   bool show_on_all_displays;
+  bool warning;
 };
 
 void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args) {
@@ -136,7 +151,9 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     show_on_all_displays = std::get<bool>(it_all->second);
   }
 
-  OverlayEnumData enum_data = {&overlay_windows_, &warm_pool_, &args, ignore_mouse, is_strict_mode, show_on_all_displays};
+  bool warning = IsPreBreakWarning(args);
+  if (warning) ignore_mouse = false;
+  OverlayEnumData enum_data = {&overlay_windows_, &warm_pool_, &args, ignore_mouse, is_strict_mode, show_on_all_displays, warning};
 
   auto monitor_enum_proc = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
     auto data = reinterpret_cast<OverlayEnumData*>(dwData);
@@ -164,6 +181,7 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
       warm_pool->erase(pool_it);
 
       entry.window->SetIgnoreMouseEvents(data->ignore_mouse);
+      entry.window->SetOverlayRect(data->warning ? WarningRect(monitorRect, hMonitor, *data->args) : monitorRect);
       // Re-applies position/size/topmost and does the right SW_SHOW* pick
       // based on ignore_mouse_events_ — the same overlay-specific setup a
       // freshly created window gets from its own Show() call below, which
@@ -229,7 +247,7 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
         window->SetIgnoreMouseEvents(true);
       }
 
-      window->SetOverlayRect(monitorRect);
+      window->SetOverlayRect(data->warning ? WarningRect(monitorRect, hMonitor, *data->args) : monitorRect);
 
       printf("[OverlayWindowManager] Calling Show() for monitor: %p\n", (void*)hMonitor);
       fflush(stdout);

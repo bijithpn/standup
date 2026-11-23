@@ -70,11 +70,11 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
     if (widget.entries.isEmpty) {
       return Container(
         height: 120,
-        alignment: Alignment.center,
-        decoration: _cardDecoration(),
+        alignment: Alignment.centerLeft,
         child: Text(
           'No activity recorded for this day',
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
             fontSize: 12,
             color: AppTheme.textMuted,
@@ -86,67 +86,54 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
     final (startHour, endHour) = _bounds;
     final byHour = activeSecondsByHour(widget.entries);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _FactsRow(entries: widget.entries),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: widget.height + _TimelinePainter.axisHeight,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return MouseRegion(
-                  onHover: (event) => _updateHover(
-                    event.localPosition,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _FactsRow(entries: widget.entries),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: widget.height + _TimelinePainter.axisHeight,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return MouseRegion(
+                onHover: (event) => _updateHover(
+                  event.localPosition,
+                  constraints.maxWidth,
+                  startHour,
+                  endHour,
+                ),
+                onExit: (_) => setState(() => _hovered = null),
+                child: CustomPaint(
+                  size: Size(
                     constraints.maxWidth,
-                    startHour,
-                    endHour,
+                    widget.height + _TimelinePainter.axisHeight,
                   ),
-                  onExit: (_) => setState(() => _hovered = null),
-                  child: CustomPaint(
-                    size: Size(
-                      constraints.maxWidth,
-                      widget.height + _TimelinePainter.axisHeight,
-                    ),
-                    painter: _TimelinePainter(
-                      entries: widget.entries,
-                      startHour: startHour,
-                      endHour: endHour,
-                      ribbonHeight: widget.height,
-                      gridColor: AppTheme.border,
-                      labelColor: AppTheme.textMuted,
-                      trackColor: AppTheme.surfaceElevated,
-                      nowMarker: _isToday ? _now : null,
-                      nowColor: AppTheme.accent,
-                      highlighted: _hovered,
-                    ),
+                  painter: _TimelinePainter(
+                    entries: widget.entries,
+                    startHour: startHour,
+                    endHour: endHour,
+                    ribbonHeight: widget.height,
+                    gridColor: AppTheme.border,
+                    labelColor: AppTheme.textMuted,
+                    trackColor: AppTheme.surfaceElevated,
+                    nowMarker: _isToday ? _now : null,
+                    nowColor: AppTheme.accent,
+                    highlighted: _hovered,
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 14),
-          _HourBars(byHour: byHour, startHour: startHour, endHour: endHour),
-          const SizedBox(height: 12),
-          const _TimelineLegend(),
-          const SizedBox(height: 8),
-          _Readout(
-            entry: _hovered,
-            idleHint: busiestHourCaption(widget.entries),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 14),
+        _HourBars(byHour: byHour, startHour: startHour, endHour: endHour),
+        const SizedBox(height: 12),
+        const _TimelineLegend(),
+        const SizedBox(height: 8),
+        _Readout(entry: _hovered, idleHint: busiestHourCaption(widget.entries)),
+      ],
     );
   }
-
-  BoxDecoration _cardDecoration() => BoxDecoration(
-    color: AppTheme.surfaceCard,
-    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-    border: Border.all(color: AppTheme.border),
-  );
 
   void _updateHover(Offset position, double width, int startHour, int endHour) {
     final span = (endHour - startHour) * 3600;
@@ -227,84 +214,48 @@ class _FactsRow extends StatelessWidget {
     final breaks = entries.where((e) => e.kind == ActivityKind.onBreak).length;
 
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: AppTheme.space24,
+      runSpacing: AppTheme.space8,
       children: <Widget>[
-        _Fact(
-          icon: Icons.wb_twilight_rounded,
-          label: 'Started',
-          value: formatClock(started),
-        ),
-        _Fact(
-          icon: Icons.schedule_rounded,
-          label: 'Latest',
-          value: formatClock(latest),
-        ),
+        _Fact(label: 'Started', value: formatClock(started)),
+        _Fact(label: 'Latest', value: formatClock(latest)),
         if (longest >= 60)
-          _Fact(
-            icon: Icons.bolt_rounded,
-            label: 'Longest focus',
-            value: formatDuration(longest),
-            highlight: true,
-          ),
+          _Fact(label: 'Longest focus', value: formatDuration(longest)),
         if (breaks > 0)
-          _Fact(
-            icon: Icons.free_breakfast_rounded,
-            label: breaks == 1 ? 'Break' : 'Breaks',
-            value: '$breaks',
-          ),
+          _Fact(label: breaks == 1 ? 'Break' : 'Breaks', value: '$breaks'),
       ],
     );
   }
 }
 
 class _Fact extends StatelessWidget {
-  const _Fact({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.highlight = false,
-  });
+  const _Fact({required this.label, required this.value});
 
-  final IconData icon;
   final String label;
   final String value;
-  final bool highlight;
 
   @override
   Widget build(BuildContext context) {
-    final color = highlight ? AppTheme.accent : AppTheme.textSecondary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: (highlight ? AppTheme.accent : AppTheme.textMuted).withValues(
-          alpha: 0.1,
-        ),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 6),
-          Text(
-            '$label ',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11.5,
-              color: AppTheme.textMuted,
-            ),
+    return Text.rich(
+      TextSpan(
+        children: <InlineSpan>[
+          TextSpan(
+            text: '$label ',
+            style: TextStyle(color: AppTheme.textMuted),
           ),
-          Text(
-            value,
+          TextSpan(
+            text: value,
             style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: highlight ? AppTheme.accent : AppTheme.textPrimary,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textPrimary,
             ),
           ),
         ],
+      ),
+      style: TextStyle(
+        fontFeatures: AppTheme.tabular,
+        fontFamily: 'Inter',
+        fontSize: 12,
       ),
     );
   }
@@ -345,9 +296,10 @@ class _HourBars extends StatelessWidget {
         Text(
           'Active time per hour',
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
             color: AppTheme.textSecondary,
           ),
         ),
@@ -413,9 +365,10 @@ class _HourBar extends StatelessWidget {
                       child: Text(
                         formatDuration(seconds),
                         style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
                           fontFamily: 'Inter',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                           color: AppTheme.accent,
                         ),
                       ),
@@ -461,8 +414,9 @@ class _Readout extends StatelessWidget {
             ? 'Hover the timeline for detail'
             : '$idleHint · hover the timeline for detail',
         style: TextStyle(
+          fontFeatures: AppTheme.tabular,
           fontFamily: 'Inter',
-          fontSize: 11,
+          fontSize: 12,
           color: AppTheme.textMuted,
         ),
       );
@@ -480,8 +434,9 @@ class _Readout extends StatelessWidget {
         Text(
           '${formatClock(current.startedAt)}–${formatClock(current.endedAt)}',
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'monospace',
-            fontSize: 11.5,
+            fontSize: 12,
             color: AppTheme.textSecondary,
           ),
         ),
@@ -493,6 +448,7 @@ class _Readout extends StatelessWidget {
                 : activityLabel(current.kind),
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
+              fontFeatures: AppTheme.tabular,
               fontFamily: 'Inter',
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -504,8 +460,9 @@ class _Readout extends StatelessWidget {
         Text(
           formatDuration(current.seconds),
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 11.5,
+            fontSize: 12,
             color: AppTheme.textMuted,
           ),
         ),
@@ -534,8 +491,9 @@ class _TimelineLegend extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 10.5,
+            fontSize: 12,
             color: AppTheme.textMuted,
           ),
         ),
@@ -552,8 +510,9 @@ class _TimelineLegend extends StatelessWidget {
         Text(
           'Empty = not recorded',
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 10.5,
+            fontSize: 12,
             color: AppTheme.textMuted,
           ),
         ),
@@ -608,11 +567,11 @@ class _TimelinePainter extends CustomPainter {
 
     final track = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, ribbonHeight),
-      const Radius.circular(10),
+      const Radius.circular(AppTheme.radiusSm),
     );
     canvas.drawRRect(track, Paint()..color = trackColor.withValues(alpha: 0.6));
 
-    _paintHourGrid(canvas, size);
+    _paintHourGrid(canvas, size, _nowLabelRect(size, xFor));
 
     canvas.save();
     canvas.clipRRect(track);
@@ -628,21 +587,13 @@ class _TimelinePainter extends CustomPainter {
 
       final rect = RRect.fromRectAndRadius(
         Rect.fromLTWH(left, 3, width, ribbonHeight - 6),
-        const Radius.circular(7),
+        const Radius.circular(4),
       );
 
       final base = isActive
           ? colour.withValues(alpha: isHighlighted ? 1.0 : 0.88)
           : colour.withValues(alpha: isHighlighted ? 0.75 : 0.4);
-      canvas.drawRRect(
-        rect,
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[Color.lerp(base, Colors.white, 0.12) ?? base, base],
-          ).createShader(rect.outerRect),
-      );
+      canvas.drawRRect(rect, Paint()..color = base);
 
       if (isHighlighted) {
         canvas.drawRRect(
@@ -665,11 +616,39 @@ class _TimelinePainter extends CustomPainter {
     _paintNow(canvas, size, xFor);
   }
 
-  void _paintNow(Canvas canvas, Size size, double Function(DateTime) xFor) {
+  TextPainter _nowLabel() => TextPainter(
+    text: TextSpan(
+      text: 'Now',
+      style: TextStyle(
+        fontFeatures: AppTheme.tabular,
+        fontFamily: 'Inter',
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: nowColor,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+
+  Rect? _nowLabelRect(Size size, double Function(DateTime) xFor) {
     final now = nowMarker;
-    if (now == null) return;
+    if (now == null) return null;
     final x = xFor(now);
-    if (x < 0 || x > size.width) return;
+    if (x < 0 || x > size.width) return null;
+    final painter = _nowLabel();
+    final labelX = math.max(0.0, math.min(x + 4, size.width - painter.width));
+    return Rect.fromLTWH(
+      labelX,
+      ribbonHeight + 3,
+      painter.width,
+      painter.height,
+    );
+  }
+
+  void _paintNow(Canvas canvas, Size size, double Function(DateTime) xFor) {
+    final label = _nowLabelRect(size, xFor);
+    if (label == null) return;
+    final x = xFor(nowMarker!);
 
     canvas.drawLine(
       Offset(x, 0),
@@ -679,24 +658,10 @@ class _TimelinePainter extends CustomPainter {
         ..strokeWidth = 1.6,
     );
     canvas.drawCircle(Offset(x, 0), 3.5, Paint()..color = nowColor);
-
-    final painter = TextPainter(
-      text: TextSpan(
-        text: 'Now',
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 9.5,
-          fontWeight: FontWeight.w700,
-          color: nowColor,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final labelX = math.min(x + 4, size.width - painter.width);
-    painter.paint(canvas, Offset(math.max(0, labelX), ribbonHeight + 3));
+    _nowLabel().paint(canvas, label.topLeft);
   }
 
-  void _paintHourGrid(Canvas canvas, Size size) {
+  void _paintHourGrid(Canvas canvas, Size size, Rect? avoid) {
     final hours = endHour - startHour;
 
     final step = size.width / hours < 48 ? math.max(1, (hours / 6).round()) : 1;
@@ -713,16 +678,24 @@ class _TimelinePainter extends CustomPainter {
         text: TextSpan(
           text: formatHour(startHour + offset),
           style: TextStyle(
+            fontFeatures: AppTheme.tabular,
             fontFamily: 'Inter',
-            fontSize: 9.5,
+            fontSize: 12,
             color: labelColor,
           ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
 
-      final labelX = math.min(x + 3, size.width - painter.width);
-      painter.paint(canvas, Offset(math.max(0, labelX), ribbonHeight + 3));
+      final labelX = math.max(0.0, math.min(x + 3, size.width - painter.width));
+      final rect = Rect.fromLTWH(
+        labelX,
+        ribbonHeight + 3,
+        painter.width,
+        painter.height,
+      );
+      if (avoid != null && rect.inflate(2).overlaps(avoid)) continue;
+      painter.paint(canvas, rect.topLeft);
     }
   }
 
@@ -743,9 +716,10 @@ class _TimelinePainter extends CustomPainter {
     painter.text = TextSpan(
       text: text,
       style: TextStyle(
+        fontFeatures: AppTheme.tabular,
         fontFamily: 'Inter',
-        fontSize: 11.5,
-        fontWeight: FontWeight.w600,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
         color: AppTheme.onColor(Color.alphaBlend(bg, AppTheme.surfaceCard)),
       ),
     );

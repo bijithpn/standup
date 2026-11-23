@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/break_system/application/skip_policy.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 class BreakStartWarningOverlay extends StatelessWidget {
@@ -8,6 +9,8 @@ class BreakStartWarningOverlay extends StatelessWidget {
   final int durationSeconds;
   final bool isPreBreak;
   final ValueNotifier<int>? remainingSecondsNotifier;
+  final VoidCallback? onSkip;
+  final VoidCallback? onSnooze;
 
   const BreakStartWarningOverlay({
     super.key,
@@ -16,7 +19,30 @@ class BreakStartWarningOverlay extends StatelessWidget {
     required this.durationSeconds,
     this.isPreBreak = false,
     this.remainingSecondsNotifier,
+    this.onSkip,
+    this.onSnooze,
   });
+
+  Widget _action(String label, VoidCallback onTap) => TextButton(
+    onPressed: onTap,
+    style:
+        TextButton.styleFrom(
+          minimumSize: const Size(48, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          foregroundColor: AppTheme.textSecondary,
+          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          ),
+        ).copyWith(
+          side: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.focused)
+                ? BorderSide(color: AppTheme.accent, width: 2)
+                : null,
+          ),
+        ),
+    child: Text(label),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -29,86 +55,69 @@ class BreakStartWarningOverlay extends StatelessWidget {
             reverseCurve: Curves.easeIn,
           ),
           child: ScaleTransition(
-            scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+            scale: Tween<double>(begin: 0.97, end: 1.0).animate(
               CurvedAnimation(
                 parent: fadeAnimation,
-                curve: Curves.easeOutBack,
+                curve: Curves.easeOutCubic,
                 reverseCurve: Curves.easeIn,
               ),
             ),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 320),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              constraints: const BoxConstraints(maxWidth: 340),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF14161B).withValues(alpha: 0.88),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  width: 1.0,
-                ),
+                color: AppTheme.surfaceCard.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                border: Border.all(color: AppTheme.border),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.45),
+                    color: AppTheme.scrim,
                     blurRadius: 24,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: AppTheme.accent.withValues(alpha: 0.10),
-                    blurRadius: 16,
-                    spreadRadius: -2,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
+                runSpacing: 4,
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppTheme.accent.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        CupertinoIcons.timer,
-                        color: AppTheme.accent,
-                        size: 15,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
+                  Icon(CupertinoIcons.timer, color: AppTheme.accent, size: 16),
                   ValueListenableBuilder<int>(
                     valueListenable:
                         remainingSecondsNotifier ??
                         ValueNotifier<int>(durationSeconds),
                     builder: (context, remaining, _) {
                       final displaySec = remaining > 0 ? remaining : 1;
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Break starting in ',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.88),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Inter',
+                      return Text.rich(
+                        TextSpan(
+                          text: 'Break starting in ',
+                          children: [
+                            TextSpan(
+                              text: '${displaySec}s',
+                              style: TextStyle(
+                                color: AppTheme.accent,
+                                fontFeatures: AppTheme.tabular,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${displaySec}s',
-                            style: TextStyle(
-                              color: AppTheme.accent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'Inter',
+                        ),
                       );
                     },
                   ),
+                  if (onSnooze != null)
+                    _action(
+                      'Snooze ${SkipPolicy.snoozeMinutes} min',
+                      onSnooze!,
+                    ),
+                  if (onSkip != null) _action('Skip', onSkip!),
                 ],
               ),
             ),
@@ -120,16 +129,10 @@ class BreakStartWarningOverlay extends StatelessWidget {
     final isPosture = title.toUpperCase().contains('POSTURE');
     final isEye = title.toUpperCase().contains('EYE');
 
-    final String labelText = isPosture
-        ? 'POSTURE BREAK'
-        : isEye
-        ? 'EYE BREAK'
-        : 'UPCOMING BREAK';
-
     final IconData mainIcon = isPosture
-        ? CupertinoIcons.person_fill
+        ? CupertinoIcons.person
         : isEye
-        ? CupertinoIcons.eye_fill
+        ? CupertinoIcons.eye
         : CupertinoIcons.timer;
 
     final String timeLabel = durationSeconds >= 60
@@ -137,105 +140,51 @@ class BreakStartWarningOverlay extends StatelessWidget {
         : '$durationSeconds seconds';
 
     final String dynamicMessage = isPosture
-        ? 'A posture break will start in $timeLabel. Prepare to stand up.'
+        ? 'Stand up in $timeLabel.'
         : isEye
-        ? 'An eye break will start in $timeLabel. Prepare to look away.'
-        : 'A break will start in $timeLabel. Prepare to step away and rest.';
+        ? 'Look away from the screen in $timeLabel.'
+        : 'Step away and rest in $timeLabel.';
 
     return Center(
       child: ScaleTransition(
-        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+        scale: Tween<double>(begin: 0.97, end: 1.0).animate(
           CurvedAnimation(
             parent: fadeAnimation,
-            curve: Curves.easeOutBack,
+            curve: Curves.easeOutCubic,
             reverseCurve: Curves.easeIn,
           ),
         ),
         child: Container(
-          width: 380,
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+          constraints: const BoxConstraints(maxWidth: 380),
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceCard.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-            border: Border.all(
-              color: AppTheme.accent.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(color: AppTheme.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 32,
+                color: AppTheme.scrim,
+                blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
-              BoxShadow(
-                color: AppTheme.accent.withValues(alpha: 0.05),
-                blurRadius: 24,
-                spreadRadius: 2,
-              ),
             ],
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.surfaceCard,
-                AppTheme.surfaceCard.withValues(alpha: 0.8),
-              ],
-            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  labelText,
-                  style: TextStyle(
-                    color: AppTheme.accent,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      AppTheme.accent.withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.accent.withValues(alpha: 0.25),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(mainIcon, color: AppTheme.accent, size: 36),
-              ),
-              const SizedBox(height: 24),
+              Icon(mainIcon, color: AppTheme.accent, size: 24),
+              const SizedBox(height: 16),
               Text(
-                'Break Starts Soon',
+                'Break starts soon',
                 style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 22,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   fontFamily: 'Inter',
-                  letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
                 dynamicMessage,
                 textAlign: TextAlign.center,

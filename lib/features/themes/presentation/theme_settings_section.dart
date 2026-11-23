@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import '../application/theme_controller.dart';
 import 'widgets/theme_preset_card.dart';
@@ -40,8 +39,16 @@ class _ThemeSettingsSectionState extends State<ThemeSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('App Themes & Styling'),
-        const SizedBox(height: 8),
+        Text(
+          'App themes and styling',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Inter',
+          ),
+        ),
+        const SizedBox(height: AppTheme.space8),
         Text(
           'Personalize the look and feel of BreakMate across the dashboard, menu bar, and break overlays.',
           style: TextStyle(
@@ -50,28 +57,27 @@ class _ThemeSettingsSectionState extends State<ThemeSettingsSection> {
             fontFamily: 'Inter',
           ),
         ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            mainAxisExtent: 130,
+        const SizedBox(height: AppTheme.space16),
+        LayoutBuilder(
+          builder: (context, box) => GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: box.maxWidth >= 480 ? 3 : 2,
+              mainAxisSpacing: AppTheme.space12,
+              crossAxisSpacing: AppTheme.space12,
+              mainAxisExtent: 88,
+            ),
+            itemCount: presets.length,
+            itemBuilder: (context, index) {
+              final p = presets[index];
+              return ThemePresetCard(
+                preset: p,
+                isSelected: p.id == currentPreset.id,
+                onTap: () => _controller.setPreset(p.id),
+              );
+            },
           ),
-          itemCount: presets.length,
-          itemBuilder: (context, index) {
-            final p = presets[index];
-            final isSelected = p.id == currentPreset.id;
-            return ThemePresetCard(
-              preset: p,
-              isSelected: isSelected,
-              onTap: () {
-                _controller.setPreset(p.id);
-              },
-            );
-          },
         ),
       ],
     );

@@ -1072,12 +1072,13 @@ void FlutterWindow::SetupOverlayBridge() {
             OverlayWindowManager::GetInstance()->HideOverlay();
             result->Success();
           }
-          else if (method_name == "skipBreak" || method_name == "completeBreak") {
+          else if (method_name == "skipBreak" || method_name == "completeBreak" || method_name == "snoozeBreak") {
             // Forward to main app directly on its bridge channel
             if (main_window_ && main_window_->GetBridgeChannel()) {
               main_window_->GetBridgeChannel()->InvokeMethod(
-                  method_name, 
-                  std::make_unique<flutter::EncodableValue>(flutter::EncodableMap()));
+                  method_name,
+                  std::make_unique<flutter::EncodableValue>(
+                      call.arguments() ? *call.arguments() : flutter::EncodableValue(flutter::EncodableMap())));
             }
             OverlayWindowManager::GetInstance()->HideOverlay();
             result->Success();

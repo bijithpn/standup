@@ -72,59 +72,43 @@ Widget _readout(BreakSession s) {
     child: ExcludeSemantics(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              s.title,
-              style: TextStyle(
-                fontFamily: BreakOverlayTheme.fontFamily,
-                fontSize: 15,
-                letterSpacing: 0.2,
-                color: p.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                formatRemaining(s.remainingSeconds),
-                style: TextStyle(
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                  fontSize: 128,
-                  height: 1,
-                  letterSpacing: -3,
-                  color: p.textPrimary,
-                  fontFeatures: BreakOverlayTheme.tabular,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: p.canvas.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(s.title, style: WellnessType.label(p)),
+                const SizedBox(height: 12),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    formatRemaining(s.remainingSeconds),
+                    style: TextStyle(
+                      fontFamily: BreakOverlayTheme.fontFamily,
+                      fontSize: 128,
+                      height: 1,
+                      color: p.textPrimary,
+                      fontFeatures: BreakOverlayTheme.tabular,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Text(
-                s.instruction,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                  fontSize: 16,
-                  height: 1.5,
-                  color: p.textSecondary,
+                const SizedBox(height: 16),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Text(
+                    s.instruction,
+                    textAlign: TextAlign.center,
+                    style: WellnessType.instruction(p),
+                  ),
                 ),
-              ),
+              ],
             ),
-            if (s.focus == BreakFocus.eyes) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Look at something far away.',
-                style: TextStyle(
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                  fontSize: 13,
-                  color: p.textMuted,
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     ),
@@ -141,10 +125,8 @@ class _Band {
 }
 
 const _bands = [
-  _Band(0.30, 0.30, Color(0xFF1F9AA0), 11, 0.30),
-  _Band(0.45, 0.28, Color(0xFF2A6F9E), 23, 0.26),
-  _Band(0.58, 0.26, Color(0xFF8C84C8), 37, 0.18),
-  _Band(0.72, 0.22, Color(0xFF3FB5B0), 41, 0.14),
+  _Band(0.36, 0.30, Color(0xFF1F9AA0), 11, 0.22),
+  _Band(0.56, 0.28, Color(0xFF2A6F9E), 23, 0.18),
 ];
 
 class _AuroraPainter extends CustomPainter {
@@ -157,10 +139,8 @@ class _AuroraPainter extends CustomPainter {
   final int kind;
 
   Size? _size;
-  late Paint _bg, _glow;
+  late Paint _bg;
   late List<Paint> _paints;
-
-  List<_Band> get _used => mode == _Mode.full ? _bands : [_bands[0], _bands[2]];
 
   void _build(Size size) {
     final rect = Offset.zero & size;
@@ -170,32 +150,9 @@ class _AuroraPainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: [Color(0xFF0A2234), Color(0xFF04121C)],
       ).createShader(rect);
-    _glow = Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(0.55, -0.6),
-        radius: 0.7,
-        colors: [Color(0x248C84C8), Color(0x008C84C8)],
-      ).createShader(rect);
     _paints = [
-      for (final b in _used)
-        Paint()
-          ..shader =
-              LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  b.color.withValues(alpha: 0),
-                  b.color.withValues(alpha: b.alpha),
-                  b.color.withValues(alpha: 0),
-                ],
-              ).createShader(
-                Rect.fromLTRB(
-                  0,
-                  b.y * size.height,
-                  size.width,
-                  (b.y + b.h) * size.height,
-                ),
-              ),
+      for (final b in _bands)
+        Paint()..color = b.color.withValues(alpha: b.alpha),
     ];
     _size = size;
   }
@@ -250,10 +207,8 @@ class _AuroraPainter extends CustomPainter {
         break;
     }
     canvas.drawRect(rect, _bg);
-    if (mode == _Mode.full) canvas.drawRect(rect, _glow);
-    final used = _used;
-    for (var i = 0; i < used.length; i++) {
-      canvas.drawPath(_ribbon(used[i], size, t, m, p, freq), _paints[i]);
+    for (var i = 0; i < _bands.length; i++) {
+      canvas.drawPath(_ribbon(_bands[i], size, t, m, p, freq), _paints[i]);
     }
 
     if (mode == _Mode.full && session?.focus == BreakFocus.hydration) {

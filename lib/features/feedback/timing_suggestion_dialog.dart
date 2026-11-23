@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/material.dart';
 import '../settings/settings_model.dart';
 import 'timing_suggestion.dart';
@@ -20,7 +21,8 @@ Future<void> showTimingSuggestion(
           'You can adjust working hours, detection or your break profile in Settings.',
         ),
         actions: [
-          TextButton(
+          MinimalButton(
+            isGhost: true,
             onPressed: () => Navigator.pop(context),
             child: const Text('Done'),
           ),
@@ -87,7 +89,7 @@ class _SuggestionDialogState extends State<_SuggestionDialog> {
         children: [
           Text(widget.suggestion.explanation),
           const SizedBox(height: 12),
-          const Text('Only applied if you choose Apply.'),
+          const Text('Applies only if you choose Apply'),
           if (_error != null)
             Text(
               _error!,
@@ -96,11 +98,12 @@ class _SuggestionDialogState extends State<_SuggestionDialog> {
         ],
       ),
       actions: [
-        TextButton(
+        MinimalButton(
+          isGhost: true,
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: const Text('Keep current settings'),
         ),
-        FilledButton(
+        MinimalButton(
           onPressed: _saving ? null : _apply,
           child: Text(_saving ? 'Saving…' : 'Apply'),
         ),

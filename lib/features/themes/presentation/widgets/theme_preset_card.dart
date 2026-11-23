@@ -1,10 +1,11 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../domain/app_theme_preset.dart';
 
-/// Selectable swatch card that previews a preset in its own colors.
-class ThemePresetCard extends StatefulWidget {
+/// Compact swatch tile that previews a preset in its own colors.
+class ThemePresetCard extends StatelessWidget {
   final AppThemePreset preset;
   final bool isSelected;
   final VoidCallback onTap;
@@ -17,55 +18,24 @@ class ThemePresetCard extends StatefulWidget {
   });
 
   @override
-  State<ThemePresetCard> createState() => _ThemePresetCardState();
-}
-
-class _ThemePresetCardState extends State<ThemePresetCard> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final p = widget.preset;
+    final p = preset;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
+    return Tooltip(
+      message: p.description,
+      waitDuration: const Duration(milliseconds: 400),
       child: TapTarget(
-        onTap: widget.onTap,
-        selected: widget.isSelected,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(14),
+        onTap: onTap,
+        selected: isSelected,
+        child: Container(
+          padding: const EdgeInsets.all(AppTheme.space12),
           decoration: BoxDecoration(
             color: p.surfaceCard,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             border: Border.all(
-              color: widget.isSelected
-                  ? p.accent
-                  : _isHovered
-                  ? p.accent.withValues(alpha: 0.5)
-                  : p.border,
-              width: widget.isSelected ? 2 : 1,
+              color: isSelected ? p.accent : p.border,
+              width: 2,
             ),
-            boxShadow: widget.isSelected
-                ? [
-                    BoxShadow(
-                      color: p.accent.withValues(alpha: 0.25),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : _isHovered
-                ? [
-                    BoxShadow(
-                      color: p.accent.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,74 +43,47 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: p.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: p.border, width: 1),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: p.accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       p.name,
                       style: TextStyle(
                         color: p.textPrimary,
-                        fontSize: 13,
-                        fontWeight: widget.isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                         fontFamily: 'Inter',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (widget.isSelected)
-                    Icon(LucideIcons.circleCheck, size: 16, color: p.accent),
+                  if (isSelected) ...[
+                    const SizedBox(width: AppTheme.space4),
+                    Icon(
+                      CupertinoIcons.checkmark_alt,
+                      size: 16,
+                      color: p.accent,
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 10),
-
               ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radiusXs),
                 child: SizedBox(
-                  height: 12,
+                  height: 16,
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(child: Container(color: p.surface)),
-                      Expanded(child: Container(color: p.surfaceElevated)),
-                      Expanded(child: Container(color: p.accent)),
-                      Expanded(child: Container(color: p.shortBreak)),
-                      Expanded(child: Container(color: p.longBreak)),
+                      for (final c in [
+                        p.surface,
+                        p.surfaceCard,
+                        p.accent,
+                        p.textPrimary,
+                        p.shortBreak,
+                      ])
+                        Expanded(child: ColoredBox(color: c)),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-
-              Text(
-                p.description,
-                style: TextStyle(
-                  color: p.textSecondary,
-                  fontSize: 11,
-                  height: 1.3,
-                  fontFamily: 'Inter',
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

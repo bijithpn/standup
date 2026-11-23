@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
@@ -14,22 +14,21 @@ class BreakContextPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final whyNow = breakInfo.title.toUpperCase().contains('EYE')
-        ? 'Why now: eye-rest interval reached'
-        : breakInfo.title.toUpperCase().contains('LONG')
-        ? 'Why now: long focus block completed'
-        : 'Why now: scheduled recovery break';
-
+    final headline = switch (breakInfo.type) {
+      BreakType.short => 'Eye break',
+      BreakType.long => 'Long break',
+      BreakType.windDown => 'Wind-down break',
+    };
     final action = exerciseTitle != null
-        ? 'Do: $exerciseTitle'
+        ? exerciseTitle!
         : breakInfo.durationSeconds <= 30
-        ? 'Do: look away and reset your posture'
-        : 'Do: stand, breathe, and move gently';
+        ? 'Look away and reset your posture'
+        : 'Stand, breathe, and move gently';
 
     final palette = BreakPalette.of(context);
     return Container(
       constraints: const BoxConstraints(maxWidth: 420),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: palette.canvasRaised.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
@@ -46,7 +45,7 @@ class BreakContextPill extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: [Text(whyNow), const SizedBox(height: 3), Text(action)],
+          children: [Text(headline), const SizedBox(height: 4), Text(action)],
         ),
       ),
     );
@@ -74,7 +73,7 @@ class StrictModeNote extends StatelessWidget {
         child: Text(
           isLocked
               ? 'Locked mode is active. Skip and postpone are unavailable until this break finishes.'
-              : 'Strict mode is active. Skip is hidden for this break intensity.',
+              : 'Strict mode is on. Skip is off for this break.',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: palette.textMuted,
@@ -85,31 +84,6 @@ class StrictModeNote extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class SwipeToDismissHint extends StatelessWidget {
-  const SwipeToDismissHint({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final muted = BreakPalette.of(context).textMuted;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(CupertinoIcons.chevron_up, size: 20, color: muted),
-        Text(
-          'Swipe up to dismiss',
-          style: TextStyle(
-            color: muted,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.0,
-            fontFamily: BreakOverlayTheme.fontFamily,
-          ),
-        ),
-      ],
     );
   }
 }

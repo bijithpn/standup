@@ -23,17 +23,12 @@ class InsightsOverviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                CupertinoIcons.sparkles,
-                size: 18,
-                color: AppTheme.accentColor,
-              ),
-              const SizedBox(width: 8),
               Text(
                 'Insights',
                 style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontFeatures: AppTheme.tabular,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                   color: AppTheme.textPrimary,
                 ),
               ),
@@ -48,11 +43,11 @@ class InsightsOverviewCard extends StatelessWidget {
 
   Widget _buildRow(OverviewInsight insight) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(insight.icon, size: 16, color: insight.color),
+          Icon(insight.icon, size: 16, color: AppTheme.textSecondary),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -60,10 +55,14 @@ class InsightsOverviewCard extends StatelessWidget {
               children: [
                 Text(
                   insight.text,
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  style: TextStyle(
+                    fontFeatures: AppTheme.tabular,
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
                 if (insight.action != null && onApply != null) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   _buildApplyButton(insight.action!),
                 ],
               ],
@@ -76,15 +75,16 @@ class InsightsOverviewCard extends StatelessWidget {
 
   Widget _buildApplyButton(InsightAction action) {
     return MinimalButton(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       onPressed: () => onApply!(action),
       child: Text(
         action.label,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+          fontFeatures: AppTheme.tabular,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
           color: AppTheme.accentColor,
         ),
       ),

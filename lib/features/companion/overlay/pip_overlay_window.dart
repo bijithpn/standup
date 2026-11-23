@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:breakmate/core/ipc/ipc_maps.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -805,19 +806,19 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                   children: <Widget>[
                     _ChromeButton(
                       icon: _keepOnScreen
-                          ? Icons.push_pin_rounded
-                          : Icons.push_pin_outlined,
+                          ? CupertinoIcons.pin_fill
+                          : CupertinoIcons.pin,
                       background: _chromeBackground,
                       foreground: _chromeForeground,
                       isActive: _keepOnScreen,
                       tooltip: _keepOnScreen
-                          ? 'Staying on screen — tap to only show during breaks'
-                          : 'Only shows during breaks — tap to keep on screen',
+                          ? 'Pinned. Tap to show only during breaks'
+                          : 'Pin to screen',
                       onTap: _toggleKeepOnScreen,
                     ),
                     const SizedBox(width: 4),
                     _ChromeButton(
-                      icon: Icons.close_rounded,
+                      icon: CupertinoIcons.xmark,
                       background: _chromeBackground,
                       foreground: _chromeForeground,
                       tooltip: 'Turn companion off',
@@ -836,7 +837,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                   children: <Widget>[
                     if (_isBlob) ...<Widget>[
                       _ChromeButton(
-                        icon: Icons.edit_rounded,
+                        icon: CupertinoIcons.pencil,
                         background: _chromeBackground,
                         foreground: _chromeForeground,
                         tooltip:

@@ -84,46 +84,22 @@ Widget _readout(BreakSession s) {
                   fontFamily: BreakOverlayTheme.monoFamily,
                   fontSize: 56,
                   height: 1,
-                  letterSpacing: 2,
                   color: p.textPrimary,
                   fontFeatures: BreakOverlayTheme.tabular,
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            Text(
-              s.title,
-              style: TextStyle(
-                fontFamily: BreakOverlayTheme.fontFamily,
-                fontSize: 15,
-                color: p.textSecondary,
-              ),
-            ),
+            Text(s.title, style: WellnessType.label(p)),
             const SizedBox(height: 4),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Text(
                 s.instruction,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                  fontSize: 14,
-                  height: 1.5,
-                  color: p.textMuted,
-                ),
+                style: WellnessType.instruction(p),
               ),
             ),
-            if (s.focus == BreakFocus.eyes) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Look at something far away.',
-                style: TextStyle(
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                  fontSize: 13,
-                  color: p.textMuted,
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -169,9 +145,9 @@ class _MidnightPainter extends CustomPainter {
   final int kind;
 
   Size? _size;
-  late Paint _bg, _halo;
+  late Paint _bg;
 
-  void _build(Size size, Offset c, double rm) {
+  void _build(Size size) {
     final rect = Offset.zero & size;
     var top = const Color(0xFF0B1326), bottom = const Color(0xFF060A14);
     if (s?.timeOfDay ?? false) {
@@ -189,10 +165,6 @@ class _MidnightPainter extends CustomPainter {
               colors: [top, bottom],
             ).createShader(rect);
     if (mode == _Mode.mark) _bg.color = top;
-    _halo = Paint()
-      ..shader = const RadialGradient(
-        colors: [Color(0x1AC9D1E0), Color(0x00C9D1E0)],
-      ).createShader(Rect.fromCircle(center: c, radius: rm * 3.2));
     _size = size;
   }
 
@@ -268,7 +240,7 @@ class _MidnightPainter extends CustomPainter {
     final rm = mode == _Mode.full
         ? big * 0.22
         : (mode == _Mode.strip ? 7.0 : 8.0);
-    if (_size != size) _build(size, c, rm);
+    if (_size != size) _build(size);
 
     canvas.save();
     switch (mode) {
@@ -291,26 +263,6 @@ class _MidnightPainter extends CustomPainter {
 
     switch (mode) {
       case _Mode.full:
-        canvas.drawCircle(c, rm * 3.2, _halo);
-        for (final (rx, ry, ang, dir, period) in [
-          (big * 0.55, big * 0.21, 0.35, 1.0, 600.0),
-          (big * 0.8, big * 0.24, -0.5, -1.0, 900.0),
-        ]) {
-          canvas.save();
-          canvas.translate(c.dx, c.dy);
-          canvas.rotate(ang + Motion.rotation(t * m * dir, period));
-          canvas.drawOval(
-            Rect.fromCenter(center: Offset.zero, width: 2 * rx, height: 2 * ry),
-            ring,
-          );
-          final a = Motion.rotation(t * m, 120);
-          canvas.drawCircle(
-            Offset(rx * math.cos(a), ry * math.sin(a)),
-            2,
-            Paint()..color = _silver.withValues(alpha: 0.45),
-          );
-          canvas.restore();
-        }
         canvas.drawCircle(c, big, ring);
         final a = -math.pi / 2;
         canvas.drawArc(

@@ -22,17 +22,21 @@ class DashboardController extends ChangeNotifier with WidgetsBindingObserver {
       _calendar.permission != CalendarPermissionStatus.notDetermined;
   bool get isRequestingPermission => _calendar.isRequesting;
 
+  bool _hidden = false;
+
   DashboardController() {
     WidgetsBinding.instance.addObserver(this);
     _calendar.addListener(notifyListeners);
     loadCalendarEvents();
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
-      loadCalendarEvents();
+      if (!_hidden) loadCalendarEvents();
     });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _hidden =
+        state == AppLifecycleState.hidden || state == AppLifecycleState.paused;
     if (state == AppLifecycleState.resumed) {
       loadCalendarEvents();
     }

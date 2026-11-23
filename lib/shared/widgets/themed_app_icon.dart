@@ -65,8 +65,6 @@ class ThemedAppIcon extends StatelessWidget {
 
   final BorderRadius? borderRadius;
 
-  final List<BoxShadow>? shadows;
-
   final bool showDevBadge;
 
   const ThemedAppIcon({
@@ -77,7 +75,6 @@ class ThemedAppIcon extends StatelessWidget {
     this.isBadge = false,
     this.innerIconSize,
     this.borderRadius,
-    this.shadows,
     this.showDevBadge = false,
   });
 
@@ -88,7 +85,6 @@ class ThemedAppIcon extends StatelessWidget {
     this.color,
     this.backgroundColor,
     this.borderRadius,
-    this.shadows,
     this.showDevBadge = true,
   }) : isBadge = true,
        innerIconSize = iconSize ?? (size * 0.58);
@@ -144,77 +140,46 @@ class ThemedAppIcon extends StatelessWidget {
       }
     }
 
-    return TweenAnimationBuilder<Color?>(
-      tween: ColorTween(begin: effectiveColor, end: effectiveColor),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic,
-      builder: (context, animatedAccent, _) {
-        final accent = animatedAccent ?? effectiveColor;
-        final defaultShadows = [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.28),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ];
-
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                accent.withValues(alpha: 0.20),
-                accent.withValues(alpha: 0.05),
-              ],
-            ),
-            boxShadow: shadows ?? defaultShadows,
-            border: Border.all(
-              color: accent.withValues(alpha: 0.35),
-              width: 1.2,
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: radius,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(color: effectiveBg.withValues(alpha: 0.85)),
-
-                Center(child: iconWidget),
-
-                if (isDev)
-                  Positioned(
-                    bottom: 2,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'DEV',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(color: effectiveBg),
+            Center(child: iconWidget),
+            if (isDev)
+              Positioned(
+                bottom: 2,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.error,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+                  ),
+                  child: Text(
+                    'dev',
+                    style: TextStyle(
+                      color: AppTheme.onColor(AppTheme.error),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-              ],
-            ),
-          ),
-        );
-      },
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

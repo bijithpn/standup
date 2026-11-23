@@ -52,7 +52,7 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('gathering data'), findsOneWidget);
+    expect(find.text('No app time recorded for this period.'), findsOneWidget);
   });
 
   testWidgets('enabled with data renders top apps and a tip', (tester) async {

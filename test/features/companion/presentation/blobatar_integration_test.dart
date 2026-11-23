@@ -96,7 +96,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Check dialog opened
-      expect(find.text('Name your Blobatar'), findsOneWidget);
+      expect(find.text('Name your companion'), findsOneWidget);
 
       // Pick suggestion 'Ziggy'
       final chip = find.text('Ziggy');
@@ -105,7 +105,7 @@ void main() {
       await tester.pump();
 
       // Save
-      await tester.tap(find.text('Save Name'));
+      await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

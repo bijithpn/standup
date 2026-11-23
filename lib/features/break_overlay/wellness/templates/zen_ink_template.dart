@@ -10,7 +10,6 @@ import '../wellness_models.dart';
 import '../wellness_template.dart';
 
 const _ink = Color(0xFF1D1B19);
-const _vermilion = Color(0xFFB8412E);
 
 final _seed = stableSeed('zen_ink');
 final _phase1 = (_seed % 628) / 100;
@@ -46,7 +45,6 @@ const _layers = <_Layer>[
   (0.22, 0.35, 0.26, 0.05, 0.75),
   (0.34, 0.12, 0.35, 0, 0.6),
   (-0.4, 0.08, 0.3, 0.1, 0.95),
-  (1.12, 0.05, 0.28, 0.08, 0.7),
 ];
 
 Path _ribbon(
@@ -60,7 +58,7 @@ Path _ribbon(
 ) {
   final s1 = math.min(l.$5, reveal);
   if (s1 <= l.$4 + 0.005) return Path();
-  final m = math.max(4, ((s1 - l.$4) * 220).ceil());
+  final m = math.max(4, ((s1 - l.$4) * 480).ceil());
   final shift = l.$1 + wobble * math.sin(index * 2.1 + 1);
   final outer = <Offset>[], inner = <Offset>[];
   for (var i = 0; i <= m; i++) {
@@ -164,7 +162,7 @@ class ZenInkTemplate extends WellnessTemplate {
                   formatRemaining(s.remainingSeconds),
                   style: TextStyle(
                     fontFamily: BreakOverlayTheme.monoFamily,
-                    fontSize: 28,
+                    fontSize: 48,
                     color: p.textPrimary,
                     fontFeatures: BreakOverlayTheme.tabular,
                   ),
@@ -184,25 +182,13 @@ class ZenInkTemplate extends WellnessTemplate {
                     Text(
                       s.title,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: p.textPrimary,
-                      ),
+                      style: WellnessType.label(p),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      s.focus == BreakFocus.eyes
-                          ? 'Look away from the screen, at something far off.'
-                          : s.instruction,
+                      s.instruction,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        fontSize: 14,
-                        height: 1.5,
-                        color: p.textSecondary,
-                      ),
+                      style: WellnessType.instruction(p),
                     ),
                   ],
                 ),
@@ -276,22 +262,6 @@ class _EnsoPainter extends CustomPainter {
             ),
         );
       }
-    }
-
-    if (!compact) {
-      final seal = centre + Offset(r * 1.2, r * 0.95);
-      final side = u * 0.034;
-      c.save();
-      c.translate(seal.dx, seal.dy);
-      c.rotate(-0.05);
-      c.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: side, height: side),
-          Radius.circular(side * 0.12),
-        ),
-        Paint()..color = _vermilion,
-      );
-      c.restore();
     }
   }
 

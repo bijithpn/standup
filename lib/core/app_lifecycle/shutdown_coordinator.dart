@@ -6,6 +6,7 @@ import 'package:breakmate/features/analytics/app_usage_tracker.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/features/analytics/focus_insight_service.dart';
 import 'package:breakmate/features/analytics/focus_streak_service.dart';
+import 'package:breakmate/features/analytics/daily_insight_notifier_service.dart';
 import 'package:breakmate/core/services/background_polling_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -50,6 +51,15 @@ class ShutdownCoordinator {
       }
     } catch (e) {
       _logger.error('Failed to stop AppUsageTracker: $e');
+    }
+
+    try {
+      if (sl.isRegistered<DailyInsightNotifierService>()) {
+        sl<DailyInsightNotifierService>().stop();
+        _logger.info('DailyInsightNotifierService stopped.');
+      }
+    } catch (e) {
+      _logger.error('Failed to stop DailyInsightNotifierService: $e');
     }
 
     try {

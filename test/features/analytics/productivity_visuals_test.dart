@@ -137,9 +137,7 @@ void main() {
       day('2026-03-10', 8 * 3600),
     ];
 
-    testWidgets('explain the goal line and colours when a goal is set', (
-      tester,
-    ) async {
+    testWidgets('render with a goal set', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -147,9 +145,6 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Reached goal'), findsOneWidget);
-      expect(find.text('Below goal'), findsOneWidget);
-      expect(find.text('Dashed line = daily goal'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -159,7 +154,6 @@ void main() {
           home: Scaffold(body: DailyActivityBars(days: days)),
         ),
       );
-      expect(find.text('Reached goal'), findsNothing);
     });
 
     testWidgets('keep the goal line on the chart when goal exceeds data', (

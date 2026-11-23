@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
@@ -17,6 +18,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'package:breakmate/core/services/daily_reset_service.dart';
 import 'package:breakmate/core/services/desktop_update_notifier.dart';
+import 'package:breakmate/features/break_system/application/skip_policy.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 
@@ -32,6 +34,7 @@ import 'shared/shared.dart';
 
 /// Routes Flutter and async errors to ErrorHandler and a toast; used by every engine.
 void _setupGlobalErrors() {
+  var lastErrorToast = DateTime.fromMillisecondsSinceEpoch(0);
   FlutterError.onError = (FlutterErrorDetails details) {
     final exceptionStr = details.exceptionAsString();
 
@@ -48,7 +51,14 @@ void _setupGlobalErrors() {
 
     if (!details.silent) {
       ErrorHandler().handleError(details.exception, details.stack);
-      ErrorToastService.showError('Oops! An internal error occurred.');
+      final now = DateTime.now();
+      if (!exceptionStr.contains('overflowed by') &&
+          now.difference(lastErrorToast) > const Duration(seconds: 15)) {
+        lastErrorToast = now;
+        ErrorToastService.showError(
+          'Something went wrong. The error was logged.',
+        );
+      }
     }
     FlutterError.presentError(details);
   };
@@ -81,7 +91,7 @@ void _setupGlobalErrors() {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.warning_rounded,
+                    CupertinoIcons.exclamationmark_triangle,
                     color: Colors.redAccent,
                     size: 56,
                   ),
@@ -92,7 +102,7 @@ void _setupGlobalErrors() {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 22,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -125,7 +135,7 @@ void _setupGlobalErrors() {
                       _globalSingleInstanceServer,
                     ).then((_) => exit(1));
                   },
-                  icon: const Icon(Icons.power_settings_new, size: 18),
+                  icon: const Icon(CupertinoIcons.power, size: 18),
                   label: const Text('Close App'),
                 ),
                 if (kDebugMode) ...[
@@ -679,7 +689,13 @@ void mainCommon(FlavorConfig config) async {
         ) async {
           if (call.method == 'handleReopen') {
             await sl<OverlayWindowService>().showDashboard(forceShow: true);
+          } else if (call.method == 'snoozeBreak') {
+            sl<BreakController>().snoozeUpcomingBreak();
           } else if (call.method == 'skipBreak') {
+            final args = call.arguments;
+            if (args is Map && args['reason'] is String) {
+              SkipPolicy.recordReason(args['reason'] as String, DateTime.now());
+            }
             sl<BreakController>().skipCurrentBreak();
           } else if (call.method == 'completeBreak') {
             final args = call.arguments;

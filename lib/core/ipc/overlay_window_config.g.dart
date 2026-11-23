@@ -48,6 +48,9 @@ _OverlayWindowConfig _$OverlayWindowConfigFromJson(Map<String, dynamic> json) =>
       breakStartedAtMs: (json['breakStartedAtMs'] as num?)?.toInt(),
       paused: json['paused'] as bool? ?? false,
       breakFocus: json['breakFocus'] as String?,
+      skipLocked: json['skipLocked'] as bool? ?? false,
+      askSkipReason: json['askSkipReason'] as bool? ?? false,
+      snoozeLocked: json['snoozeLocked'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$OverlayWindowConfigToJson(
@@ -91,4 +94,7 @@ Map<String, dynamic> _$OverlayWindowConfigToJson(
   'breakStartedAtMs': instance.breakStartedAtMs,
   'paused': instance.paused,
   'breakFocus': instance.breakFocus,
+  'skipLocked': instance.skipLocked,
+  'askSkipReason': instance.askSkipReason,
+  'snoozeLocked': instance.snoozeLocked,
 };

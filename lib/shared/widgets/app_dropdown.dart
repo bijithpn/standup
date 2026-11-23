@@ -38,7 +38,7 @@ class AppDropdown<T> extends StatelessWidget {
           constraints: const BoxConstraints(maxHeight: 250),
           elevation: 12,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             side: BorderSide(color: AppTheme.border, width: 0.8),
           ),
           color: AppTheme.surfaceElevated,
@@ -47,7 +47,7 @@ class AppDropdown<T> extends StatelessWidget {
             final isSelected = item.value == value;
             return PopupMenuItem<T>(
               value: item.value,
-              height: 34,
+              height: 36,
               child: Row(
                 children: [
                   if (item.customChild != null)
@@ -56,12 +56,12 @@ class AppDropdown<T> extends StatelessWidget {
                     if (item.icon != null) ...[
                       Icon(
                         item.icon,
-                        size: 15,
+                        size: 16,
                         color: isSelected
                             ? AppTheme.accentColor
                             : AppTheme.textSecondary,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                     ],
                     Expanded(
                       child: Text(
@@ -69,9 +69,7 @@ class AppDropdown<T> extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 12.5,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                          fontWeight: FontWeight.w500,
                           color: isSelected
                               ? AppTheme.accentColor
                               : AppTheme.textPrimary,
@@ -91,7 +89,7 @@ class AppDropdown<T> extends StatelessWidget {
           }).toList(),
           child: Container(
             width: width,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: AppTheme.surfaceElevated,
               borderRadius: BorderRadius.circular(8),
@@ -140,7 +138,7 @@ class AppDropdown<T> extends StatelessWidget {
       style: TextStyle(
         color: AppTheme.textPrimary,
         fontSize: 13,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         fontFamily: 'Inter',
       ),
       overflow: TextOverflow.ellipsis,

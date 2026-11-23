@@ -9,6 +9,7 @@ import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart
 import 'package:breakmate/features/break_overlay/wellness/wellness_template.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
+import 'package:breakmate/features/settings/widgets/settings_group.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
@@ -64,42 +65,28 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Break Templates'),
-        const SizedBox(height: 8),
-        Text(
-          'Make room for a better break.',
-          style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Choose one of six scenes and how it appears.',
-          style: TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 13,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 24),
+        sectionHeader('Break templates'),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            SegmentedButton<bool>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: true, label: Text('Compact')),
-                ButtonSegment(value: false, label: Text('Immersive')),
-              ],
-              selected: {_compactPreview},
-              onSelectionChanged: (v) =>
-                  setState(() => _compactPreview = v.first),
-            ),
+            for (final (label, compact) in const [
+              ('Compact', true),
+              ('Immersive', false),
+            ])
+              MinimalButton(
+                isGhost: true,
+                onPressed: () => setState(() => _compactPreview = compact),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: _compactPreview == compact
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+              ),
             Text(
               'Selected · ${selected.name}',
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
@@ -107,33 +94,14 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             Tooltip(
               message: 'Preview selected template',
               child: MinimalButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                isSecondary: true,
                 onPressed: () => _showBreakTemplatePreview(_selectedTemplateId),
-                child: Text(
-                  'Preview break',
-                  style: TextStyle(
-                    color: AppTheme.accentColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: const Text('Preview break'),
               ),
             ),
             Tooltip(
               message: 'Apply selected template',
               child: MinimalButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                backgroundColor: AppTheme.accentColor,
-                disabledColor: AppTheme.accentColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
                 onPressed: hasChanges
                     ? () {
                         widget.onSave(
@@ -144,16 +112,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                         Toast.showSuccess(context, 'Template updated');
                       }
                     : null,
-                child: Text(
-                  'Apply',
-                  style: TextStyle(
-                    color: AppTheme.onAccent.withValues(
-                      alpha: hasChanges ? 1 : 0.5,
-                    ),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: const Text('Apply'),
               ),
             ),
           ],
@@ -162,21 +121,20 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         _buildGallery(),
         const SizedBox(height: 16),
         _buildLivePreview(context),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         ..._buildControls(),
-        const SizedBox(height: 32),
         sectionHeader('Accessibility'),
         buildCard([
           toggleRow(
             'Reduce motion',
-            'Freeze decorative animations in break screens, reminders, the companion and the app.',
+            'Freezes decorative animations everywhere',
             widget.settings.reduceMotion,
             (v) => widget.onSave(widget.settings.copyWith(reduceMotion: v)),
           ),
           divider(),
           toggleRow(
             'Larger text',
-            'Scale up text in break screens and reminders (and slightly in the app).',
+            'Bigger text in break screens and reminders',
             widget.settings.largeOverlayText,
             (v) => widget.onSave(widget.settings.copyWith(largeOverlayText: v)),
           ),
@@ -191,10 +149,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       controller.previewBreak(templateId: templateId);
 
       if (mounted) {
-        Toast.showSuccess(
-          context,
-          'Preview started! Break overlay will appear.',
-        );
+        Toast.showSuccess(context, 'Preview started');
       }
     } catch (e) {
       if (mounted) {

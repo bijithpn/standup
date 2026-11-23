@@ -15,6 +15,7 @@ import 'package:breakmate/features/analytics/segments/productivity_repository.da
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/page_scroll.dart';
 
 enum ProductivityRange {
   today('Today', 1),
@@ -80,10 +81,12 @@ class _ProductivityPageState extends State<ProductivityPage> {
     _settings?.addListener(_onSettingsChanged);
     _repository?.refreshToday();
 
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _repository?.refreshToday(),
-    );
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        return;
+      }
+      _repository?.refreshToday();
+    });
     _load();
   }
 
@@ -218,9 +221,8 @@ class _ProductivityPageState extends State<ProductivityPage> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppTheme.surface,
-      body: Column(
+    return PageScroll(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _Header(
@@ -230,25 +232,82 @@ class _ProductivityPageState extends State<ProductivityPage> {
                 ? formatDateKey(_todayKey)
                 : 'Last ${_range.days} days',
           ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : !hasActivity
-                ? ProductivityEmptyState(
-                    trackingEnabled: _trackingEnabled,
-                    onEnableTracking: _trackingEnabled ? null : _enableTracking,
-                  )
-                : _content(summary, showingToday),
-          ),
+          const SizedBox(height: AppTheme.space32),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (!hasActivity)
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 280),
+              child: ProductivityEmptyState(
+                trackingEnabled: _trackingEnabled,
+                onEnableTracking: _trackingEnabled ? null : _enableTracking,
+              ),
+            )
+          else
+            _content(summary, showingToday),
         ],
       ),
     );
   }
 
   Widget _content(RangeProductivitySummary? summary, bool showingToday) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-      children: _contentChildren(summary, showingToday),
+    final primary = _primaryChildren(summary, showingToday);
+    final applications = _applications(summary, showingToday);
+    final insights = _insightsSection();
+    final budgets = _budgets(showingToday);
+    return LayoutBuilder(
+      builder: (context, box) {
+        if (box.maxWidth < 760) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              ...primary,
+              const SizedBox(height: 48),
+              applications,
+              const SizedBox(height: 48),
+              insights,
+              if (budgets != null) ...<Widget>[
+                const SizedBox(height: 48),
+                budgets,
+              ],
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: primary,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.space32),
+                Expanded(flex: 2, child: applications),
+              ],
+            ),
+            const SizedBox(height: 48),
+            if (budgets == null)
+              insights
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: insights),
+                  const SizedBox(width: AppTheme.space32),
+                  Expanded(child: budgets),
+                ],
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -256,10 +315,21 @@ class _ProductivityPageState extends State<ProductivityPage> {
     RangeProductivitySummary? summary,
     bool showingToday,
   ) {
+    final budgets = _budgets(showingToday);
+    return <Widget>[
+      ..._primaryChildren(summary, showingToday),
+      _applications(summary, showingToday),
+      const SizedBox(height: 48),
+      if (budgets != null) ...<Widget>[budgets, const SizedBox(height: 48)],
+      _insightsSection(),
+    ];
+  }
+
+  List<Widget> _primaryChildren(
+    RangeProductivitySummary? summary,
+    bool showingToday,
+  ) {
     final day = _today;
-    final apps = showingToday
-        ? day.apps
-        : (summary?.apps ?? const <AppTotal>[]);
     final activeSeconds = showingToday
         ? day.activeSeconds
         : (summary?.activeSeconds ?? 0);
@@ -284,7 +354,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
                   '${(summary?.activeDayCount ?? 0) == 1 ? 'day' : 'days'} '
                   'with activity',
       ),
-      const SizedBox(height: 26),
+      const SizedBox(height: 48),
 
       if (showingToday) ...<Widget>[
         ProductivitySection(
@@ -299,7 +369,6 @@ class _ProductivityPageState extends State<ProductivityPage> {
                 const <TimelineEntry>[],
           ),
         ),
-        const SizedBox(height: 26),
       ] else if (summary != null) ...<Widget>[
         ProductivitySection(
           title: 'Daily activity',
@@ -311,87 +380,72 @@ class _ProductivityPageState extends State<ProductivityPage> {
                 : _settings!.currentSettings.dailyWorkGoalHours * 3600,
           ),
         ),
-        const SizedBox(height: 26),
       ],
-
-      ProductivitySection(
-        title: 'Applications',
-        subtitle: apps.isEmpty
-            ? null
-            : '${apps.length} ${apps.length == 1 ? 'application' : 'applications'}',
-        child: ApplicationUsageList(
-          apps: apps,
-          totalActiveSeconds: activeSeconds,
-          limit: 8,
-          onSelected: _openApplication,
-        ),
-      ),
-      const SizedBox(height: 26),
-
-      if (showingToday &&
-          sl.isRegistered<AppUsageService>() &&
-          _settings != null) ...<Widget>[
-        DailyBudgetsCard(
-          usedSecondsByCategory: sl<AppUsageService>().categoryTotals(
-            UsagePeriod.today,
-          ),
-          budgetMinutes: _settings!.currentSettings.categoryDailyBudgetMinutes,
-        ),
-        const SizedBox(height: 26),
-      ],
-
-      ProductivitySection(
-        title: 'Insights',
-        subtitle: _insights.isEmpty
-            ? 'Not enough data yet'
-            : 'What the recorded activity shows',
-        child: _insights.isEmpty
-            ? _NotEnoughInsights()
-            : Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceCard,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  border: Border.all(color: AppTheme.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    for (var i = 0; i < _insights.length; i++) ...<Widget>[
-                      if (i > 0)
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          color: AppTheme.borderSubtle,
-                        ),
-                      InsightCard(insight: _insights[i]),
-                    ],
-                  ],
-                ),
-              ),
-      ),
     ];
   }
+
+  Widget _applications(RangeProductivitySummary? summary, bool showingToday) {
+    final day = _today;
+    final apps = showingToday
+        ? day.apps
+        : (summary?.apps ?? const <AppTotal>[]);
+    return ProductivitySection(
+      title: 'Applications',
+      subtitle: apps.isEmpty
+          ? null
+          : '${apps.length} ${apps.length == 1 ? 'application' : 'applications'}',
+      child: ApplicationUsageList(
+        apps: apps,
+        totalActiveSeconds: showingToday
+            ? day.activeSeconds
+            : (summary?.activeSeconds ?? 0),
+        limit: 8,
+        onSelected: _openApplication,
+      ),
+    );
+  }
+
+  Widget? _budgets(bool showingToday) {
+    if (!showingToday ||
+        !sl.isRegistered<AppUsageService>() ||
+        _settings == null) {
+      return null;
+    }
+    return DailyBudgetsCard(
+      usedSecondsByCategory: sl<AppUsageService>().categoryTotals(
+        UsagePeriod.today,
+      ),
+      budgetMinutes: _settings!.currentSettings.categoryDailyBudgetMinutes,
+    );
+  }
+
+  Widget _insightsSection() => ProductivitySection(
+    title: 'Insights',
+    subtitle: _insights.isEmpty
+        ? 'Not enough data yet'
+        : 'What the recorded activity shows',
+    child: _insights.isEmpty
+        ? _NotEnoughInsights()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (final insight in _insights) InsightCard(insight: insight),
+            ],
+          ),
+  );
 }
 
 class _NotEnoughInsights extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Text(
-        'Keep using BreakMate for a few days and patterns in how you work '
-        'will start to appear here.',
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 12,
-          height: 1.5,
-          color: AppTheme.textMuted,
-        ),
+    return Text(
+      'Patterns appear after a few days of data.',
+      style: TextStyle(
+        fontFeatures: AppTheme.tabular,
+        fontFamily: 'Inter',
+        fontSize: 12,
+        height: 1.5,
+        color: AppTheme.textSecondary,
       ),
     );
   }
@@ -410,61 +464,43 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated,
-        border: Border(bottom: BorderSide(color: AppTheme.border)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Productivity',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 19,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.4,
-                    color: AppTheme.textPrimary,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                'Productivity',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    color: AppTheme.textMuted,
-                  ),
-                ),
-              ],
+              ),
             ),
+            for (final option in ProductivityRange.values)
+              _RangeButton(
+                label: option.label,
+                isSelected: option == range,
+                onTap: () => onRangeChanged(option),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppTheme.space8),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontFeatures: AppTheme.tabular,
+            fontFamily: 'Inter',
+            fontSize: 14,
+            color: AppTheme.textSecondary,
           ),
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceCard,
-              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-              border: Border.all(color: AppTheme.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                for (final option in ProductivityRange.values)
-                  _RangeButton(
-                    label: option.label,
-                    isSelected: option == range,
-                    onTap: () => onRangeChanged(option),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -482,25 +518,32 @@ class _RangeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppTheme.accent.withValues(alpha: 0.14)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? AppTheme.accent : AppTheme.textMuted,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        hoverColor: AppTheme.hoverOverlay,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 32),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.space12),
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFeatures: AppTheme.tabular,
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                  color: isSelected
+                      ? AppTheme.textPrimary
+                      : AppTheme.textSecondary,
+                ),
+              ),
+            ),
           ),
         ),
       ),

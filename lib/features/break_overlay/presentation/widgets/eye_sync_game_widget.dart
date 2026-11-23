@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
@@ -124,7 +125,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
         _SessionIndicator(
           completed: _completedSessions,
           total: widget.targetSessions,
-          color: const Color(0xFF93C5FD),
+          color: BreakOverlayTheme.eyeRest,
         ),
         const SizedBox(height: 32),
         ValueListenableBuilder<int>(
@@ -158,7 +159,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
               style: TextStyle(
                 color: BreakPalette.of(
                   context,
-                ).accentOn(const Color(0xFF93C5FD)).withValues(alpha: 0.8),
+                ).accentOn(BreakOverlayTheme.eyeRest).withValues(alpha: 0.8),
                 fontSize: 12,
                 fontFamily: 'Inter',
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -180,14 +181,14 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFF93C5FD).withValues(alpha: 0.4),
+              color: BreakOverlayTheme.eyeRest.withValues(alpha: 0.4),
               width: 1.5,
             ),
           ),
           child: const Center(
             child: Icon(
-              Icons.visibility_rounded,
-              color: Color(0xFF93C5FD),
+              CupertinoIcons.eye,
+              color: BreakOverlayTheme.eyeRest,
               size: 28,
             ),
           ),
@@ -198,9 +199,8 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           style: TextStyle(
             color: BreakPalette.of(context).textPrimary,
             fontSize: 20,
-            fontWeight: FontWeight.w300,
+            fontWeight: FontWeight.w400,
             fontFamily: 'Inter',
-            letterSpacing: -0.2,
           ),
         ),
         const SizedBox(height: 10),
@@ -271,24 +271,31 @@ class _EyeSyncViewport extends StatelessWidget {
         animation: orbController,
         builder: (ctx, _) {
           final pos = orbAnimation.value;
-          return Container(
-            width: 320,
-            height: 200,
-            decoration: BoxDecoration(
-              color: BreakPalette.of(context).canvasRaised,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: BreakPalette.of(context).border),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: pos.dx * 280 + 10,
-                    top: pos.dy * 160 + 10,
-                    child: _GlowingOrb(),
+          final palette = BreakPalette.of(context);
+          return ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: AspectRatio(
+              aspectRatio: 1.6,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: palette.canvasRaised,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.border),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: LayoutBuilder(
+                    builder: (_, box) => Stack(
+                      children: [
+                        Positioned(
+                          left: pos.dx * (box.maxWidth - 40) + 10,
+                          top: pos.dy * (box.maxHeight - 40) + 10,
+                          child: _GlowingOrb(),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
           );
@@ -306,7 +313,7 @@ class _GlowingOrb extends StatelessWidget {
       height: 20,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        color: Color(0xFF93C5FD),
+        color: BreakOverlayTheme.eyeRest,
       ),
     );
   }

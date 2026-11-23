@@ -35,34 +35,25 @@ class GeneralSection extends StatelessWidget {
         SettingsGroup(
           children: [_buildLaunchAtStartup(context), _buildMenuBarDisplay()],
         ),
-        const SizedBox(height: 8),
-
-        sectionHeader('Working Hours'),
+        sectionHeader('Schedule'),
         SettingsGroup(
           children: [
             _buildWorkingHoursToggle(),
             if (settings.workingHoursEnabled) ...[
               _buildDaysToggle(),
-              _buildTimeSelector('Start Time', settings.workStartTime),
-              _buildTimeSelector('End Time', settings.workEndTime),
+              _buildTimeSelector('Start time', settings.workStartTime),
+              _buildTimeSelector('End time', settings.workEndTime),
               WeeklyScheduleEditor(settings: settings, onSave: onSave),
             ],
           ],
         ),
         AccessibilitySettings(settings: settings, onSave: onSave),
         AdvancedSettings(
-          subtitle:
-              'Session recovery, quiet presets, hotkeys and idle behavior',
           children: [
             _buildSessionResume(),
-            divider(),
             _buildQuietModePresets(),
-            divider(),
             _buildGlobalHotkey(),
-            const SizedBox(height: 16),
-            sectionHeader('Idle & Inactivity'),
             _buildPauseTimer(),
-            divider(),
             _buildResetTimer(),
           ],
         ),
@@ -71,50 +62,44 @@ class GeneralSection extends StatelessWidget {
   }
 
   Widget _buildLaunchAtStartup(BuildContext context) {
-    return buildListRow(
-      'Launch at Startup',
-      'Start BreakMate automatically when you log in',
-      settings.autoStart,
-      CupertinoIcons.rocket,
-      (v) async {
-        onSave(settings.copyWith(autoStart: v));
-        try {
-          final ok = v
-              ? await launchAtStartup.enable()
-              : await launchAtStartup.disable();
-          if (ok) {
-            if (context.mounted) {
-              Toast.showSuccess(
-                context,
-                v ? 'Will launch at startup' : 'Startup launch disabled',
-              );
-            }
-            return;
+    return buildListRow('Launch at startup', '', settings.autoStart, (v) async {
+      onSave(settings.copyWith(autoStart: v));
+      try {
+        final ok = v
+            ? await launchAtStartup.enable()
+            : await launchAtStartup.disable();
+        if (ok) {
+          if (context.mounted) {
+            Toast.showSuccess(
+              context,
+              v ? 'Will launch at startup' : 'Startup launch disabled',
+            );
           }
-        } catch (_) {}
-
-        onSave(settings.copyWith(autoStart: !v));
-        if (context.mounted) {
-          await showCupertinoDialog<void>(
-            context: context,
-            builder: (ctx) => CupertinoAlertDialog(
-              title: const Text('Launch at Startup unavailable'),
-              content: Text(
-                v
-                    ? "This feature can't be enabled on this system."
-                    : "This feature can't be disabled on this system.",
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+          return;
         }
-      },
-    );
+      } catch (_) {}
+
+      onSave(settings.copyWith(autoStart: !v));
+      if (context.mounted) {
+        await showCupertinoDialog<void>(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: const Text('Launch at Startup unavailable'),
+            content: Text(
+              v
+                  ? "This feature can't be enabled on this system."
+                  : "This feature can't be disabled on this system.",
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    });
   }
 
   static final _menuBarModes = Platform.isWindows
@@ -151,13 +136,7 @@ class GeneralSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildListRow(
-          'Menu Bar Display',
-          'What the menu bar shows while your next break approaches',
-          null,
-          CupertinoIcons.macwindow,
-          null,
-        ),
+        buildListRow('Menu bar display', '', null, null),
         MenuBarModePicker(
           modes: _menuBarModes,
           selected: _currentMenuBarMode,
@@ -169,10 +148,9 @@ class GeneralSection extends StatelessWidget {
 
   Widget _buildQuietModePresets() {
     return buildListRow(
-      'Quiet Mode Preset',
-      'Choose a behavior for silences (e.g. Deep Work blocks all)',
+      'Quiet mode preset',
+      '',
       null,
-      CupertinoIcons.moon_zzz,
       null,
       trailing: inlineDropdown(
         settings.quietModePreset,
@@ -188,10 +166,9 @@ class GeneralSection extends StatelessWidget {
   Widget _buildGlobalHotkey() {
     final shortcutLabel = Platform.isMacOS ? '⌘⌥B' : 'Ctrl+Alt+B';
     return buildListRow(
-      'Global Hotkey',
-      'Press $shortcutLabel anywhere to take a break, or skip one already running',
+      'Global hotkey',
+      '$shortcutLabel takes or skips a break from anywhere',
       settings.globalHotkeyEnabled,
-      CupertinoIcons.keyboard,
       (v) => onSave(settings.copyWith(globalHotkeyEnabled: v)),
     );
   }
@@ -199,9 +176,8 @@ class GeneralSection extends StatelessWidget {
   Widget _buildPauseTimer() {
     return buildListRow(
       'Pause timer after',
-      'Inactivity time before pausing the timer',
+      '',
       null,
-      CupertinoIcons.pause_circle,
       null,
       trailing: inlineDropdown(
         '${settings.pauseTimerAfterMinutes} min',
@@ -220,9 +196,8 @@ class GeneralSection extends StatelessWidget {
   Widget _buildResetTimer() {
     return buildListRow(
       'Return choice after',
-      'After this much idle pause, ask how to resume when you return',
+      'Ask how to resume after this long paused',
       null,
-      CupertinoIcons.refresh,
       null,
       trailing: inlineDropdown(
         '${settings.resetTimerAfterMinutes} min',
@@ -240,8 +215,8 @@ class GeneralSection extends StatelessWidget {
 
   Widget _buildWorkingHoursToggle() {
     return toggleRow(
-      'Working Hours',
-      'Specify on which days and at what time you want to use the app.',
+      'Working hours',
+      '',
       settings.workingHoursEnabled,
       (v) => onSave(settings.copyWith(workingHoursEnabled: v)),
     );
@@ -263,7 +238,7 @@ class GeneralSection extends StatelessWidget {
                 children: [
                   Text(
                     e.value,
-                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                   ),
                   const SizedBox(height: 4),
                   TapTarget(
@@ -313,11 +288,8 @@ class GeneralSection extends StatelessWidget {
   Widget _buildTimeSelector(String label, String time) {
     return buildListRow(
       label,
-      label.startsWith('Start')
-          ? 'When your workday begins'
-          : 'When your workday ends',
+      '',
       null,
-      CupertinoIcons.clock,
       null,
       trailing: inlineDropdown(time, timeOptions(), (v) {
         if (v != null) {
@@ -333,10 +305,9 @@ class GeneralSection extends StatelessWidget {
 
   Widget _buildSessionResume() {
     return buildListRow(
-      'Resume Progress',
-      'Continue from where you left off on app restart (same day only)',
+      'Resume progress',
+      'Continue where you left off after a restart, same day only',
       settings.enableSessionResume,
-      CupertinoIcons.arrow_counterclockwise,
       (v) {
         onSave(settings.copyWith(enableSessionResume: v));
         sl<TrayManagerService>().triggerActionAnimation();

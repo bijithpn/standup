@@ -35,7 +35,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Name your Blobatar'), findsOneWidget);
+      expect(find.text('Name your companion'), findsOneWidget);
       expect(find.byType(Blobatar), findsOneWidget);
 
       // Enter a new name
@@ -43,7 +43,7 @@ void main() {
       await tester.pump();
 
       // Tap Save
-      await tester.tap(find.text('Save Name'));
+      await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -87,7 +87,7 @@ void main() {
       await tester.pump();
 
       // Tap Save
-      await tester.tap(find.text('Save Name'));
+      await tester.tap(find.text('Save'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -124,7 +124,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Name your Blobatar'), findsOneWidget);
+        expect(find.text('Name your companion'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

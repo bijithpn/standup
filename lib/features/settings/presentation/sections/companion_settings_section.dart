@@ -190,41 +190,27 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeroHeader(),
-                const SizedBox(height: 32),
+                if (widget.controller.companionEnabled) ...[
+                  _buildActiveCompanion(),
+                  const SizedBox(height: 32),
+                ],
 
                 sectionHeader('Status'),
                 buildCard([
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          CupertinoIcons.info_circle,
-                          size: 18,
-                          color: AppTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            widget.controller.companionStateExplanation,
-                            style: TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 13,
-                              height: 1.35,
-                            ),
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      widget.controller.companionStateExplanation,
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                   divider(),
                   toggleRow(
-                    'Show Companion',
-                    'Enable your 3D companion to float seamlessly on your screen in Picture-in-Picture mode.',
+                    'Show companion',
+                    'Floats on your screen in a small window',
                     widget.controller.companionEnabled,
                     (v) => widget.controller.toggleCompanion(v),
                   ),
@@ -232,8 +218,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     divider(),
                     toggleRow(
                       'Escalate if ignored',
-                      'Your companion gives the first cue. If you do not step '
-                          'away within 45 seconds, the full reminder appears.',
+                      'The companion cues first; the full reminder follows after 45 seconds',
                       sl<SettingsRepository>()
                           .currentSettings
                           .experience
@@ -259,21 +244,21 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   const SizedBox(height: 32),
 
                   if (!FlavorConfig.instance.isDev) ...[
-                    sectionHeader('Streak Recognition'),
-                    _buildStreakCard(),
+                    sectionHeader('Streak recognition'),
+                    _buildStreak(),
                     const SizedBox(height: 32),
                   ],
 
                   sectionHeader('Personalization'),
                   buildCard([
                     textFieldRow(
-                      'Companion Name',
+                      'Companion name',
                       widget.controller.companionPetName,
                       (v) => widget.controller.changePetName(v),
                     ),
                     divider(),
                     sliderRow(
-                      'Pet Size (${_petSizePercent(_displayedScale)}%)',
+                      'Pet size (${_petSizePercent(_displayedScale)}%)',
                       _displayedScale,
                       _previewPetSize,
                       onChangeEnd: (value) => unawaited(_commitPetSize(value)),
@@ -281,9 +266,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       max: _maximumPetSize,
                     ),
                   ]),
-
-                  const SizedBox(height: 32),
-                  sectionHeader('Floating Window'),
+                  sectionHeader('Floating window'),
                   buildCard([
                     dropdownRow(
                       'Backdrop',
@@ -297,15 +280,14 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                     divider(),
                     toggleRow(
-                      'Keep On Screen',
-                      'Your companion stays out all the time. Turn this off and '
-                          'it only appears while a break is running.',
+                      'Keep on screen',
+                      'Off: it only appears during a break',
                       widget.controller.companionKeepOnScreen,
                       (v) => widget.controller.changeKeepOnScreen(v),
                     ),
                     divider(),
                     sliderRow(
-                      'Window Opacity (${(_displayedOpacity * 100).round()}%)${_displayedOpacity == 1.0 ? " (Opaque)" : ""}',
+                      'Window opacity (${(_displayedOpacity * 100).round()}%)${_displayedOpacity == 1.0 ? " (Opaque)" : ""}',
                       _displayedOpacity,
                       (v) => setState(() => _previewOpacity = v),
                       onChangeEnd: (v) => unawaited(_commitOpacity(v)),
@@ -314,20 +296,17 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                     divider(),
                     toggleRow(
-                      'Draggable Area Clickable',
-                      'Enables click/drag on the handle. If disabled, the entire window ignores mouse clicks (click-through).',
+                      'Draggable area clickable',
+                      'Off: the whole window ignores clicks',
                       widget.controller.pipDraggableClickable,
                       (v) => widget.controller.changePipDraggableClickable(v),
                     ),
                   ]),
-
-                  const SizedBox(height: 32),
-                  sectionHeader('Looking & Motion'),
+                  sectionHeader('Looking and motion'),
                   buildCard([
                     toggleRow(
-                      'Follow Cursor',
-                      'Eyes and head turn toward your pointer, and settle '
-                          'when it stops. Nothing is recorded or sent anywhere.',
+                      'Follow cursor',
+                      'Eyes and head turn toward your pointer',
                       widget.controller.gazeEnabled,
                       (v) => widget.controller.changeGazeEnabled(v),
                     ),
@@ -342,81 +321,69 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ],
                     divider(),
                     toggleRow(
-                      'Idle Animation',
-                      'Gentle breathing, blinking and occasional glances '
-                          'while nothing is happening.',
+                      'Idle animation',
+                      'Breathing, blinking and glances while idle',
                       widget.controller.idleAnimationEnabled,
                       (v) => widget.controller.changeIdleAnimation(v),
                     ),
                     divider(),
                     toggleRow(
                       'Reactions',
-                      'Celebrates a finished break and perks up for a break '
-                          'reminder. Never makes a sound or a notification.',
+                      'Celebrates finished breaks and perks up for reminders',
                       widget.controller.reactionsEnabled,
                       (v) => widget.controller.changeReactionsEnabled(v),
                     ),
                     divider(),
                     toggleRow(
-                      'Reduce Motion',
-                      'No bouncing, recoil or wandering glances. Also on '
-                          'automatically when macOS Reduce Motion is on.',
+                      'Reduce motion',
+                      'No bouncing or wandering glances. Follows macOS Reduce Motion',
                       widget.controller.reducedMotionEnabled,
                       (v) => widget.controller.changeReducedMotion(v),
                     ),
                   ]),
-
-                  const SizedBox(height: 32),
                   sectionHeader('Behavior'),
                   buildCard([
                     toggleRow(
-                      'Low-distraction Focus Mode',
-                      'Reduces motion, disables cursor chasing, and makes the companion click-through.',
+                      'Low-distraction focus mode',
+                      'Less motion, no cursor chasing, click-through',
                       widget.controller.isLowDistractionMode,
                       (v) => widget.controller.setLowDistractionMode(v),
                     ),
                     divider(),
                     toggleRow(
-                      'Ghost Mode (Click-through)',
-                      'Let the pet stay visible but ignore all mouse interactions.',
+                      'Click-through',
+                      'Stays visible but ignores the mouse',
                       widget.controller.companionClickThrough,
                       (v) => widget.controller.changeClickThrough(v),
                     ),
                     divider(),
                     toggleRow(
-                      'Wander Around the Screen',
-                      'Every so often the pet strolls to a new spot near the '
-                          'edge of your display. It never moves while you are '
-                          'hovering over it or dragging it.',
+                      'Wander around the screen',
+                      'Strolls to a new spot near the edge now and then',
                       widget.controller.companionWanderingEnabled,
                       (v) => widget.controller.changeWandering(v),
                     ),
                   ]),
 
-                  const SizedBox(height: 32),
-
-                  sectionHeader('Interaction Features'),
+                  sectionHeader('Interaction'),
                   buildCard([
                     toggleRow(
-                      'Petting & Affection',
-                      'Offers a "pet" button when you hover the companion, and '
-                          'lets you scratch it by clicking.',
+                      'Petting',
+                      'A pet button appears when you hover',
                       widget.controller.pettingEnabled,
                       (v) => widget.controller.changePettingEnabled(v),
                     ),
                     divider(),
                     toggleRow(
                       'Play',
-                      'Offers a game when you hover the companion. It stays '
-                          'wound up for a while afterwards.',
+                      'Offers a game when you hover',
                       widget.controller.ballThrowEnabled,
                       (v) => widget.controller.changeBallThrowEnabled(v),
                     ),
                     divider(),
                     toggleRow(
                       'Treats',
-                      'Offers a treat when you hover the companion. The '
-                          'quickest way to win it over.',
+                      'Offers a treat when you hover',
                       widget.controller.treatEnabled,
                       (v) => widget.controller.changeTreatEnabled(v),
                     ),
@@ -429,12 +396,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               Positioned.fill(
                 child: AbsorbPointer(
                   child: Container(
-                    color: Colors.black.withValues(alpha: 0.15),
-
+                    color: AppTheme.surface.withValues(alpha: 0.4),
                     child: Align(
-                      alignment: Alignment.topCenter,
+                      alignment: Alignment.center,
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 120),
+                        padding: EdgeInsets.zero,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -444,15 +410,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             color: AppTheme.surfaceElevated.withValues(
                               alpha: 0.9,
                             ),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusMd,
+                            ),
                             border: Border.all(color: AppTheme.border),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -463,11 +424,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Starting your companion...',
+                                'Starting your companion',
                                 style: TextStyle(
                                   color: AppTheme.textPrimary,
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -484,34 +445,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     );
   }
 
-  Widget _buildHeroHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Customize and preview your companion settings.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStreakCard() {
+  Widget _buildStreak() {
     return AnimatedBuilder(
       animation: sl<CompanionStreakService>(),
       builder: (context, _) {
@@ -521,243 +455,119 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
         final next = streakService.nextMilestone;
         final daysToNext = next != null ? next.days - current : null;
 
-        return buildCard([
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              children: [
-                Icon(
-                  CupertinoIcons.flame_fill,
-                  size: 18,
-                  color: current > 0 ? AppTheme.accent : AppTheme.textMuted,
+        return Padding(
+          padding: const EdgeInsets.only(left: AppTheme.space4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$current',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w500,
+                  fontFeatures: AppTheme.tabular,
+                  color: current > 0
+                      ? AppTheme.textPrimary
+                      : AppTheme.textMuted,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        current > 0
-                            ? '$current-day streak'
-                                  '${highest != null ? ' · ${highest.label}' : ''}'
-                            : 'No active streak yet',
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (next != null &&
-                          daysToNext != null &&
-                          daysToNext > 0) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '$daysToNext day${daysToNext == 1 ? '' : 's'} to '
-                          '"${next.label}"',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+              ),
+              const SizedBox(width: AppTheme.space8),
+              Flexible(
+                child: Text(
+                  [
+                    'day streak',
+                    ?highest?.label,
+                    if (next != null && daysToNext != null && daysToNext > 0)
+                      '$daysToNext ${daysToNext == 1 ? 'day' : 'days'} to "${next.label}"',
+                  ].join(' · '),
+                  style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ]);
+        );
       },
     );
   }
 
-  Widget _buildActiveCompanionShowcase() {
+  Widget _buildActiveCompanion() {
     final theme = PetTheme.getTheme(_displayedThemeId);
     final isBlobatar = theme.isBlobatar;
     final def = theme.avatarDefinition;
-    final previewSize = 124.0 * _petSizeFactor(_displayedScale);
+    final previewSize = 104.0 * _petSizeFactor(_displayedScale);
 
-    return Container(
-      margin: const EdgeInsets.only(top: 16, bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.accentColor.withValues(alpha: 0.3),
-          width: 1.5,
+    return Row(
+      children: [
+        Container(
+          width: 128,
+          height: 128,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          ),
+          child: isBlobatar
+              ? BlobatarCompanionWidget(
+                  name: widget.controller.companionPetName,
+                  size: previewSize,
+                  onTap: _openBlobatarRenameDialog,
+                )
+              : def != null
+              ? AvatarArtwork.definition(
+                  def,
+                  width: previewSize,
+                  height: previewSize,
+                  fit: BoxFit.contain,
+                )
+              : theme.basePath.endsWith('.svg')
+              ? AvatarArtwork(
+                  recipe: AvatarArtworkRecipe(assetKey: theme.basePath),
+                  width: previewSize,
+                  height: previewSize,
+                  fit: BoxFit.contain,
+                )
+              : theme.basePath.isNotEmpty
+              ? Image.asset(
+                  theme.basePath,
+                  width: previewSize,
+                  height: previewSize,
+                  fit: BoxFit.contain,
+                )
+              : Icon(CupertinoIcons.paw, size: 48, color: AppTheme.textMuted),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.accentColor.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 140,
-            height: 140,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceElevated.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.border),
-            ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (isBlobatar)
-                  Center(
-                    child: BlobatarCompanionWidget(
-                      name: widget.controller.companionPetName,
-                      size: previewSize,
-                      onTap: _openBlobatarRenameDialog,
-                    ),
-                  )
-                else if (def != null)
-                  Center(
-                    child: AvatarArtwork.definition(
-                      def,
-                      width: previewSize,
-                      height: previewSize,
-                      fit: BoxFit.contain,
-                    ),
-                  )
-                else if (theme.basePath.endsWith('.svg'))
-                  Center(
-                    child: AvatarArtwork(
-                      recipe: AvatarArtworkRecipe(assetKey: theme.basePath),
-                      width: previewSize,
-                      height: previewSize,
-                      fit: BoxFit.contain,
-                    ),
-                  )
-                else if (theme.basePath.isNotEmpty)
-                  Center(
-                    child: Image.asset(
-                      theme.basePath,
-                      width: previewSize,
-                      height: previewSize,
-                      fit: BoxFit.contain,
-                    ),
-                  )
-                else
-                  Icon(
-                    Icons.pets_rounded,
-                    size: 64,
-                    color: AppTheme.accentColor,
-                  ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          width: 0.5,
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      theme.name,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+        const SizedBox(width: AppTheme.space24),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.controller.companionPetName,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: AppTheme.space4),
+              Text(
+                isBlobatar
+                    ? 'Blobatar, generative pet'
+                    : '${theme.name} · ${theme.species.name}',
+                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+              ),
+              if (isBlobatar) ...[
+                const SizedBox(height: AppTheme.space16),
+                MinimalButton(
+                  isSecondary: true,
+                  onPressed: _openBlobatarRenameDialog,
+                  child: const Text('Name and morph'),
                 ),
               ],
-            ),
+            ],
           ),
-          const SizedBox(width: 20),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppTheme.success,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'ACTIVE COMPANION',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.accentColor,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  widget.controller.companionPetName,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isBlobatar
-                      ? 'Blobatar · GENERATIVE DYNAMIC PET'
-                      : '${theme.name} · ${theme.species.name.toUpperCase()}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (isBlobatar)
-                  FilledButton.icon(
-                    onPressed: _openBlobatarRenameDialog,
-                    icon: const Icon(Icons.edit_rounded, size: 16),
-                    label: const Text('Name & Morph Blob'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.accentColor,
-                      foregroundColor: AppTheme.onAccent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -787,7 +597,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
         filterQuality: FilterQuality.medium,
         isAntiAlias: true,
         errorBuilder: (_, _, _) => Center(
-          child: Icon(Icons.pets_rounded, size: 34, color: AppTheme.textMuted),
+          child: Icon(CupertinoIcons.paw, size: 34, color: AppTheme.textMuted),
         ),
       ),
     );
@@ -797,221 +607,127 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildActiveCompanionShowcase(),
-        const SizedBox(height: 16),
         sectionHeader(
-          '3D Pet Gallery',
-          subtitle:
-              'Select from 30+ OneWorks 3D species and generative Blobatar',
+          'Pets',
+          subtitle: 'Select from 30+ 3D species and the generative Blobatar',
         ),
-
-        const SizedBox(height: 12),
+        const SizedBox(height: AppTheme.space4),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.95,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 128,
+            mainAxisExtent: 128,
+            mainAxisSpacing: AppTheme.space8,
+            crossAxisSpacing: AppTheme.space8,
           ),
           itemCount: PetTheme.themes.length,
-          itemBuilder: (context, index) {
-            final theme = PetTheme.themes[index];
-            final isSelected = _displayedThemeId == theme.id;
+          itemBuilder: (context, index) => _petTile(PetTheme.themes[index]),
+        ),
+      ],
+    );
+  }
 
-            final isLocked =
-                !FlavorConfig.instance.isDev &&
-                theme.requiredConsistencyDays > 0 &&
-                (sl<CompanionStreakService>().currentStreakDays <
-                    theme.requiredConsistencyDays);
+  Widget _petTile(PetTheme theme) {
+    final isSelected = _displayedThemeId == theme.id;
+    final isLocked =
+        !FlavorConfig.instance.isDev &&
+        theme.requiredConsistencyDays > 0 &&
+        (sl<CompanionStreakService>().currentStreakDays <
+            theme.requiredConsistencyDays);
 
-            return Tooltip(
-              message: isLocked
-                  ? 'Requires a ${theme.requiredConsistencyDays}-day streak to unlock'
-                  : (theme.isBlobatar
-                        ? 'Blobatar: tap to select or rename'
-                        : ''),
-              waitDuration: const Duration(milliseconds: 400),
-              child: TapTarget(
-                selected: isSelected,
-                onTap: isLocked
-                    ? null
-                    : () {
-                        if (_isApplyingTheme) return;
-                        if (theme.isBlobatar && isSelected) {
-                          _openBlobatarRenameDialog();
-                        } else {
-                          unawaited(_selectTheme(theme));
-                        }
-                      },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isSelected
-                          ? [
-                              AppTheme.accentColor.withValues(alpha: 0.22),
-                              AppTheme.accentColor.withValues(alpha: 0.08),
-                            ]
-                          : [
-                              AppTheme.surfaceElevated,
-                              AppTheme.accentColor.withValues(alpha: 0.05),
-                            ],
+    return Tooltip(
+      message: isLocked
+          ? 'Requires a ${theme.requiredConsistencyDays}-day streak to unlock'
+          : (theme.isBlobatar ? 'Blobatar: tap to select or rename' : ''),
+      waitDuration: const Duration(milliseconds: 400),
+      child: TapTarget(
+        selected: isSelected,
+        onTap: isLocked
+            ? null
+            : () {
+                if (_isApplyingTheme) return;
+                if (theme.isBlobatar && isSelected) {
+                  _openBlobatarRenameDialog();
+                } else {
+                  unawaited(_selectTheme(theme));
+                }
+              },
+        child: Container(
+          padding: const EdgeInsets.all(AppTheme.space8),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            border: Border.all(
+              color: isSelected ? AppTheme.accent : AppTheme.borderSubtle,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: Opacity(
+                  opacity: isLocked ? 0.4 : 1,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+                    child: SizedBox.expand(
+                      child: theme.isBlobatar
+                          ? Center(
+                              child: BlobatarCompanionWidget(
+                                name: widget.controller.companionPetName,
+                                size: 56,
+                                isInteractive: false,
+                                animate: BlobatarAnimate.hover,
+                              ),
+                            )
+                          : theme.avatarDefinition != null ||
+                                theme.basePath.endsWith('.svg')
+                          ? _buildSpeciesThumbnail(theme)
+                          : Center(
+                              child: Icon(
+                                CupertinoIcons.paw,
+                                size: 32,
+                                color: AppTheme.textMuted,
+                              ),
+                            ),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppTheme.accentColor
-                          : AppTheme.border,
-                      width: isSelected ? 2.5 : 1,
-                    ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withValues(
-                                alpha: 0.25,
-                              ),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (theme.isBlobatar)
-                        Center(
-                          child: BlobatarCompanionWidget(
-                            name: widget.controller.companionPetName,
-                            size: 64,
-                            isInteractive: false,
-                            animate: BlobatarAnimate.hover,
-                          ),
-                        )
-                      else if (theme.avatarDefinition != null ||
-                          theme.basePath.endsWith('.svg'))
-                        _buildSpeciesThumbnail(theme)
-                      else
-                        Center(
-                          child: Icon(
-                            Icons.pets_rounded,
-                            size: 40,
-                            color: isSelected
-                                ? AppTheme.accentColor
-                                : AppTheme.textMuted,
-                          ),
-                        ),
-
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 5,
-                            horizontal: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.28),
-                            border: Border(
-                              top: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                width: 0.5,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (isSelected) ...[
-                                Container(
-                                  width: 5,
-                                  height: 5,
-                                  margin: const EdgeInsets.only(right: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.accentColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ],
-                              Flexible(
-                                child: Text(
-                                  theme.name,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                    color: isSelected
-                                        ? AppTheme.accentColor
-                                        : Colors.white,
-                                    letterSpacing: 0.2,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      if (isLocked) ...[
-                        Positioned.fill(
-                          child: ColoredBox(
-                            color: Colors.black.withValues(alpha: 0.16),
-                          ),
-                        ),
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.42),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.22),
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  CupertinoIcons.lock_fill,
-                                  size: 18,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${theme.requiredConsistencyDays} days',
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
                   ),
                 ),
               ),
-            );
-          },
+              const SizedBox(height: AppTheme.space4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isLocked) ...[
+                    Icon(
+                      CupertinoIcons.lock,
+                      size: 12,
+                      color: AppTheme.textMuted,
+                    ),
+                    const SizedBox(width: AppTheme.space4),
+                  ],
+                  Flexible(
+                    child: Text(
+                      isLocked
+                          ? '${theme.requiredConsistencyDays} days'
+                          : theme.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isLocked
+                            ? AppTheme.textMuted
+                            : AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }

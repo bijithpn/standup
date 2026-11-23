@@ -13,18 +13,18 @@ class _WishStyle {
 
 const Map<PetWish, _WishStyle> _wishStyles = <PetWish, _WishStyle>{
   PetWish.petting: _WishStyle(
-    Icons.back_hand_rounded,
+    CupertinoIcons.hand_raised,
     'Pet',
     'Give it a scratch',
   ),
   PetWish.play: _WishStyle(
-    Icons.sports_baseball_rounded,
+    CupertinoIcons.sportscourt,
     'Play',
     'Throw something for it',
   ),
-  PetWish.treat: _WishStyle(Icons.cookie_rounded, 'Treat', 'Offer a treat'),
+  PetWish.treat: _WishStyle(CupertinoIcons.gift, 'Treat', 'Offer a treat'),
   PetWish.rest: _WishStyle(
-    Icons.self_improvement_rounded,
+    CupertinoIcons.person_crop_circle,
     'Rest',
     'Start a break now',
   ),
@@ -84,7 +84,7 @@ class _ActionBarState extends State<_ActionBar> {
                 },
                 onTap: () => widget.onSelected(action),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
             ],
           ]..removeLast(),
         ),
@@ -99,14 +99,10 @@ class _ActionBarState extends State<_ActionBar> {
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
+                      fontWeight: FontWeight.w500,
                       color: labelled == suggested
                           ? AppTheme.accent
                           : widget.foreground.withValues(alpha: 0.75),
-                      shadows: const <Shadow>[
-                        Shadow(blurRadius: 4, color: Color(0xCC000000)),
-                      ],
                     ),
                   ),
                 ),
@@ -148,8 +144,8 @@ class _ActionButton extends StatelessWidget {
           label: style.hint,
           onTap: onTap,
           child: Container(
-            width: 30,
-            height: 30,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: isSuggested
                   ? AppTheme.accent.withValues(alpha: 0.22)
@@ -159,12 +155,12 @@ class _ActionButton extends StatelessWidget {
                 color: isSuggested
                     ? AppTheme.accent.withValues(alpha: 0.85)
                     : foreground.withValues(alpha: 0.14),
-                width: isSuggested ? 1.4 : 1.0,
+                width: 1.0,
               ),
             ),
             child: Icon(
               style.icon,
-              size: 15,
+              size: 16,
               color: isSuggested
                   ? AppTheme.accent
                   : foreground.withValues(alpha: 0.85),
@@ -197,6 +193,7 @@ class _ChromeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
+      waitDuration: const Duration(milliseconds: 400),
       child: _Pressable(
         label: tooltip,
         onTap: onTap,
@@ -216,7 +213,7 @@ class _ChromeButton extends StatelessWidget {
             ),
             child: Icon(
               icon,
-              size: 13,
+              size: 16,
               color: isActive
                   ? AppTheme.accent
                   : foreground.withValues(alpha: 0.8),
@@ -245,7 +242,7 @@ class _NamePill extends StatelessWidget {
     if (label.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -258,8 +255,7 @@ class _NamePill extends StatelessWidget {
         style: TextStyle(
           fontFamily: 'Inter',
           fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.1,
+          fontWeight: FontWeight.w500,
           color: foreground.withValues(alpha: 0.9),
         ),
       ),
@@ -296,7 +292,7 @@ class _DottedDragHandleState extends State<_DottedDragHandle> {
 
     return Tooltip(
       message: 'Drag to move companion',
-      waitDuration: const Duration(milliseconds: 500),
+      waitDuration: const Duration(milliseconds: 400),
       child: MouseRegion(
         cursor: _isDragging
             ? SystemMouseCursors.grabbing

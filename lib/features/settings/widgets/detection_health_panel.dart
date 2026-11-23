@@ -1,7 +1,9 @@
 import 'settings_group.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -109,27 +111,27 @@ class _DetectionHealthPanelState extends State<DetectionHealthPanel>
     StatusPill pill,
     List<Widget> actions,
   ) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 20),
+    padding: const EdgeInsets.symmetric(vertical: 16),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Wrap(
-          spacing: 10,
-          runSpacing: 6,
+          spacing: 8,
+          runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
               title,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 color: AppTheme.textPrimary,
               ),
             ),
             pill,
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           status,
           style: TextStyle(
@@ -147,15 +149,10 @@ class _DetectionHealthPanelState extends State<DetectionHealthPanel>
     ),
   );
 
-  Widget _button(String label, VoidCallback? onPressed) => OutlinedButton(
+  Widget _button(String label, VoidCallback? onPressed) => MinimalButton(
     onPressed: onPressed,
-    style: OutlinedButton.styleFrom(
-      foregroundColor: AppTheme.accentColor,
-      side: BorderSide(color: AppTheme.accentColor.withValues(alpha: 0.5)),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ),
-    child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+    isSecondary: true,
+    child: Text(label),
   );
 
   void _goTo(String section) {
@@ -233,29 +230,12 @@ class _DetectionHealthPanelState extends State<DetectionHealthPanel>
           ),
         if (_message != null)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Semantics(
               liveRegion: true,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 16,
-                    color: AppTheme.accentColor,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _message!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.5,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
+              child: Text(
+                _message!,
+                style: TextStyle(fontSize: 12, color: AppTheme.textPrimary),
               ),
             ),
           ),
@@ -263,10 +243,17 @@ class _DetectionHealthPanelState extends State<DetectionHealthPanel>
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: TextButton.icon(
+            child: MinimalButton(
+              isGhost: true,
               onPressed: _loading ? null : () => _refresh(announce: true),
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: Text(_loading ? 'Checking' : 'Check again'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(CupertinoIcons.refresh, size: 16),
+                  const SizedBox(width: 8),
+                  Text(_loading ? 'Checking' : 'Check again'),
+                ],
+              ),
             ),
           ),
         ),

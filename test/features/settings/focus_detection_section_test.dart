@@ -65,7 +65,7 @@ void main() {
     );
     await pumpSection(tester, const SettingsModel(), (_) {});
 
-    await tester.tap(find.text('Open Calendar Sync'));
+    await tester.tap(find.text('Open calendar sync'));
     await tester.pump();
 
     expect(sl<AppNavigationService>().selectedSection.value, 'Calendar Sync');

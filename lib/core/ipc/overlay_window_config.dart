@@ -46,6 +46,9 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     int? breakStartedAtMs,
     @Default(false) bool paused,
     String? breakFocus,
+    @Default(false) bool skipLocked,
+    @Default(false) bool askSkipReason,
+    @Default(false) bool snoozeLocked,
   }) = _OverlayWindowConfig;
 
   factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) =>

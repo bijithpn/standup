@@ -1,9 +1,11 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
 import 'package:breakmate/features/settings/presentation/sections/calendar_events_view.dart';
+import 'package:breakmate/features/settings/widgets/settings_group.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -46,24 +48,17 @@ class _CalendarSyncSectionState extends State<CalendarSyncSection>
         builder: (context, c, _) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            sectionHeader(
-              'Calendar Sync',
-              subtitle:
-                  'Lets BreakMate see when your meetings are so breaks stay '
-                  'out of the way. Only event times are used; titles are '
-                  'shown here but never saved.',
+            const SettingsNote(
+              'BreakMate reads event times to keep breaks out of meetings. Titles are shown here but never saved.',
             ),
-            const SizedBox(height: 4),
             _StatusCard(controller: c),
-            const SizedBox(height: 24),
             sectionHeader('Behavior'),
             buildCard([
               toggleRow(
                 'Quiet reminders during meetings',
                 c.state == CalendarConnectionState.connected
-                    ? 'Show a subtle reminder instead of the full break screen '
-                          'while a calendar event is in progress.'
-                    : 'Connect your calendar to use this.',
+                    ? 'A subtle reminder instead of the full break screen during events'
+                    : 'Connect your calendar to use this',
                 c.quietDuringMeetings,
                 (v) {
                   if (c.state == CalendarConnectionState.connected) {
@@ -73,9 +68,7 @@ class _CalendarSyncSectionState extends State<CalendarSyncSection>
               ),
             ]),
             if (c.state == CalendarConnectionState.connected) ...[
-              sectionHeader('Today'),
               TodayAgendaCard(controller: c),
-              sectionHeader('Calendar'),
               MonthCalendarCard(controller: c),
             ],
           ],
@@ -93,76 +86,45 @@ class _StatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller;
-    final (
-      IconData icon,
-      Color color,
-      String title,
-      String body,
-    ) = switch (c.state) {
+    final (String title, String body) = switch (c.state) {
       CalendarConnectionState.checking => (
-        Icons.hourglass_top_rounded,
-        AppTheme.accent,
         'Checking calendar access…',
         'One moment.',
       ),
       CalendarConnectionState.disconnected => (
-        Icons.link_off_rounded,
-        AppTheme.textSecondary,
         'Not connected',
-        'Connect to let BreakMate avoid interrupting your meetings.',
+        'Connect to keep breaks from interrupting your meetings.',
       ),
-      CalendarConnectionState.connected => (
-        Icons.check_circle_outline_rounded,
-        AppTheme.success,
-        'Connected',
-        _syncedLabel(c),
-      ),
+      CalendarConnectionState.connected => ('Connected', _syncedLabel(c)),
       CalendarConnectionState.permissionNeeded => (
-        Icons.lock_outline_rounded,
-        AppTheme.warning,
         'Calendar access needed',
         'Allow calendar access when macOS asks, or in System Settings.',
       ),
       CalendarConnectionState.permissionBlocked => (
-        Icons.lock_outline_rounded,
-        AppTheme.warning,
         'Calendar access blocked',
         'macOS is blocking access. In Privacy & Security → Calendars, '
             'turn BreakMate off and on again (or remove it with “−” and '
             'click Connect again), then come back.',
       ),
       CalendarConnectionState.error => (
-        Icons.error_outline_rounded,
-        AppTheme.error,
         'Couldn’t read your calendar',
         'The last sync failed. Try again.',
       ),
     };
 
-    ButtonStyle filled() => FilledButton.styleFrom(
-      backgroundColor: AppTheme.accentColor,
-      foregroundColor: AppTheme.onAccent,
-      disabledBackgroundColor: AppTheme.accentColor.withValues(alpha: 0.5),
-      disabledForegroundColor: AppTheme.onAccent.withValues(alpha: 0.7),
-    );
-    ButtonStyle outlined() => OutlinedButton.styleFrom(
-      foregroundColor: AppTheme.textPrimary,
-      side: BorderSide(color: AppTheme.border),
-    );
-
     final actions = <Widget>[
       switch (c.state) {
         CalendarConnectionState.disconnected ||
-        CalendarConnectionState.permissionNeeded => FilledButton(
-          style: filled(),
+        CalendarConnectionState.permissionNeeded => MinimalButton(
+          backgroundColor: AppTheme.accentColor,
           onPressed: c.isRequesting ? null : c.connect,
           child: c.isRequesting
               ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: 14,
-                      height: 14,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: AppTheme.onAccent,
@@ -174,31 +136,33 @@ class _StatusCard extends StatelessWidget {
                 )
               : const Text('Connect'),
         ),
-        CalendarConnectionState.permissionBlocked => FilledButton(
-          style: filled(),
+        CalendarConnectionState.permissionBlocked => MinimalButton(
+          backgroundColor: AppTheme.accentColor,
           onPressed: c.openSystemSettings,
-          child: const Text('Open System Settings'),
+          child: const Text('Open system settings'),
         ),
         CalendarConnectionState.connected ||
-        CalendarConnectionState.error => OutlinedButton(
-          style: outlined(),
+        CalendarConnectionState.error => MinimalButton(
+          isSecondary: true,
           onPressed: () => c.refresh(force: true),
           child: const Text('Sync now'),
         ),
-        CalendarConnectionState.checking => OutlinedButton(
-          style: outlined(),
+        CalendarConnectionState.checking => MinimalButton(
+          isSecondary: true,
           onPressed: null,
           child: const Text('Checking…'),
         ),
       },
       if (c.state == CalendarConnectionState.permissionBlocked ||
           c.state == CalendarConnectionState.permissionNeeded)
-        TextButton(
+        MinimalButton(
+          isGhost: true,
           onPressed: () => c.refresh(force: true),
           child: const Text('Recheck'),
         ),
       if (c.enabled && c.state != CalendarConnectionState.checking)
-        TextButton(
+        MinimalButton(
+          isGhost: true,
           onPressed: c.disconnect,
           child: Text(
             'Disconnect',
@@ -207,48 +171,32 @@ class _StatusCard extends StatelessWidget {
         ),
     ];
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return SettingsGroup(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      body,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                body,
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              Wrap(spacing: 8, runSpacing: 8, children: actions),
             ],
           ),
-          const SizedBox(height: 14),
-          Wrap(spacing: 8, runSpacing: 8, children: actions),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

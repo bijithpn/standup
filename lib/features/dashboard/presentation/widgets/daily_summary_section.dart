@@ -1,174 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
-import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
-import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Dashboard card summarizing today's completed/skipped breaks against the daily goal, plus the event timeline.
 class DailySummarySection extends StatelessWidget {
   const DailySummarySection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer3<StatsService, BreakHistoryService, SettingsRepository>(
-      builder: (context, statsService, history, settings, child) {
+    return Consumer2<StatsService, SettingsRepository>(
+      builder: (context, statsService, settings, child) {
         final stats = statsService.load();
-        final todayStr = _todayString();
-        final todayStats = stats.weeklyData.lastWhere(
-          (d) => d.date == todayStr,
-          orElse: () => DailyStats(
-            date: todayStr,
-            breaksCompleted: 0,
-            breaksSkipped: 0,
-            usageMinutes: 0,
-          ),
-        );
-
         final now = DateTime.now();
-        final startOfDay = DateTime(now.year, now.month, now.day);
-        final events = history.eventsBetween(startOfDay, now)
-          ..sort((a, b) => a.time.compareTo(b.time));
-
+        final todayStr =
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        final done = stats.weeklyData
+            .where((d) => d.date == todayStr)
+            .fold<int>(0, (n, d) => n + d.breaksCompleted);
         final goal = settings.currentSettings.dailyBreakGoalCount;
         final restDay = settings.currentSettings.experience.isRestDay(now);
-        final done = todayStats.breaksCompleted;
-        final skipped = todayStats.breaksSkipped;
-        final total = done + skipped;
-        final hasData = total > 0 || todayStats.usageMinutes > 0;
-        final rate = total == 0 ? null : (done / total * 100).round();
 
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: AppTheme.borderSubtle)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Break activity',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Today',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  restDay
-                      ? Text(
-                          'Rest day · $done breaks taken',
-                          style: TextStyle(color: AppTheme.textSecondary),
-                        )
-                      : _GoalChip(done: done, goal: goal),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (!restDay)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: goal <= 0 ? 0 : (done / goal).clamp(0.0, 1.0),
-                    minHeight: 4,
-                    color: done >= goal
-                        ? AppTheme.success
-                        : AppTheme.textPrimary,
-                    backgroundColor: AppTheme.border,
-                  ),
+        final String? breaksDelta = restDay
+            ? 'Rest day'
+            : goal <= 0
+            ? null
+            : done >= goal
+            ? 'Goal reached · $done / $goal'
+            : '$done / $goal breaks';
+
+        return ValueListenableBuilder<Duration>(
+          valueListenable: sl<TimerEngine>().totalWorkTodayNotifier,
+          builder: (context, workToday, _) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Stat(
+                  label: 'Breaks today',
+                  value: '$done',
+                  delta: breaksDelta,
                 ),
-              const SizedBox(height: 22),
-              if (!hasData)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      'No breaks yet today. Your first one will show up here.',
-                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                    ),
-                  ),
-                )
-              else ...[
-                ValueListenableBuilder<Duration>(
-                  valueListenable: sl<TimerEngine>().totalWorkTodayNotifier,
-                  builder: (context, workToday, _) {
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _StatItem(
-                          label: AppStrings.completed,
-                          value: '$done',
-                          color: AppTheme.textPrimary,
-                        ),
-                        _StatItem(
-                          label: AppStrings.skipped,
-                          value: '$skipped',
-                          color: AppTheme.textPrimary,
-                        ),
-                        _StatItem(
-                          label: 'Kept',
-                          value: rate == null ? '–' : '$rate%',
-                          color: AppTheme.textPrimary,
-                        ),
-                        _StatItem(
-                          label: 'Worked',
-                          value: _formatWork(workToday),
-                          color: AppTheme.textPrimary,
-                        ),
-                      ],
-                    );
-                  },
+                _Stat(label: 'Focus time', value: _formatWork(workToday)),
+                _Stat(
+                  label: 'Streak',
+                  value: '${stats.currentStreak}d',
+                  delta: _streakDelta(stats),
                 ),
-                if (events.isNotEmpty) ...[
-                  const SizedBox(height: 22),
-                  Text(
-                    'Timeline',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final e
-                          in events.reversed.take(12).toList().reversed)
-                        _EventChip(event: e),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 18),
-                _RecommendationChip(stats: stats),
               ],
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
+
+  static String? _streakDelta(StatsModel stats) =>
+      stats.longestStreak > stats.currentStreak
+      ? 'Best ${stats.longestStreak}d'
+      : null;
 
   static String _formatWork(Duration d) {
     final h = d.inHours;
@@ -177,140 +69,47 @@ class DailySummarySection extends StatelessWidget {
     if (m > 0) return '${m}m';
     return '${d.inSeconds}s';
   }
-
-  String _todayString() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
 }
 
-class _GoalChip extends StatelessWidget {
-  final int done;
-  final int goal;
-  const _GoalChip({required this.done, required this.goal});
-
-  @override
-  Widget build(BuildContext context) {
-    final met = done >= goal && goal > 0;
-    return Text(
-      met ? 'Goal reached · $done / $goal' : '$done / $goal breaks',
-      style: TextStyle(
-        fontFamilyFallback: const ['Menlo', 'monospace'],
-        fontSize: 12,
-        color: met ? AppTheme.success : AppTheme.textSecondary,
-      ),
-    );
-  }
-}
-
-class _EventChip extends StatelessWidget {
-  final BreakEvent event;
-  const _EventChip({required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    final ok = event.completed;
-    final color = ok ? AppTheme.success : AppTheme.error;
-    final h = event.time.hour.toString().padLeft(2, '0');
-    final m = event.time.minute.toString().padLeft(2, '0');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.border),
-        borderRadius: BorderRadius.circular(AppTheme.radiusXs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            ok ? Icons.check_circle_rounded : Icons.cancel_rounded,
-            size: 13,
-            color: color,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            '$h:$m',
-            style: TextStyle(
-              fontFamilyFallback: const ['Menlo', 'monospace'],
-              fontSize: 12,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecommendationChip extends StatelessWidget {
-  final StatsModel stats;
-  const _RecommendationChip({required this.stats});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<ContextSwitchTracker>(
-      builder: (context, switchTracker, _) {
-        final switchCount = switchTracker.switchesInWindow(DateTime.now());
-        return _buildChip(_recommendationFor(switchCount));
-      },
-    );
-  }
-
-  String _recommendationFor(int switchCount) {
-    if (switchCount >= 12) {
-      return "$switchCount app switches in the last hour — a short break might help you refocus.";
-    }
-    if (stats.completionRate < 0.5 && stats.breaksCompleted > 2) {
-      return 'High skips. Try a longer interval?';
-    }
-    if (stats.dailyUsageMinutes > 120 && stats.wellnessScore < 40) {
-      return 'Intense day. Take a long break?';
-    }
-    return 'Keep it up!';
-  }
-
-  Widget _buildChip(String recommendation) {
-    return Text(
-      recommendation,
-      style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
+class _Stat extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
+  final String? delta;
 
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _Stat({required this.label, required this.value, this.delta});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontFamilyFallback: const ['Georgia', 'Times New Roman'],
-            fontSize: 34,
-            color: AppTheme.textPrimary,
-            letterSpacing: -1,
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: AppTheme.textSecondary,
-            fontWeight: FontWeight.w500,
+          const SizedBox(height: AppTheme.space4),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 28,
+              fontWeight: FontWeight.w400,
+              color: AppTheme.textPrimary,
+              fontFeatures: AppTheme.tabular,
+            ),
           ),
-        ),
-      ],
+          if (delta != null)
+            Text(
+              delta!,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+                fontFeatures: AppTheme.tabular,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

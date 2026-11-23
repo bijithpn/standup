@@ -78,7 +78,7 @@ class SecondaryWindows {
   void AddOverlayChannels(Surface* surface);
   void AddCompanionChannels(Surface* surface, FlValue* initial_settings, const char* data_name);
 
-  void ForwardToMain(const char* method);
+  void ForwardToMain(const char* method, FlValue* args = nullptr);
   void ClearPool();
 
   static void OnFirstFrame(FlView* view, gpointer data);
