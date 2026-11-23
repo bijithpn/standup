@@ -553,7 +553,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               Text(
                 isBlobatar
                     ? 'Blobatar, generative pet'
-                    : '${theme.name} · ${theme.species.name}',
+                    : '${theme.name} · ${theme.avatarDefinition?.species.category.displayName ?? theme.species.name}',
                 style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
               ),
               if (isBlobatar) ...[
@@ -577,7 +577,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       AvatarSpecies.panda ||
       AvatarSpecies.redPanda ||
       AvatarSpecies.raccoon => 'assets/avatars/species/bear.thumbnail.png',
-      AvatarSpecies.wolf => 'assets/avatars/species/dog.thumbnail.png',
       AvatarSpecies.guineaPig =>
         'assets/avatars/species/guinea-pig.thumbnail.png',
       final AvatarSpecies species =>

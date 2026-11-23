@@ -307,7 +307,6 @@ String avatarPresetFor(String species) {
     'redPanda': 'bear',
     'panda': 'bear',
     'raccoon': 'bear',
-    'wolf': 'dog',
     'lynx': 'cat',
     'badger': 'ferret',
     'marmot': 'hamster',

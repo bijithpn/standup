@@ -20,6 +20,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _updateGazeTarget(dt, toCursor, reach, distance);
     _integrateGaze(dt);
     _integratePosture(dt);
+    _updateDizzy(dt);
     _updateBlink(dt);
     _updateImpulses(dt);
     _updateDrives(dt);
@@ -250,6 +251,29 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _tilt += (tiltTarget - _tilt) * math.min(1.0, 3.0 * dt);
   }
 
+  void _updateDizzy(double dt) {
+    if (_held) _heldSeconds += dt;
+    if (_dizzy <= 0) return;
+
+    _dizzy = math.max(0.0, _dizzy - dt / PetBehaviorEngine._dizzySeconds);
+    _dizzyPhase += dt * 6.5;
+    final fade = math.min(1.0, _dizzy * 3.0);
+    final orbit = Offset(math.cos(_dizzyPhase), math.sin(_dizzyPhase));
+    final k = math.min(1.0, 10.0 * dt);
+
+    final gaze = orbit * (0.7 * fade);
+    final head = Offset(orbit.dx, orbit.dy * 0.6) * (0.5 * fade);
+    _gaze = Offset(
+      _gaze.dx + (gaze.dx - _gaze.dx) * k,
+      _gaze.dy + (gaze.dy - _gaze.dy) * k,
+    );
+    _head = Offset(
+      _head.dx + (head.dx - _head.dx) * k,
+      _head.dy + (head.dy - _head.dy) * k,
+    );
+    _tilt = math.sin(_dizzyPhase * 0.5) * 0.2 * fade;
+  }
+
   void _updateBlink(double dt) {
     if (_machine.mood == CompanionMood.resting) {
       _blink = 0.0;
@@ -406,6 +430,8 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
           fatigue: _fatigue,
         );
 
+    if (_dizzy > 0.05) return state(PetEmotion.dizzy, 0.5 + _dizzy * 0.5);
+
     final mood = _machine.mood;
     if (mood == CompanionMood.resting) {
       return state(mood.emotion, mood.intensity);
@@ -457,6 +483,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
   }
 
   PetActivity _activity() {
+    if (_dizzy > 0.05) return PetActivity.dizzy;
     if (_quietSeconds > PetBehaviorEngine._sleepAfter) {
       return PetActivity.sleeping;
     }

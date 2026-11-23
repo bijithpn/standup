@@ -49,6 +49,34 @@ void _wiggleAt(PetBehaviorEngine engine, Offset target, int step) {
 }
 
 void main() {
+  group('dizzy', () {
+    test('a long drag leaves the pet dizzy, then it recovers', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      engine.grab();
+      var now = _advance(engine, 2.0);
+      engine.release();
+      now = _advance(engine, 0.5, from: now);
+      expect(engine.snapshot.activity, PetActivity.dizzy);
+      expect(engine.snapshot.emotion.emotion, PetEmotion.dizzy);
+
+      _advance(engine, 4.0, from: now);
+      expect(engine.snapshot.activity, isNot(PetActivity.dizzy));
+    });
+
+    test('a quick grab does not', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      engine.grab();
+      final now = _advance(engine, 0.3);
+      engine.release();
+      _advance(engine, 0.5, from: now);
+      expect(engine.snapshot.activity, isNot(PetActivity.dizzy));
+    });
+  });
+
   group('gaze', () {
     test('follows a cursor that is moving beside it', () {
       final engine = _engine();

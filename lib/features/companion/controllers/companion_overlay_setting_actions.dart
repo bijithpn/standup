@@ -33,7 +33,8 @@ extension CompanionOverlaySettingActions on CompanionOverlayController {
 
     PetAssetLoader.clearCache();
 
-    final species = PetTheme.getTheme(themeId).species;
+    final newTheme = PetTheme.getTheme(themeId);
+    final species = newTheme.species;
     final random = Random();
     final List<String> names;
 
@@ -59,6 +60,9 @@ extension CompanionOverlaySettingActions on CompanionOverlayController {
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetTheme: themeId,
       companionPetName: randomName,
+      companionAvatarDefinition: newTheme.avatarDefinition == null
+          ? null
+          : jsonEncode(newTheme.avatarDefinition!.toJson()),
     );
     await _settingsRepo.save(updated);
 

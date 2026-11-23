@@ -111,7 +111,10 @@ class AppUsageTracker {
     try {
       final app = await _appTracking.getActiveApp();
       if (app == null) return;
-      if (isBreakMateItself(app)) return;
+      if (isBreakMateItself(app) ||
+          isSystemHelperKey(app.bundleId.toLowerCase())) {
+        return;
+      }
 
       final appKey = _resolveAppKey(app);
       if (appKey == null) return;
@@ -186,6 +189,25 @@ class AppUsageTracker {
     return bundleId.startsWith('com.bijith.breakmate') ||
         bundleId.contains('breakmateapp.exe');
   }
+
+  // OS agents that briefly take focus (screenshot UI, notification prompts, login window); never real apps.
+  static const _systemHelperKeys = <String>{
+    'com.apple.screencaptureui',
+    'com.apple.usernotificationcenter',
+    'com.apple.notificationcenterui',
+    'com.apple.loginwindow',
+    'com.apple.systemuiserver',
+    'com.apple.controlcenter',
+    'com.apple.universalaccessd',
+    'com.apple.coreservices.uiagent',
+    'com.apple.securityagent',
+    'com.apple.screensaver.engine',
+    'com.apple.dock',
+    'com.apple.wifi.menu',
+  };
+
+  static bool isSystemHelperKey(String lowerBundleId) =>
+      _systemHelperKeys.contains(lowerBundleId);
 
   String? _resolveAppKey(ActiveAppInfo app) {
     final raw = app.bundleId != 'Unknown' ? app.bundleId : app.executableName;

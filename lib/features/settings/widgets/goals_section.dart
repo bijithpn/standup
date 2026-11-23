@@ -138,6 +138,9 @@ class GoalsSection extends StatelessWidget {
                     onChanged: (updated) => repo.save(
                       s.copyWith(categoryDailyBudgetMinutes: updated),
                     ),
+                    customCategories: s.customBudgetCategories,
+                    onCustomChanged: (updated) =>
+                        repo.save(s.copyWith(customBudgetCategories: updated)),
                   ),
               ],
             );

@@ -6,7 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag       | Version | Build | Date       | Summary                                                                                                                            |
 | --------- | ------: | ----: | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `v1.14.0` |  1.14.0 |    53 | 2026-11-23 | Break skip limits with reasons, snooze from the break warning, and refreshed theme and update settings UI                          |
+| `v1.14.1` |  1.14.1 |    52 | 2026-11-23 | Break skip limits and snooze, custom budget types, a redesigned Productivity screen and a dizzy companion                          |
 | `v1.13.0` |  1.13.0 |    51 | 2026-11-17 | Six wellness templates, compact tray duration pickers, and desktop update notifications                                            |
 | `v1.12.2` |  1.12.2 |    50 | 2026-11-14 | Clear paused state in every menu bar style and a static countdown preview                                                          |
 | `v1.12.1` |  1.12.1 |    49 | 2026-11-14 | Reliable idle, lock and sleep pause/resume across macOS, Windows and Linux, and a clearer Smart Detection screen                   |
@@ -35,27 +35,38 @@ Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.
 
 ## [Released]
 
-## [1.14.0] - 2026-11-23
+## [1.14.1] - 2026-11-23
 
-Tags: `v1.14.0` (not yet tagged)
+Tags: `v1.14.1` (not yet tagged)
 
 Build: `53`
 
-Release title: Skip Limits & Snooze
+Release title: Skip Limits, Custom Budgets & a Clearer Productivity Screen
 
-Changes compared with `v1.13.1` (build `52`).
+Changes compared with `v1.13.0` (build `51`).
 
 ### Added
 
-- Skip policy for breaks: configurable daily skip limit and an optional prompt asking why a break was skipped.
-- Skip reason picker in the break overlay.
-- Skip and schedule settings in the Breaks section.
+- Skip policy for breaks: a configurable daily skip limit and an optional prompt asking why a break was skipped, with a reason picker in the break overlay and matching Breaks settings.
 - Snooze from the break start warning and quick reminder overlays on macOS, Windows and Linux.
+- Custom budget types in Settings > Personal goals: name, icon (86 searchable icons) and the apps that count toward it, each with its own daily limit.
+- A dizzy animation for the companion after it has been dragged around for a while.
+- Loading skeleton on the Productivity screen, and a progress bar showing how much of the 30 minutes insights need has been recorded.
 
 ### Changed
 
-- Refreshed theme preset cards, the update section, and shared settings controls for a more consistent look.
-- Improved error handling in the update section.
+- Productivity screen layout: content starts at the top-left on every page, Timeline and Applications sit side by side, then Daily budgets and a two-column Insights section.
+- Applications donut is drawn with smooth anti-aliased arcs, and every application has its own color across the donut, list and detail sheet.
+- Application detail opens inside the page instead of covering the sidebar, with an hourly chart in place of the session list; durations under a minute show seconds instead of 0m.
+- Daily budgets are ring tiles showing each budget as a share of the work day.
+- Calendar: square day selection and hover, a date header for the selected day, and square month buttons.
+- Refreshed theme preset cards, update section and shared settings controls.
+
+### Fixed
+
+- Skipping a break after choosing a skip reason no longer leaves the next break overlay unable to dismiss.
+- Switching companion now replaces the saved avatar, so the floating companion matches the selection.
+- OS helper processes such as the screenshot UI and notification prompts are no longer tracked as applications.
 
 ## [1.13.0] - 2026-11-17
 

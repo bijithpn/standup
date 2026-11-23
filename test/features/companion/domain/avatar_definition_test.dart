@@ -41,11 +41,10 @@ void main() {
         'seal',
         'squirrel',
         'tiger',
-        'wolf',
         'bear',
       ];
 
-      expect(AvatarSpecies.values.length, 33);
+      expect(AvatarSpecies.values.length, 32);
       for (final name in expectedSpeciesNames) {
         final species = AvatarSpecies.fromName(name);
         expect(species, isNotNull);
@@ -217,12 +216,12 @@ void main() {
     test('copyWith properly modifies fields', () {
       final base = AvatarDefinition.fromSpecies(AvatarSpecies.dog);
       final modified = base.copyWith(
-        species: AvatarSpecies.wolf,
+        species: AvatarSpecies.fox,
         pattern: 'spots',
         scale: 1.5,
       );
 
-      expect(modified.species, equals(AvatarSpecies.wolf));
+      expect(modified.species, equals(AvatarSpecies.fox));
       expect(modified.pattern, equals('spots'));
       expect(modified.scale, equals(1.5));
       expect(modified.seed, equals(base.seed));

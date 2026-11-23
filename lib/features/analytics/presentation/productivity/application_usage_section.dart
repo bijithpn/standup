@@ -1,5 +1,7 @@
-import 'package:fl_chart/fl_chart.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/core/storage/models/activity_segment.dart';
@@ -62,30 +64,15 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
         ? apps.fold<int>(0, (sum, a) => sum + a.seconds)
         : widget.totalActiveSeconds;
 
-    final colours = <Color>[
-      for (var i = 0; i < shown.length; i++)
-        i == 0
-            ? AppTheme.accent
-            : AppTheme.textMuted.withValues(
-                alpha: (0.7 - i * 0.08).clamp(0.2, 0.7),
-              ),
-    ];
+    final colours = <Color>[for (var i = 0; i < shown.length; i++) appColor(i)];
 
-    final sections = <PieChartSectionData>[
-      for (var i = 0; i < shown.length; i++)
-        PieChartSectionData(
-          value: shown[i].seconds.toDouble(),
-          color: colours[i],
-          radius: _touched == i ? 30 : 24,
-          showTitle: false,
-        ),
-      if (restSeconds > 0)
-        PieChartSectionData(
-          value: restSeconds.toDouble(),
-          color: AppTheme.border,
-          radius: _touched == shown.length ? 30 : 24,
-          showTitle: false,
-        ),
+    final values = <double>[
+      for (final app in shown) app.seconds.toDouble(),
+      if (restSeconds > 0) restSeconds.toDouble(),
+    ];
+    final sliceColours = <Color>[
+      ...colours,
+      if (restSeconds > 0) AppTheme.border,
     ];
 
     final focused = _touched != null && _touched! < shown.length
@@ -106,30 +93,16 @@ class _ApplicationUsageListState extends State<ApplicationUsageList> {
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
-          PieChart(
-            PieChartData(
-              sections: sections,
-              centerSpaceRadius: 56,
-              sectionsSpace: 2.5,
-              startDegreeOffset: -90,
-              pieTouchData: PieTouchData(
-                touchCallback: (event, response) {
-                  final index = response?.touchedSection?.touchedSectionIndex;
-                  final next =
-                      event.isInterestedForInteractions &&
-                          index != null &&
-                          index >= 0
-                      ? index
-                      : null;
-                  if (next != _touched) setState(() => _touched = next);
-                  if (event is FlTapUpEvent &&
-                      next != null &&
-                      next < shown.length) {
-                    widget.onSelected?.call(shown[next]);
-                  }
-                },
-              ),
-            ),
+          _Donut(
+            values: values,
+            colours: sliceColours,
+            touched: _touched,
+            onTouched: (index) {
+              if (index != _touched) setState(() => _touched = index);
+            },
+            onTap: (index) {
+              if (index < shown.length) widget.onSelected?.call(shown[index]);
+            },
           ),
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -375,9 +348,13 @@ class ApplicationDetailSheet extends StatelessWidget {
     required this.totalActiveSeconds,
     required this.segments,
     required this.dateLabel,
+    required this.onClose,
+    required this.colour,
     this.historyByDate = const <String, int>{},
   });
 
+  final VoidCallback onClose;
+  final Color colour;
   final AppTotal app;
   final int totalActiveSeconds;
 
@@ -400,21 +377,28 @@ class ApplicationDetailSheet extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppTheme.radiusMd),
         ),
-        border: Border.all(color: AppTheme.border),
+        border: Border(top: BorderSide(color: AppTheme.border)),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 32,
+            offset: Offset(0, -8),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+            padding: const EdgeInsets.fromLTRB(40, 24, 32, 0),
             child: Row(
               children: <Widget>[
                 Container(
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: categoryColor(app.categoryName),
+                    color: colour,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -446,7 +430,7 @@ class ApplicationDetailSheet extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: onClose,
                   icon: const Icon(CupertinoIcons.xmark, size: 18),
                   color: AppTheme.textSecondary,
                 ),
@@ -455,12 +439,12 @@ class ApplicationDetailSheet extends StatelessWidget {
           ),
           Flexible(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              padding: const EdgeInsets.fromLTRB(40, 20, 40, 32),
               shrinkWrap: true,
               children: <Widget>[
                 Wrap(
-                  spacing: 28,
-                  runSpacing: 14,
+                  spacing: 48,
+                  runSpacing: 16,
                   children: <Widget>[
                     _DetailStat(
                       label: 'Time',
@@ -500,36 +484,9 @@ class ApplicationDetailSheet extends StatelessWidget {
                 ],
                 if (segments.isNotEmpty) ...<Widget>[
                   const SizedBox(height: 22),
-                  _SubHeading('Sessions on this day'),
-                  const SizedBox(height: 8),
-                  for (final segment in segments)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: <Widget>[
-                          Text(
-                            '${formatClock(segment.startedAt)}'
-                            '–${formatClock(segment.endedAt)}',
-                            style: TextStyle(
-                              fontFeatures: AppTheme.tabular,
-                              fontFamily: 'monospace',
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            formatDuration(segment.seconds),
-                            style: TextStyle(
-                              fontFeatures: AppTheme.tabular,
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              color: AppTheme.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _SubHeading('Today by hour'),
+                  const SizedBox(height: 10),
+                  _HourlyChart(segments: segments, colour: colour),
                 ],
               ],
             ),
@@ -657,4 +614,220 @@ class _HistoryRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Seconds of [segments] per clock hour, splitting segments that cross an hour boundary.
+List<int> _secondsByHour(List<ActivitySegment> segments) {
+  final hours = List<int>.filled(24, 0);
+  for (final segment in segments) {
+    var cursor = segment.startedAt;
+    final end = segment.endedAt;
+    while (cursor.isBefore(end)) {
+      final next = DateTime(
+        cursor.year,
+        cursor.month,
+        cursor.day,
+        cursor.hour + 1,
+      );
+      final stop = next.isBefore(end) ? next : end;
+      hours[cursor.hour] += stop.difference(cursor).inSeconds;
+      cursor = stop;
+    }
+  }
+  return hours;
+}
+
+class _HourlyChart extends StatelessWidget {
+  const _HourlyChart({required this.segments, required this.colour});
+
+  final List<ActivitySegment> segments;
+  final Color colour;
+
+  static const double _barAreaHeight = 96;
+
+  @override
+  Widget build(BuildContext context) {
+    final byHour = _secondsByHour(segments);
+    final used = <int>[
+      for (var h = 0; h < 24; h++)
+        if (byHour[h] > 0) h,
+    ];
+    if (used.isEmpty) return const SizedBox.shrink();
+
+    var first = used.first;
+    var last = used.last;
+    while (last - first < 5) {
+      if (first > 0) first--;
+      if (last - first < 5 && last < 23) last++;
+      if (first == 0 && last == 23) break;
+    }
+    final peak = byHour.reduce((a, b) => a > b ? a : b);
+    final label = TextStyle(
+      fontFeatures: AppTheme.tabular,
+      fontFamily: 'Inter',
+      fontSize: 11,
+      color: AppTheme.textMuted,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SizedBox(
+          height: _barAreaHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              for (var h = first; h <= last; h++)
+                Expanded(
+                  child: Tooltip(
+                    message: '${formatHour(h)} · ${formatDuration(byHour[h])}',
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          height: byHour[h] == 0
+                              ? 3
+                              : math.max(
+                                  6.0,
+                                  _barAreaHeight * byHour[h] / peak,
+                                ),
+                          decoration: BoxDecoration(
+                            color: byHour[h] == 0
+                                ? AppTheme.borderSubtle
+                                : colour,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: <Widget>[
+            Text(formatHour(first), style: label),
+            const Spacer(),
+            Text('Busiest ${formatDuration(peak)}', style: label),
+            const Spacer(),
+            Text(formatHour(last), style: label),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Ring chart drawn with stroked arcs: anti-aliased edges, small gaps between slices, the hovered slice thickens.
+class _Donut extends StatelessWidget {
+  const _Donut({
+    required this.values,
+    required this.colours,
+    required this.touched,
+    required this.onTouched,
+    required this.onTap,
+  });
+
+  final List<double> values;
+  final List<Color> colours;
+  final int? touched;
+  final ValueChanged<int?> onTouched;
+  final ValueChanged<int> onTap;
+
+  static const double _thickness = 22;
+  static const double _hoverExtra = 6;
+
+  int? _hit(Offset position, Size size) {
+    final centre = size.center(Offset.zero);
+    final delta = position - centre;
+    final radius = delta.distance;
+    final outer = size.shortestSide / 2;
+    if (radius > outer || radius < outer - _thickness - _hoverExtra * 2) {
+      return null;
+    }
+    final total = values.fold<double>(0, (a, b) => a + b);
+    if (total <= 0) return null;
+    var angle = math.atan2(delta.dy, delta.dx) + math.pi / 2;
+    if (angle < 0) angle += math.pi * 2;
+    var start = 0.0;
+    for (var i = 0; i < values.length; i++) {
+      start += values[i] / total * math.pi * 2;
+      if (angle <= start) return i;
+    }
+    return values.length - 1;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final size = Size(box.maxWidth, box.maxHeight);
+        return MouseRegion(
+          onHover: (e) => onTouched(_hit(e.localPosition, size)),
+          onExit: (_) => onTouched(null),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (d) {
+              final index = _hit(d.localPosition, size);
+              if (index != null) onTap(index);
+            },
+            child: CustomPaint(
+              size: size,
+              painter: _DonutPainter(values, colours, touched),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DonutPainter extends CustomPainter {
+  _DonutPainter(this.values, this.colours, this.touched);
+
+  final List<double> values;
+  final List<Color> colours;
+  final int? touched;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final total = values.fold<double>(0, (a, b) => a + b);
+    if (total <= 0) return;
+
+    final outer = size.shortestSide / 2;
+    final gap = values.length > 1 ? 0.045 : 0.0;
+    var start = -math.pi / 2;
+    for (var i = 0; i < values.length; i++) {
+      final sweep = values[i] / total * math.pi * 2;
+      final thickness =
+          _Donut._thickness + (touched == i ? _Donut._hoverExtra : 0);
+      final rect = Rect.fromCircle(
+        center: size.center(Offset.zero),
+        radius: outer - _Donut._hoverExtra - _Donut._thickness / 2,
+      );
+      final visible = math.max(0.0, sweep - gap);
+      canvas.drawArc(
+        rect,
+        start + gap / 2,
+        visible,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = thickness
+          ..strokeCap = StrokeCap.butt
+          ..isAntiAlias = true
+          ..color = colours[i],
+      );
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DonutPainter old) =>
+      old.touched != touched ||
+      !listEquals(old.values, values) ||
+      !listEquals(old.colours, colours);
 }

@@ -20,7 +20,9 @@ enum PetEmotion {
 
   playful,
 
-  laughing;
+  laughing,
+
+  dizzy;
 
   bool get isPositive =>
       this == PetEmotion.happy ||
