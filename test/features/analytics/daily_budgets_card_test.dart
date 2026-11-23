@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakmate/features/analytics/presentation/widgets/daily_budgets_card.dart';
+import 'package:breakmate/features/settings/custom_budget_category.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
 void main() {
@@ -45,11 +46,38 @@ void main() {
     expect(find.text('Daily budgets'), findsOneWidget);
     expect(find.text(AppCategory.coding.label), findsOneWidget);
     expect(find.text(AppCategory.browsing.label), findsOneWidget);
-    expect(find.textContaining('over'), findsNothing);
+    expect(find.textContaining('Over budget'), findsNothing);
   });
 
   testWidgets('flags a category that is over its budget', (tester) async {
     await pump(tester, {AppCategory.coding: 3 * 3600}, {'coding': 120});
-    expect(find.textContaining('over'), findsOneWidget);
+    expect(find.textContaining('Over budget'), findsOneWidget);
+  });
+
+  testWidgets('shows a custom budget type next to the built-in ones', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: DailyBudgetsCard(
+            usedSecondsByCategory: const {},
+            budgetMinutes: const {},
+            customCategories: const [
+              CustomBudgetCategory(
+                id: 'a',
+                name: 'Reading',
+                iconIndex: 7,
+                appNames: ['Books'],
+                minutes: 30,
+              ),
+            ],
+            customUsedSeconds: const {'a': 600},
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Reading'), findsOneWidget);
+    expect(find.text('10m of 30m'), findsOneWidget);
   });
 }

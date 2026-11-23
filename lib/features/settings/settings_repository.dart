@@ -2,6 +2,8 @@ import 'package:breakmate/features/break_overlay/wellness/wellness_models.dart';
 import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart';
 import 'experience_preferences.dart';
 import 'dart:convert';
+
+import 'package:breakmate/features/settings/custom_budget_category.dart';
 import 'work_schedule.dart';
 import 'dart:async';
 import 'dart:io';
@@ -44,6 +46,15 @@ class SettingsRepository extends ChangeNotifier {
       }
     } catch (_) {}
     return const {};
+  }
+
+  static List<CustomBudgetCategory> _decodeCustomBudgetCategories(String raw) {
+    if (raw.isEmpty) return const [];
+    try {
+      return CustomBudgetCategory.listFromJson(jsonDecode(raw));
+    } catch (_) {
+      return const [];
+    }
   }
 
   Map<int, WorkSchedule> _loadWeeklySchedule() {
@@ -384,6 +395,9 @@ class SettingsRepository extends ChangeNotifier {
       categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
         _storage.getString('category_daily_budget_minutes', defaultValue: ''),
       ),
+      customBudgetCategories: _decodeCustomBudgetCategories(
+        _storage.getString('custom_budget_categories', defaultValue: ''),
+      ),
       appUsageTrackingEnabled: _storage.getBool('app_usage_tracking_enabled'),
       activityHistoryRetentionDays: _storage.getInt(
         'activity_history_retention_days',
@@ -697,6 +711,9 @@ class SettingsRepository extends ChangeNotifier {
       ),
       categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
         _storage.getString('category_daily_budget_minutes', defaultValue: ''),
+      ),
+      customBudgetCategories: _decodeCustomBudgetCategories(
+        _storage.getString('custom_budget_categories', defaultValue: ''),
       ),
       appUsageTrackingEnabled: _storage.getBool('app_usage_tracking_enabled'),
       activityHistoryRetentionDays: _storage.getInt(
@@ -1028,6 +1045,10 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'category_daily_budget_minutes',
       jsonEncode(settings.categoryDailyBudgetMinutes),
+    );
+    await _storage.setString(
+      'custom_budget_categories',
+      jsonEncode([for (final c in settings.customBudgetCategories) c.toJson()]),
     );
     await _storage.setBool(
       'app_usage_tracking_enabled',

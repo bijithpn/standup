@@ -197,6 +197,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           targetEndTime = null;
           _fadeController.value = 0;
           setState(() {
+            _askingReason = false;
             _hasReceivedOverlayData = false;
             _cachedBreakModel = null;
             _cachedSettingsModel = null;
@@ -226,12 +227,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     skipBreak(_config.isPreview, _config.overlayType, _fadeController);
   }
 
-  void _skipWithReason(String reason) => skipBreak(
-    _config.isPreview,
-    _config.overlayType,
-    _fadeController,
-    reason: reason,
-  );
+  void _skipWithReason(String reason) {
+    setState(() => _askingReason = false);
+    skipBreak(
+      _config.isPreview,
+      _config.overlayType,
+      _fadeController,
+      reason: reason,
+    );
+  }
+
   void _snoozeBreak() => snoozeBreak(_fadeController);
   void _quitApp() => _bridge.invokeMethod('quitApp');
 

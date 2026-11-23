@@ -5,6 +5,7 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 
 String formatDuration(int seconds) {
   if (seconds <= 0) return '—';
+  if (seconds < 60) return '${seconds}s';
   final totalMinutes = seconds ~/ 60;
   final hours = totalMinutes ~/ 60;
   final minutes = totalMinutes % 60;
@@ -93,6 +94,22 @@ String categoryLabel(String categoryName) {
       return categoryName.isEmpty ? 'Other' : categoryName;
   }
 }
+
+const List<Color> _appPalette = <Color>[
+  Color(0xFF38BDF8),
+  Color(0xFFF59E0B),
+  Color(0xFF34D399),
+  Color(0xFFA78BFA),
+  Color(0xFFF472B6),
+  Color(0xFFFB923C),
+  Color(0xFF2DD4BF),
+  Color(0xFFFB7185),
+  Color(0xFFA3E635),
+  Color(0xFF818CF8),
+];
+
+/// Distinct colour per ranked application so the donut, list and detail sheet agree.
+Color appColor(int rank) => _appPalette[rank % _appPalette.length];
 
 Color categoryColor(String categoryName) {
   switch (categoryName) {

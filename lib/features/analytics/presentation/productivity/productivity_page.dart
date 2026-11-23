@@ -55,6 +55,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
   RangeProductivitySummary? _rangeSummary;
   List<ProductivityInsight> _insights = const <ProductivityInsight>[];
   bool _loading = true;
+  Widget? _detail;
 
   late final DateTime _now = DateTime.now();
   late final String _todayKey = ProductivityRepository.dateKey(_now);
@@ -175,11 +176,8 @@ class _ProductivityPageState extends State<ProductivityPage> {
       history[day.date] = match.isEmpty ? 0 : match.first.seconds;
     }
 
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => ApplicationDetailSheet(
+    setState(() {
+      _detail = ApplicationDetailSheet(
         app: app,
         totalActiveSeconds: _range == ProductivityRange.today
             ? _today.activeSeconds
@@ -189,7 +187,40 @@ class _ProductivityPageState extends State<ProductivityPage> {
             ? 'Today'
             : 'Last ${_range.days} days',
         historyByDate: _range == ProductivityRange.today ? const {} : history,
-      ),
+        onClose: _closeDetail,
+        colour: appColor(_rankOf(app)),
+      );
+    });
+  }
+
+  int _rankOf(AppTotal app) {
+    final apps = _range == ProductivityRange.today
+        ? _today.apps
+        : _rangeSummary?.apps ?? const <AppTotal>[];
+    final index = apps.indexWhere((a) => a.appKey == app.appKey);
+    return index < 0 ? 0 : index;
+  }
+
+  void _closeDetail() {
+    if (mounted) setState(() => _detail = null);
+  }
+
+  // Shown inside the page rather than as a root-navigator sheet, so the sidebar stays usable.
+  Widget _withDetail(Widget page) {
+    final detail = _detail;
+    if (detail == null) return page;
+    return Stack(
+      children: <Widget>[
+        page,
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _closeDetail,
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.4)),
+          ),
+        ),
+        Align(alignment: Alignment.bottomCenter, child: detail),
+      ],
     );
   }
 
@@ -221,32 +252,34 @@ class _ProductivityPageState extends State<ProductivityPage> {
       );
     }
 
-    return PageScroll(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _Header(
-            range: _range,
-            onRangeChanged: _selectRange,
-            subtitle: showingToday
-                ? formatDateKey(_todayKey)
-                : 'Last ${_range.days} days',
-          ),
-          const SizedBox(height: AppTheme.space32),
-          if (_loading)
-            const _ProductivitySkeleton()
-          else if (!hasActivity)
-            ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 420),
-              child: ProductivityEmptyState(
-                trackingEnabled: _trackingEnabled,
-                recordedSeconds: _today.trackedSeconds,
-                onEnableTracking: _trackingEnabled ? null : _enableTracking,
-              ),
-            )
-          else
-            _content(summary, showingToday),
-        ],
+    return _withDetail(
+      PageScroll(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _Header(
+              range: _range,
+              onRangeChanged: _selectRange,
+              subtitle: showingToday
+                  ? formatDateKey(_todayKey)
+                  : 'Last ${_range.days} days',
+            ),
+            const SizedBox(height: AppTheme.space32),
+            if (_loading)
+              const _ProductivitySkeleton()
+            else if (!hasActivity)
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 420),
+                child: ProductivityEmptyState(
+                  trackingEnabled: _trackingEnabled,
+                  recordedSeconds: _today.trackedSeconds,
+                  onEnableTracking: _trackingEnabled ? null : _enableTracking,
+                ),
+              )
+            else
+              _content(summary, showingToday),
+          ],
+        ),
       ),
     );
   }
@@ -274,30 +307,35 @@ class _ProductivityPageState extends State<ProductivityPage> {
             ],
           );
         }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[...primary, insights],
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: primary,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.space32),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[applications],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: AppTheme.space32),
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  applications,
-                  if (budgets != null) ...<Widget>[
-                    const SizedBox(height: 48),
-                    budgets,
-                  ],
-                ],
-              ),
-            ),
+            if (budgets != null) ...<Widget>[
+              const SizedBox(height: 40),
+              budgets,
+            ],
+            const SizedBox(height: 40),
+            _insightsSection(columns: 2),
           ],
         );
       },
@@ -417,21 +455,49 @@ class _ProductivityPageState extends State<ProductivityPage> {
         UsagePeriod.today,
       ),
       budgetMinutes: _settings!.currentSettings.categoryDailyBudgetMinutes,
+      workDaySeconds: _settings!.currentSettings.dailyWorkGoalHours * 3600,
+      customCategories: _settings!.currentSettings.customBudgetCategories,
+      customUsedSeconds: {
+        for (final custom in _settings!.currentSettings.customBudgetCategories)
+          custom.id: _today.apps
+              .where(
+                (app) => custom.appNames.any(
+                  (name) => name.toLowerCase() == app.appName.toLowerCase(),
+                ),
+              )
+              .fold<int>(0, (sum, app) => sum + app.seconds),
+      },
     );
   }
 
-  Widget _insightsSection() => ProductivitySection(
+  Widget _insightsSection({int columns = 1}) => ProductivitySection(
     title: 'Insights',
     subtitle: _insights.isEmpty
         ? 'Not enough data yet'
         : 'What the recorded activity shows',
     child: _insights.isEmpty
         ? _NotEnoughInsights()
-        : Column(
+        : columns == 1
+        ? Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               for (final insight in _insights) InsightCard(insight: insight),
             ],
+          )
+        : LayoutBuilder(
+            builder: (context, box) {
+              final width = (box.maxWidth - AppTheme.space32) / 2;
+              return Wrap(
+                spacing: AppTheme.space32,
+                children: <Widget>[
+                  for (final insight in _insights)
+                    SizedBox(
+                      width: width,
+                      child: InsightCard(insight: insight),
+                    ),
+                ],
+              );
+            },
           ),
   );
 }

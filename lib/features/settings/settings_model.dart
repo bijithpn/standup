@@ -2,6 +2,7 @@ import 'package:breakmate/features/break_overlay/wellness/wellness_registry.dart
 import 'experience_preferences.dart';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'work_schedule.dart';
+import 'custom_budget_category.dart';
 
 /// Immutable snapshot of every user setting; changed via [copyWith] and persisted by [SettingsRepository].
 class SettingsModel {
@@ -171,6 +172,8 @@ class SettingsModel {
 
   final Map<String, int> categoryDailyBudgetMinutes;
 
+  final List<CustomBudgetCategory> customBudgetCategories;
+
   const SettingsModel({
     this.experience = const ExperiencePreferences(),
     this.autoStart = true,
@@ -292,6 +295,7 @@ class SettingsModel {
     this.appUsageTrackingEnabled = false,
     this.activityHistoryRetentionDays = 30,
     this.categoryDailyBudgetMinutes = const {},
+    this.customBudgetCategories = const [],
   });
 
   SettingsModel copyWith({
@@ -405,6 +409,7 @@ class SettingsModel {
     bool? appUsageTrackingEnabled,
     int? activityHistoryRetentionDays,
     Map<String, int>? categoryDailyBudgetMinutes,
+    List<CustomBudgetCategory>? customBudgetCategories,
     String? pipBackgroundStyle,
     double? pipOpacity,
     bool? pipDraggableClickable,
@@ -565,6 +570,8 @@ class SettingsModel {
           activityHistoryRetentionDays ?? this.activityHistoryRetentionDays,
       categoryDailyBudgetMinutes:
           categoryDailyBudgetMinutes ?? this.categoryDailyBudgetMinutes,
+      customBudgetCategories:
+          customBudgetCategories ?? this.customBudgetCategories,
       pipBackgroundStyle: pipBackgroundStyle ?? this.pipBackgroundStyle,
       pipOpacity: pipOpacity ?? this.pipOpacity,
       pipDraggableClickable:
@@ -697,6 +704,9 @@ class SettingsModel {
     'appUsageTrackingEnabled': appUsageTrackingEnabled,
     'activityHistoryRetentionDays': activityHistoryRetentionDays,
     'categoryDailyBudgetMinutes': categoryDailyBudgetMinutes,
+    'customBudgetCategories': [
+      for (final c in customBudgetCategories) c.toJson(),
+    ],
     'pipBackgroundStyle': pipBackgroundStyle,
     'pipOpacity': pipOpacity,
     'pipDraggableClickable': pipDraggableClickable,
@@ -856,6 +866,9 @@ class SettingsModel {
             (k, v) => MapEntry(k as String, v as int),
           ) ??
           const {},
+      customBudgetCategories: CustomBudgetCategory.listFromJson(
+        map['customBudgetCategories'],
+      ),
       pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'transparent',
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 1.0,
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,
