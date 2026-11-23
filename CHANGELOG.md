@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag       | Version | Build | Date       | Summary                                                                                                                            |
 | --------- | ------: | ----: | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `v1.14.0` |  1.14.0 |    53 | 2026-11-23 | Break skip limits with reasons, snooze from the break warning, and refreshed theme and update settings UI                          |
 | `v1.13.0` |  1.13.0 |    51 | 2026-11-17 | Six wellness templates, compact tray duration pickers, and desktop update notifications                                            |
 | `v1.12.2` |  1.12.2 |    50 | 2026-11-14 | Clear paused state in every menu bar style and a static countdown preview                                                          |
 | `v1.12.1` |  1.12.1 |    49 | 2026-11-14 | Reliable idle, lock and sleep pause/resume across macOS, Windows and Linux, and a clearer Smart Detection screen                   |
@@ -33,6 +34,28 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.14.0] - 2026-11-23
+
+Tags: `v1.14.0` (not yet tagged)
+
+Build: `53`
+
+Release title: Skip Limits & Snooze
+
+Changes compared with `v1.13.1` (build `52`).
+
+### Added
+
+- Skip policy for breaks: configurable daily skip limit and an optional prompt asking why a break was skipped.
+- Skip reason picker in the break overlay.
+- Skip and schedule settings in the Breaks section.
+- Snooze from the break start warning and quick reminder overlays on macOS, Windows and Linux.
+
+### Changed
+
+- Refreshed theme preset cards, the update section, and shared settings controls for a more consistent look.
+- Improved error handling in the update section.
 
 ## [1.13.0] - 2026-11-17
 
