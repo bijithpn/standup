@@ -308,7 +308,6 @@ class BreakController extends ChangeNotifier {
       'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
       'overlayThemeMode': settings.overlayThemeMode,
       'breathPreset': settings.breathPreset,
-      'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
       'customImagePath': settings.customImagePath ?? '',
       ..._displayData(
         settings,
@@ -724,7 +723,6 @@ class BreakController extends ChangeNotifier {
         'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
         'overlayThemeMode': settings.overlayThemeMode,
         'breathPreset': settings.breathPreset,
-        'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
         'customImagePath': settings.customImagePath ?? '',
         ..._displayData(settings, isLong: false, focus: 'eyes', preview: true),
       },
@@ -741,9 +739,9 @@ class BreakController extends ChangeNotifier {
   }
 
   /// Finishes the break normally; wellness stats and chime are skipped in meetings/presentations.
-  Future<void> completeCurrentBreak({bool lookedAway = false}) async {
+  Future<void> completeCurrentBreak() async {
     await _timerEngine.finishBreak(skipped: false);
-    if (lookedAway || _microExercise != null) {
+    if (_microExercise != null) {
       _statsService.recordWellnessAction();
     }
     _microExercise = null;

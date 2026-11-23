@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/ipc/overlay_window_config.dart';
-import 'package:breakmate/features/break_overlay/presentation/widgets/looked_away_button.dart';
 import 'package:breakmate/features/break_overlay/wellness/wellness_overlay_view.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -18,8 +17,6 @@ class BreakOverlayContent extends StatelessWidget {
   final bool canDismiss;
   final BreakModel breakInfo;
   final SettingsModel settings;
-  final bool lookedAway;
-  final VoidCallback onLookedAway;
 
   const BreakOverlayContent({
     super.key,
@@ -31,11 +28,7 @@ class BreakOverlayContent extends StatelessWidget {
     required this.canDismiss,
     required this.breakInfo,
     required this.settings,
-    required this.lookedAway,
-    required this.onLookedAway,
   });
-
-  bool get _compact => config.windowMode == 'compact';
 
   bool _needsAccessibleView(BuildContext context) =>
       settings.experience.highContrast ||
@@ -71,8 +64,6 @@ class BreakOverlayContent extends StatelessWidget {
         exerciseTitle: config.showWellnessNotes ? config.exerciseTitle : null,
         intensityLevel: config.intensityLevel,
         onSkip: onSkip,
-        lookedAway: lookedAway,
-        onLookedAway: _lookedAwayHandler,
         child: ValueListenableBuilder<int>(
           valueListenable: remainingSecondsNotifier,
           builder: (_, remaining, _) => AccessibleBreakView(
@@ -85,42 +76,15 @@ class BreakOverlayContent extends StatelessWidget {
         ),
       );
     } else {
-      final handler = _lookedAwayHandler;
-      content = Stack(
-        fit: StackFit.expand,
-        children: [
-          RepaintBoundary(
-            child: WellnessOverlayView(
-              config: config,
-              remainingSecondsNotifier: remainingSecondsNotifier,
-              onSkip: canDismiss ? onSkip : null,
-            ),
-          ),
-          if (handler != null && !_compact)
-            Positioned(
-              top: 32,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: SafeArea(
-                  child: LookedAwayButton(
-                    confirmed: lookedAway,
-                    onPressed: handler,
-                  ),
-                ),
-              ),
-            ),
-        ],
+      content = RepaintBoundary(
+        child: WellnessOverlayView(
+          config: config,
+          remainingSecondsNotifier: remainingSecondsNotifier,
+          onSkip: canDismiss ? onSkip : null,
+        ),
       );
     }
 
     return content;
   }
-
-  VoidCallback? get _lookedAwayHandler =>
-      config.lookedAwayPromptEnabled &&
-          breakInfo.type == BreakType.short &&
-          config.overlayType == 'breakScreen'
-      ? onLookedAway
-      : null;
 }

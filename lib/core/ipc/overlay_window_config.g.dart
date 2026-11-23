@@ -30,8 +30,6 @@ _OverlayWindowConfig _$OverlayWindowConfigFromJson(Map<String, dynamic> json) =>
       clockFaceBlurEnabled: json['clockFaceBlurEnabled'] as bool? ?? true,
       overlayThemeMode: json['overlayThemeMode'] as String? ?? 'dark',
       breathPreset: json['breathPreset'] as String? ?? 'box',
-      lookedAwayPromptEnabled:
-          json['lookedAwayPromptEnabled'] as bool? ?? false,
       customImagePath: json['customImagePath'] as String?,
       exerciseTitle: json['exerciseTitle'] as String?,
       exerciseInstructions: json['exerciseInstructions'] as String?,
@@ -77,7 +75,6 @@ Map<String, dynamic> _$OverlayWindowConfigToJson(
   'clockFaceBlurEnabled': instance.clockFaceBlurEnabled,
   'overlayThemeMode': instance.overlayThemeMode,
   'breathPreset': instance.breathPreset,
-  'lookedAwayPromptEnabled': instance.lookedAwayPromptEnabled,
   'customImagePath': instance.customImagePath,
   'exerciseTitle': instance.exerciseTitle,
   'exerciseInstructions': instance.exerciseInstructions,

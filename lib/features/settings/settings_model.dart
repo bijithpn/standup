@@ -69,7 +69,6 @@ class SettingsModel {
 
   final bool largeOverlayText;
 
-  final bool lookedAwayPromptEnabled;
   final String? customImagePath;
 
   final int resetTimerAfterMinutes;
@@ -219,7 +218,6 @@ class SettingsModel {
     this.dismissReminderOnMouseMove = false,
     this.avoidBreakHour = -1,
     this.largeOverlayText = false,
-    this.lookedAwayPromptEnabled = false,
     this.customImagePath,
     this.resetTimerAfterMinutes = 15,
     this.weeklySchedule = const {},
@@ -348,7 +346,6 @@ class SettingsModel {
     bool? dismissReminderOnMouseMove,
     int? avoidBreakHour,
     bool? largeOverlayText,
-    bool? lookedAwayPromptEnabled,
     String? customImagePath,
     int? resetTimerAfterMinutes,
     Map<int, WorkSchedule>? weeklySchedule,
@@ -487,8 +484,6 @@ class SettingsModel {
           dismissReminderOnMouseMove ?? this.dismissReminderOnMouseMove,
       avoidBreakHour: avoidBreakHour ?? this.avoidBreakHour,
       largeOverlayText: largeOverlayText ?? this.largeOverlayText,
-      lookedAwayPromptEnabled:
-          lookedAwayPromptEnabled ?? this.lookedAwayPromptEnabled,
       customImagePath: customImagePath != null
           ? (customImagePath == "" ? null : customImagePath)
           : this.customImagePath,
@@ -645,7 +640,6 @@ class SettingsModel {
     'dismissReminderOnMouseMove': dismissReminderOnMouseMove,
     'avoidBreakHour': avoidBreakHour,
     'largeOverlayText': largeOverlayText,
-    'lookedAwayPromptEnabled': lookedAwayPromptEnabled,
     'customImagePath': customImagePath,
     'resetTimerAfterMinutes': resetTimerAfterMinutes,
     'weeklySchedule': weeklySchedule.map(
@@ -786,7 +780,6 @@ class SettingsModel {
         for (final r in map['customReminders'] as List? ?? const [])
           CustomReminder.fromJson(Map<String, dynamic>.from(r as Map)),
       ],
-      lookedAwayPromptEnabled: map['lookedAwayPromptEnabled'] as bool? ?? false,
       customImagePath: map['customImagePath'] as String?,
       resetTimerAfterMinutes: map['resetTimerAfterMinutes'] as int? ?? 15,
       weeklySchedule: WorkSchedule.decode(map['weeklySchedule']),

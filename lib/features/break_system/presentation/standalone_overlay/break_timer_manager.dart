@@ -19,8 +19,6 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
 
   bool isDismissing = false;
 
-  bool lookedAway = false;
-
   static const Duration completionHold = Duration(milliseconds: 400);
 
   final ValueNotifier<bool> completing = ValueNotifier<bool>(false);
@@ -78,7 +76,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
       } else if (overlayType == 'quickReminder') {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
-        bridgeChannel.invokeMethod('completeBreak', {'lookedAway': lookedAway});
+        bridgeChannel.invokeMethod('completeBreak');
       }
     }
 

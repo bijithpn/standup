@@ -6,7 +6,8 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag       | Version | Build | Date       | Summary                                                                                                                            |
 | --------- | ------: | ----: | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `v1.14.1` |  1.14.1 |    52 | 2026-11-23 | Break skip limits and snooze, custom budget types, a redesigned Productivity screen and a dizzy companion                          |
+| `v1.15.0` |  1.15.0 |    53 | 2026-11-23 | Period comparisons in analytics, Review adjustment confirmation and a cleaner break overlay                                        |
+| `v1.14.0` |  1.14.0 |    52 | 2026-11-23 | Break skip limits and snooze, custom budget types, a redesigned Productivity screen and a dizzy companion                          |
 | `v1.13.0` |  1.13.0 |    51 | 2026-11-17 | Six wellness templates, compact tray duration pickers, and desktop update notifications                                            |
 | `v1.12.2` |  1.12.2 |    50 | 2026-11-14 | Clear paused state in every menu bar style and a static countdown preview                                                          |
 | `v1.12.1` |  1.12.1 |    49 | 2026-11-14 | Reliable idle, lock and sleep pause/resume across macOS, Windows and Linux, and a clearer Smart Detection screen                   |
@@ -35,7 +36,29 @@ Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.
 
 ## [Released]
 
-## [1.14.1] - 2026-11-23
+## [1.15.0] - 2026-11-23
+
+Tags: `v1.15.0` (not yet tagged)
+
+Build: `53`
+
+Release title: Period Comparisons & a Cleaner Break Overlay
+
+Changes compared with `v1.14.0` (build `52`).
+
+### Added
+
+- Comparison labels against the previous period (for example "+12m vs yesterday") on Productivity active time, the deep-work total on the Focus score card and the completed-breaks tile.
+
+### Changed
+
+- "Review adjustment" on the weekly insight now confirms once an adjustment is applied instead of offering it again.
+
+### Removed
+
+- The "I looked away" button on the break overlay and its "Eye-rest confirmation" setting.
+
+## [1.14.0] - 2026-11-23
 
 Tags: `v1.14.1` (not yet tagged)
 

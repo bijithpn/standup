@@ -301,7 +301,25 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                 ? (focusSeconds / totalActiveSeconds).clamp(0.0, 1.0)
                 : 0.0;
 
+            final now = DateTime.now();
+            final previousFocusSeconds = switch (period) {
+              UsagePeriod.today => focusService.focusSecondsForPeriod(
+                period,
+                now: now.subtract(const Duration(days: 1)),
+              ),
+              UsagePeriod.week => focusService.focusSecondsForPeriod(
+                period,
+                now: now.subtract(const Duration(days: 7)),
+              ),
+              // a partial month vs a full one would mislead
+              UsagePeriod.month => null,
+            };
+
             return FocusScoreCard(
+              previousFocusSeconds: previousFocusSeconds,
+              versusLabel: period == UsagePeriod.week
+                  ? 'last week'
+                  : 'yesterday',
               enabled: widget.settings.appUsageTrackingEnabled,
               focusScore: focusScore,
               sessions: sessions,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_format.dart';
 
 enum ChartPeriod { today, week, month }
 
@@ -136,6 +137,16 @@ class ProductivityTrendChart extends StatelessWidget {
     return _buildWeekMonthChart(slots, period == ChartPeriod.week ? 22 : 30);
   }
 
+  int? _yesterdayCompleted() {
+    final y = DateTime.now().subtract(const Duration(days: 1));
+    final key =
+        '${y.year}-${y.month.toString().padLeft(2, '0')}-${y.day.toString().padLeft(2, '0')}';
+    for (final d in weeklyData) {
+      if (d.date == key) return d.breaksCompleted;
+    }
+    return null;
+  }
+
   Widget _buildTodayChart() {
     final today = _todayStr();
     final d = weeklyData.firstWhere(
@@ -232,11 +243,15 @@ class ProductivityTrendChart extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // TODO(no-data): comparison baseline needs previous-period stats
               _TodayMetricTile(
                 label: 'Completed',
                 value: '$done',
                 unit: done == 1 ? 'break' : 'breaks',
+                comparison: ComparisonLabel(
+                  current: done,
+                  previous: _yesterdayCompleted(),
+                  versus: 'yesterday',
+                ),
               ),
               _TodayMetricTile(
                 label: 'Skipped',
@@ -464,8 +479,14 @@ class _TodayMetricTile extends StatelessWidget {
   final String label;
   final String value;
   final String? unit;
+  final Widget? comparison;
 
-  const _TodayMetricTile({required this.label, required this.value, this.unit});
+  const _TodayMetricTile({
+    required this.label,
+    required this.value,
+    this.unit,
+    this.comparison,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -484,6 +505,7 @@ class _TodayMetricTile extends StatelessWidget {
               ),
             ),
           ),
+          if (comparison != null) ...[comparison!, const SizedBox(width: 12)],
           Text(
             value,
             style: TextStyle(

@@ -388,7 +388,6 @@ class SettingsRepository extends ChangeNotifier {
       ),
       avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
-      lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
       ),
@@ -705,7 +704,6 @@ class SettingsRepository extends ChangeNotifier {
       ),
       avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
       largeOverlayText: _storage.getBool('large_overlay_text'),
-      lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
       ),
@@ -1033,10 +1031,6 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'custom_reminders',
       jsonEncode([for (final r in settings.customReminders) r.toJson()]),
-    );
-    await _storage.setBool(
-      'looked_away_prompt_enabled',
-      settings.lookedAwayPromptEnabled,
     );
     await _storage.setString(
       'template_accent_overrides',

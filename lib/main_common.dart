@@ -698,10 +698,7 @@ void mainCommon(FlavorConfig config) async {
             }
             sl<BreakController>().skipCurrentBreak();
           } else if (call.method == 'completeBreak') {
-            final args = call.arguments;
-            sl<BreakController>().completeCurrentBreak(
-              lookedAway: args is Map && args['lookedAway'] == true,
-            );
+            sl<BreakController>().completeCurrentBreak();
           } else if (call.method == 'hideOverlay') {
             await sl<OverlayWindowService>().hideOverlay();
           } else if (call.method == 'quitApp') {
@@ -1009,10 +1006,10 @@ class FakeStatsService extends ChangeNotifier implements StatsService {
 /// Stand-in BreakController that relays skip/complete to the main engine over the bridge channel.
 class FakeBreakController extends ChangeNotifier implements BreakController {
   @override
-  Future<void> completeCurrentBreak({bool lookedAway = false}) async {
+  Future<void> completeCurrentBreak() async {
     const MethodChannel(
       'com.breakmate.desktop/bridge',
-    ).invokeMethod('completeBreak', {'lookedAway': lookedAway});
+    ).invokeMethod('completeBreak');
   }
 
   @override

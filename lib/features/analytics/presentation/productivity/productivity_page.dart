@@ -53,6 +53,7 @@ class ProductivityPage extends StatefulWidget {
 class _ProductivityPageState extends State<ProductivityPage> {
   late ProductivityRange _range = widget.range ?? ProductivityRange.today;
   RangeProductivitySummary? _rangeSummary;
+  RangeProductivitySummary? _previousSummary;
   List<ProductivityInsight> _insights = const <ProductivityInsight>[];
   bool _loading = true;
   Widget? _detail;
@@ -127,6 +128,10 @@ class _ProductivityPageState extends State<ProductivityPage> {
     }
 
     final summary = await repository.summaryForLastDays(_range.days, now: _now);
+    final previous = await repository.summaryForLastDays(
+      _range.days,
+      now: _now.subtract(Duration(days: _range.days)),
+    );
     final goalHours = _settings?.currentSettings.dailyWorkGoalHours;
     final insights = await repository.insights(
       now: _now,
@@ -136,6 +141,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
     if (!mounted) return;
     setState(() {
       _rangeSummary = summary;
+      _previousSummary = previous;
       _insights = insights;
       _loading = false;
     });
@@ -384,6 +390,10 @@ class _ProductivityPageState extends State<ProductivityPage> {
             ? day.contextSwitches
             : summary?.contextSwitches ?? 0,
         switchesPerHour: showingToday ? day.switchesPerActiveHour : null,
+        previousActiveSeconds: _previousSummary?.activeSeconds,
+        versusLabel: showingToday
+            ? 'yesterday'
+            : 'previous ${_range.days} days',
         focusGoalSeconds: showingToday && _settings != null
             ? _settings!.currentSettings.dailyWorkGoalHours * 3600
             : null,

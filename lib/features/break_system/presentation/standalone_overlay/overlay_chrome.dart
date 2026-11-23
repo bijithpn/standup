@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
-import 'package:breakmate/features/break_overlay/presentation/widgets/looked_away_button.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_skip_button.dart';
 
@@ -17,9 +16,6 @@ class OverlayChrome extends StatelessWidget {
   final String intensityLevel;
   final VoidCallback onSkip;
 
-  final bool lookedAway;
-  final VoidCallback? onLookedAway;
-
   const OverlayChrome({
     super.key,
     required this.child,
@@ -31,8 +27,6 @@ class OverlayChrome extends StatelessWidget {
     this.exerciseTitle,
     required this.intensityLevel,
     required this.onSkip,
-    this.lookedAway = false,
-    this.onLookedAway,
   });
 
   @override
@@ -51,20 +45,6 @@ class OverlayChrome extends StatelessWidget {
               child: BreakContextPill(
                 breakInfo: breakInfo,
                 exerciseTitle: exerciseTitle,
-              ),
-            ),
-          ),
-        if (onLookedAway != null && !templateOwnsChrome)
-          Positioned(
-            top: 32,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: SafeArea(
-                child: LookedAwayButton(
-                  confirmed: lookedAway,
-                  onPressed: onLookedAway!,
-                ),
               ),
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_format.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -14,6 +15,8 @@ class FocusScoreCard extends StatelessWidget {
   final List<AppUsageEntry> focusApps;
 
   final Widget? footer;
+  final int? previousFocusSeconds;
+  final String versusLabel;
 
   const FocusScoreCard({
     super.key,
@@ -22,6 +25,8 @@ class FocusScoreCard extends StatelessWidget {
     required this.sessions,
     this.focusApps = const [],
     this.footer,
+    this.previousFocusSeconds,
+    this.versusLabel = 'yesterday',
   });
 
   @override
@@ -230,7 +235,6 @@ class FocusScoreCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // TODO(no-data): comparison baseline needs previous-period stats
                   Text(
                     formatUsageDuration(total),
                     style: TextStyle(
@@ -240,6 +244,12 @@ class FocusScoreCard extends StatelessWidget {
                       height: 1.1,
                       color: AppTheme.textPrimary,
                     ),
+                  ),
+                  ComparisonLabel(
+                    current: total,
+                    previous: previousFocusSeconds,
+                    versus: versusLabel,
+                    format: formatUsageDuration,
                   ),
                   const SizedBox(height: 8),
                   Text(
