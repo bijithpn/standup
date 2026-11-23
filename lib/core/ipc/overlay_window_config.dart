@@ -28,7 +28,6 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     @Default(true) bool clockFaceBlurEnabled,
     @Default('dark') String overlayThemeMode,
     @Default('box') String breathPreset,
-    @Default(false) bool lookedAwayPromptEnabled,
     String? customImagePath,
     String? exerciseTitle,
     String? exerciseInstructions,

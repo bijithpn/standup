@@ -83,8 +83,12 @@ class ProductivityOverviewCard extends StatelessWidget {
     this.switchesPerHour,
     this.caption,
     this.focusGoalSeconds,
+    this.previousActiveSeconds,
+    this.versusLabel = 'yesterday',
   });
 
+  final int? previousActiveSeconds;
+  final String versusLabel;
   final int activeSeconds;
   final int idleSeconds;
   final int breakSeconds;
@@ -134,7 +138,6 @@ class ProductivityOverviewCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: <Widget>[
-            // TODO(no-data): comparison baseline needs previous-period stats
             Text(
               formatDuration(activeSeconds),
               style: TextStyle(
@@ -175,6 +178,15 @@ class ProductivityOverviewCard extends StatelessWidget {
               fontSize: 12,
               color: AppTheme.textMuted,
             ),
+          ),
+        ],
+        if (previousActiveSeconds != null) ...<Widget>[
+          const SizedBox(height: 2),
+          ComparisonLabel(
+            current: activeSeconds,
+            previous: previousActiveSeconds,
+            versus: versusLabel,
+            format: formatDuration,
           ),
         ],
         const SizedBox(height: 10),

@@ -145,13 +145,6 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
           s.breakChimeEnabled,
           (v) => widget.onSave(s.copyWith(breakChimeEnabled: v)),
         ),
-        divider(),
-        toggleRow(
-          'Eye-rest confirmation',
-          'Adds an “I looked away” button to eye-rest breaks',
-          s.lookedAwayPromptEnabled,
-          (v) => widget.onSave(s.copyWith(lookedAwayPromptEnabled: v)),
-        ),
       ]),
     ];
   }

@@ -150,3 +150,40 @@ String activityLabel(ActivityKind kind) {
       return 'Idle';
   }
 }
+
+/// "+12m vs yesterday"; hidden when there is no previous value to compare.
+class ComparisonLabel extends StatelessWidget {
+  const ComparisonLabel({
+    super.key,
+    required this.current,
+    required this.previous,
+    required this.versus,
+    this.format = _plain,
+  });
+
+  final int current;
+  final int? previous;
+  final String versus;
+  final String Function(int) format;
+
+  static String _plain(int n) => '$n';
+
+  @override
+  Widget build(BuildContext context) {
+    final prev = previous;
+    if (prev == null || prev <= 0) return const SizedBox.shrink();
+    final diff = current - prev;
+    final text = diff == 0
+        ? 'Same as $versus'
+        : '${diff > 0 ? '+' : '−'}${format(diff.abs())} vs $versus';
+    return Text(
+      text,
+      style: TextStyle(
+        fontFeatures: AppTheme.tabular,
+        fontFamily: 'Inter',
+        fontSize: 12,
+        color: AppTheme.textMuted,
+      ),
+    );
+  }
+}

@@ -6,7 +6,7 @@ import '../../../settings/settings_model.dart';
 import '../../../feedback/timing_suggestion_dialog.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-class WeeklyActionableInsightCard extends StatelessWidget {
+class WeeklyActionableInsightCard extends StatefulWidget {
   final List<DailyStats> days;
   final SettingsModel settings;
   final SettingsModel Function() currentSettings;
@@ -19,10 +19,20 @@ class WeeklyActionableInsightCard extends StatelessWidget {
     required this.onApply,
   });
   @override
+  State<WeeklyActionableInsightCard> createState() =>
+      _WeeklyActionableInsightCardState();
+}
+
+class _WeeklyActionableInsightCardState
+    extends State<WeeklyActionableInsightCard> {
+  // The insight is derived from past breaks, so it outlives applying its fix.
+  bool _applied = false;
+
+  @override
   Widget build(BuildContext context) {
     final insight = WeeklyActionableInsight.fromDays(
-      days,
-      settings,
+      widget.days,
+      widget.settings,
       clock.now(),
     );
     return Column(
@@ -51,15 +61,24 @@ class WeeklyActionableInsightCard extends StatelessWidget {
         ),
         if (insight.suggestion != null) ...[
           const SizedBox(height: AppTheme.space12),
-          TextButton(
-            onPressed: () => showTimingSuggestion(
-              context,
-              insight.suggestion,
-              currentSettings: currentSettings,
-              onApply: onApply,
+          if (_applied)
+            Text(
+              'Adjustment applied. Check back next week to see the effect.',
+              style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
+            )
+          else
+            TextButton(
+              onPressed: () => showTimingSuggestion(
+                context,
+                insight.suggestion,
+                currentSettings: widget.currentSettings,
+                onApply: (s) async {
+                  await widget.onApply(s);
+                  if (mounted) setState(() => _applied = true);
+                },
+              ),
+              child: const Text('Review adjustment'),
             ),
-            child: const Text('Review adjustment'),
-          ),
         ],
       ],
     );

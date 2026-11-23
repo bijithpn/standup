@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 
-import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     hide DailyStats;
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
@@ -99,93 +98,5 @@ void main() {
         BreakPalette.light,
       );
     });
-  });
-
-  group('"I looked away" button', () {
-    testWidgets('is hidden unless the setting is on', (tester) async {
-      serve(shortBreak());
-      await show(tester);
-      expect(find.text('I looked away'), findsNothing);
-    });
-
-    testWidgets('is hidden on long breaks', (tester) async {
-      serve(
-        shortBreak(
-          extra: {'lookedAwayPromptEnabled': true, 'breakType': 'long'},
-        ),
-      );
-      await show(tester);
-      expect(find.text('I looked away'), findsNothing);
-    });
-
-    testWidgets('shows on eye-rest breaks and confirms on tap', (tester) async {
-      serve(shortBreak(extra: {'lookedAwayPromptEnabled': true}));
-      await show(tester);
-      expect(find.text('I looked away'), findsOneWidget);
-      await tester.tap(find.text('I looked away'));
-      await tester.pump();
-      expect(find.text('Looked away'), findsOneWidget);
-    });
-
-    for (final tapped in [true, false]) {
-      testWidgets(
-        'a break that runs out reports lookedAway=$tapped to the main app',
-        (tester) async {
-          serve(
-            shortBreak(
-              extra: {'lookedAwayPromptEnabled': true},
-              endsInMs: 1900,
-            ),
-          );
-          await show(tester);
-          if (tapped) {
-            await tester.tap(find.text('I looked away'));
-            await tester.pump();
-          }
-          // The overlay measures the countdown against the wall clock but ticks
-          // on a (fake) timer: let real time pass, then tick, then run the
-          // 400 ms completion hold and the dismiss timer.
-          await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 1100)),
-          );
-          await tester.pump(const Duration(seconds: 1));
-          await tester.pump(const Duration(seconds: 3));
-          final done = calls.where((c) => c.method == 'completeBreak');
-          expect(done, hasLength(1));
-          expect(done.single.arguments, {'lookedAway': tapped});
-          await tester.pumpWidget(const SizedBox.shrink());
-        },
-      );
-    }
-
-    testWidgets('skipping does not report a completion', (tester) async {
-      serve(shortBreak(extra: {'lookedAwayPromptEnabled': true}));
-      await show(tester);
-      await tester.tap(find.text('I looked away'));
-      await tester.tap(find.text('Skip'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      expect(calls.any((c) => c.method == 'completeBreak'), isFalse);
-      expect(calls.any((c) => c.method == 'skipBreak'), isTrue);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-  });
-
-  testWidgets('a quick reminder never shows the looked-away button', (
-    tester,
-  ) async {
-    serve({
-      'overlayType': 'quickReminder',
-      'reminderType': 'posture',
-      'lookedAwayPromptEnabled': true,
-      'durationSeconds': 2,
-      'remainingSeconds': 2,
-    });
-    await show(tester);
-    expect(find.text('I looked away'), findsNothing);
-    // Let the reminder's own auto-dismiss timer run out.
-    await tester.pump(AppConstants.healthReminderDismissDuration);
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

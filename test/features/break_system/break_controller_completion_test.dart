@@ -103,18 +103,4 @@ void main() {
       expect(chimes, 0);
     });
   });
-
-  group('looked-away confirmation', () {
-    test('counts as one wellness action', () async {
-      final c = build(const SettingsModel());
-      await c.completeCurrentBreak(lookedAway: true);
-      expect(stats.wellnessActions, 1);
-    });
-
-    test('a plain completion counts none', () async {
-      final c = build(const SettingsModel());
-      await c.completeCurrentBreak();
-      expect(stats.wellnessActions, 0);
-    });
-  });
 }

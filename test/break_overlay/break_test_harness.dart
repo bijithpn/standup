@@ -42,8 +42,7 @@ class FakeStatsService extends StatsService {
 class FakeBreakController extends ChangeNotifier implements BreakController {
   int completed = 0;
   @override
-  Future<void> completeCurrentBreak({bool lookedAway = false}) async =>
-      completed++;
+  Future<void> completeCurrentBreak() async => completed++;
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

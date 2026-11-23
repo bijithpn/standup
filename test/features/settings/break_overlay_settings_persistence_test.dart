@@ -111,7 +111,6 @@ void main() {
         overlayThemeMode: 'system',
         breathPreset: 'relax',
         breakChimeEnabled: true,
-        lookedAwayPromptEnabled: true,
       ),
     );
 
@@ -121,7 +120,6 @@ void main() {
     expect(s.overlayThemeMode, 'system');
     expect(s.breathPreset, 'relax');
     expect(s.breakChimeEnabled, isTrue);
-    expect(s.lookedAwayPromptEnabled, isTrue);
   });
 
   for (final readSnapshot in [false, true]) {
@@ -153,7 +151,6 @@ void main() {
     expect(s.overlayThemeMode, 'dark');
     expect(s.breathPreset, 'box');
     expect(s.breakChimeEnabled, isFalse);
-    expect(s.lookedAwayPromptEnabled, isFalse);
   });
 }
 

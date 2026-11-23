@@ -111,7 +111,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     isDismissing = false;
     completing.value = false;
-    lookedAway = false;
     _cachedBreakModel = null;
     _cachedSettingsModel = null;
 
@@ -323,9 +322,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                             canDismiss: _canDismiss,
                             breakInfo: _cachedBreakModel!,
                             settings: _cachedSettingsModel!,
-                            lookedAway: lookedAway,
-                            onLookedAway: () =>
-                                setState(() => lookedAway = true),
                           ),
                           if (_askingReason)
                             SkipReasonPicker(
