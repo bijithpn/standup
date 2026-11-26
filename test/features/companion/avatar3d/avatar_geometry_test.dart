@@ -49,7 +49,10 @@ void main() {
     test('the cat keeps the colours and camera the editor authored', () {
       final cat = _scene('cat');
 
-      expect(cat.parts.length, 3);
+      expect(
+        cat.parts.map((p) => p.id),
+        containsAll(['cat-head', 'cat-ear-left', 'cat-ear-right']),
+      );
       // The camera background is data now, not something baked into artwork,
       // so the app can show it, recolour it, or leave it off.
       expect(cat.cameraBackground, isNotNull);
@@ -63,7 +66,7 @@ void main() {
     test('builds shaded, depth-sorted cells for every part', () {
       final geometry = buildAvatarGeometry(_scene('cat'));
 
-      expect(geometry.parts.length, 3);
+      expect(geometry.parts.length, _scene('cat').parts.length);
       for (final part in geometry.parts) {
         expect(
           part.cells,

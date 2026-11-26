@@ -69,7 +69,7 @@ class Avatar3DView extends StatefulWidget {
 class _Avatar3DViewState extends State<Avatar3DView>
     with SingleTickerProviderStateMixin {
   static const double _poseEpsilon = 0.004;
-  static const double _faceEaseSeconds = 0.11;
+  static const double _faceEaseSeconds = 0.18;
   static const double _lagSeconds = 0.18;
 
   AvatarScene? _scene;
@@ -85,27 +85,28 @@ class _Avatar3DViewState extends State<Avatar3DView>
 
   AvatarFaceStyle? _shownFace;
   AvatarFaceStyle? _targetFace;
+  AvatarFaceStyle? _faceFrom;
+  double _faceProgress = 1;
   FaceRig _shownRig = FaceRig.neutral;
   FaceRig _targetRig = FaceRig.neutral;
   double _lag = 0;
   double _lagTarget = 0;
   late final Ticker _ticker;
-  final Stopwatch _clock = Stopwatch()..start();
   Duration _lastTick = Duration.zero;
-
-  bool get _animating =>
-      !_reduceMotion && (_targetRig.nose > 0.01 || _targetRig.nod > 0.01);
 
   void _step(Duration elapsed) {
     final dt = ((elapsed - _lastTick).inMicroseconds / 1e6).clamp(0.0, 0.1);
+    if (dt < 1 / 30) return;
     _lastTick = elapsed;
     final k = 1 - math.exp(-dt / _faceEaseSeconds);
 
     final target = _targetFace;
-    final shown = _shownFace;
-    if (target != null && shown != null) {
-      final next = shown.lerpTo(target, k);
-      _shownFace = next.isCloseTo(target) ? target : next;
+    if (target != null && _faceFrom != null) {
+      _faceProgress = math.min(1.0, _faceProgress + dt / _faceEaseSeconds);
+      final eased = 1 - math.pow(1 - _faceProgress, 3).toDouble();
+      _shownFace = _faceProgress >= 1
+          ? target
+          : _faceFrom!.lerpTo(target, eased);
     }
     _shownRig = _shownRig.isCloseTo(_targetRig)
         ? _targetRig
@@ -116,11 +117,18 @@ class _Avatar3DViewState extends State<Avatar3DView>
         (_lag - _lagTarget).abs() < 0.002 &&
         _shownRig.isCloseTo(_targetRig) &&
         (target == null || (_shownFace?.isCloseTo(target) ?? true));
-    if (settled && !_animating) _ticker.stop();
+    if (settled) _ticker.stop();
     if (mounted) setState(() {});
   }
 
   void _wake() {
+    if (_reduceMotion) {
+      _shownFace = _targetFace;
+      _faceProgress = 1;
+      _shownRig = _targetRig;
+      _lag = _lagTarget;
+      return;
+    }
     if (_ticker.isActive) return;
     _lastTick = Duration.zero;
     _ticker.start();
@@ -143,6 +151,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (_reduceMotion) _ticker.stop();
   }
 
   @override
@@ -151,12 +160,16 @@ class _Avatar3DViewState extends State<Avatar3DView>
     if (oldWidget.preset != widget.preset ||
         oldWidget.palette != widget.palette ||
         oldWidget.paletteStrength != widget.paletteStrength ||
-        oldWidget.style != widget.style) {
+        oldWidget.style != widget.style ||
+        oldWidget.densityScale != widget.densityScale) {
       _geometry = null;
       _fitBounds = null;
       _lastBuilt = null;
       _builtYaw = double.nan;
       _shownFace = null;
+      _targetFace = null;
+      _faceFrom = null;
+      _faceProgress = 1;
       _resolveScene();
     }
   }
@@ -196,13 +209,8 @@ class _Avatar3DViewState extends State<Avatar3DView>
 
     final yaw = base.yaw + snapshot.headTurn.dx * widget.lookRange;
     final pitch =
-        base.pitch +
-        snapshot.headTurn.dy * widget.lookRange * 0.7 +
-        rig.pitch +
-        (_reduceMotion
-            ? 0
-            : _shownRig.nod * 0.12 * (0.5 + 0.5 * math.sin(_t * 1.1)));
-    final roll = base.roll + snapshot.tilt;
+        base.pitch + snapshot.headTurn.dy * widget.lookRange * .7 + rig.pitch;
+    final roll = base.roll + snapshot.tilt + rig.browAsym * .065;
 
     return scene
         .copyWithParts(poseParts(scene.parts, rig))
@@ -212,23 +220,17 @@ class _Avatar3DViewState extends State<Avatar3DView>
         );
   }
 
-  double get _t => _clock.elapsedMilliseconds / 1000;
-
   FaceRig _currentRig(PetBehaviorSnapshot snapshot) {
     _targetRig = rigFor(snapshot.emotion);
     _lagTarget = _reduceMotion ? 0 : snapshot.headTurn.dx + snapshot.tilt * 3;
-    if (!_shownRig.isCloseTo(_targetRig) ||
-        (_lag - _lagTarget).abs() > 0.002 ||
-        _animating) {
+    if (!_shownRig.isCloseTo(_targetRig) || (_lag - _lagTarget).abs() > 0.002) {
       _wake();
     }
-    final twitch = _reduceMotion
-        ? 0.0
-        : math.pow(math.max(0, math.sin(_t * 2.3)), 3) *
-              (0.5 + 0.5 * math.sin(_t * 28));
-    return _shownRig.copyWith(
-      earRot: (_lag - _lagTarget) * 14,
-      nose: _shownRig.nose * twitch,
+    return composeFaceRig(
+      widget.preset,
+      _shownRig,
+      snapshot,
+      earLag: _lag - _lagTarget,
     );
   }
 
@@ -237,12 +239,16 @@ class _Avatar3DViewState extends State<Avatar3DView>
     PetBehaviorSnapshot snapshot,
   ) {
     final target = expressFace(scene.faceStyle, snapshot.emotion);
+    final previousTarget = _targetFace;
     _targetFace = target;
-
-    final shown = _shownFace;
-    if (shown == null) {
+    if (_shownFace == null) {
       _shownFace = target;
-    } else if (!shown.isCloseTo(target)) {
+      _faceFrom = target;
+      _faceProgress = 1;
+    } else if (previousTarget == null ||
+        !previousTarget.isCloseTo(target, epsilon: .001)) {
+      _faceFrom = _shownFace;
+      _faceProgress = 0;
       _wake();
     }
 
@@ -252,8 +258,8 @@ class _Avatar3DViewState extends State<Avatar3DView>
   // Authored yaw/pitch/roll are damped so the idle pose stays mostly front-facing.
   static AvatarViewState _restView(AvatarViewState authored) =>
       authored.copyWith(
-        yaw: authored.yaw * 0.2,
-        pitch: authored.pitch * 0.2,
+        yaw: authored.yaw * 0.8,
+        pitch: authored.pitch * 0.8,
         roll: authored.roll * 0.2,
       );
 
@@ -267,12 +273,13 @@ class _Avatar3DViewState extends State<Avatar3DView>
     if (cached != null &&
         (yaw - _builtYaw).abs() < _poseEpsilon &&
         (pitch - _builtPitch).abs() < _poseEpsilon &&
-        _builtFace != null &&
-        face.isCloseTo(_builtFace!, epsilon: 0.08) &&
         _builtRig != null &&
-        (rig.earDroop - _builtRig!.earDroop).abs() < 0.03 &&
-        (rig.earRot - _builtRig!.earRot).abs() < 0.5) {
-      return cached;
+        rig.isCloseTo(_builtRig!, epsilon: .02)) {
+      if (_builtFace != null && face.isCloseTo(_builtFace!, epsilon: .08)) {
+        return cached;
+      }
+      _builtFace = face;
+      return _geometry = updateAvatarFace(cached, posed);
     }
 
     final built = buildAvatarGeometry(posed, densityScale: widget.densityScale);
@@ -317,7 +324,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
 
     final still = _reduceMotion;
     final breath = still ? 0.0 : snapshot.breath * widget.size * 0.004;
-    final squash = still ? 1.0 : snapshot.squash.clamp(0.6, 1.6);
+    final squash = still ? 1.0 : snapshot.squash.clamp(0.92, 1.10);
 
     Widget painted = CustomPaint(
       size: Size(widget.size, widget.size),
@@ -326,6 +333,7 @@ class _Avatar3DViewState extends State<Avatar3DView>
         fitBounds: _fitBoundsFor(posed),
         blush: blushFor(snapshot.emotion),
         rig: _poseRig,
+        gaze: snapshot.gaze,
         scene: posed,
         background: background,
         showOutline: widget.showOutline,
@@ -337,11 +345,11 @@ class _Avatar3DViewState extends State<Avatar3DView>
       transform: Matrix4.identity()
         ..translateByDouble(
           still ? 0.0 : snapshot.bodyLean.dx * widget.size * 0.03,
-          still ? 0.0 : snapshot.bounce + breath,
+          still ? 0.0 : snapshot.bounce * widget.size / 220 + breath,
           0.0,
           1.0,
         )
-        ..scaleByDouble(math.sqrt(squash), 1 / squash, 1.0, 1.0),
+        ..scaleByDouble(math.sqrt(squash), 1 / squash, math.sqrt(squash), 1.0),
       alignment: Alignment.center,
       child: painted,
     );
@@ -431,8 +439,13 @@ const Set<String> kAvatarScenePresets = <String>{
 bool hasAvatarScene(String species) =>
     kAvatarScenePresets.contains(avatarPresetFor(species));
 
-double avatarDensityFor(double size) =>
-    size <= 160 ? 1.1 : math.min(1.6, size / 140);
+double avatarDensityFor(double size) => size <= 48
+    ? .5
+    : size <= 96
+    ? .7
+    : size <= 160
+    ? .9
+    : math.min(1.4, size / 160);
 
 /// Cute stand-in while the scene catalog loads: a soft blob that bobs and blinks.
 class PetLoader extends StatefulWidget {

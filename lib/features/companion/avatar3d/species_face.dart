@@ -131,6 +131,9 @@ const Map<String, double> _eyeBoost = <String, double>{
 
 /// Per-species face adjustments applied on top of the authored scene face.
 AvatarFaceStyle tuneFaceForSpecies(String preset, AvatarFaceStyle base) {
+  if (base.eyeShape == "anatomical" || base.eyeShape.startsWith("reference-")) {
+    return base;
+  }
   final face = _faces[preset];
   if (face == null) return base;
   final nose = face.nose;

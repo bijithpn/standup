@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag       | Version | Build | Date       | Summary                                                                                                                            |
 | --------- | ------: | ----: | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `v1.16.0` |  1.16.0 |    55 | 2026-11-26 | Rebuilt companion heads, live cursor reactions and larger floating pet windows                                                     |
 | `v1.15.0` |  1.15.0 |    53 | 2026-11-23 | Period comparisons in analytics, Review adjustment confirmation and a cleaner break overlay                                        |
 | `v1.14.0` |  1.14.0 |    52 | 2026-11-23 | Break skip limits and snooze, custom budget types, a redesigned Productivity screen and a dizzy companion                          |
 | `v1.13.0` |  1.13.0 |    51 | 2026-11-17 | Six wellness templates, compact tray duration pickers, and desktop update notifications                                            |
@@ -35,6 +36,37 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.16.0] - 2026-11-26
+
+Tags: `v1.16.0` (not yet tagged)
+
+Build: `55`
+
+Release title: Expressive Companion Heads & Responsive Pet Windows
+
+### Added
+
+- Live browser preview using the production pet renderer, with species selection, cursor tracking, click/play/treat reactions, adjustable size and reduced-motion controls.
+- Larger floating companion windows with plus/minus size controls and migration of the previous default window size.
+- Runtime preview sheets, motion recordings and regression coverage for geometry, expressions, cursor tracking and click responses.
+
+### Changed
+
+- Reconstructed all 32 companion heads from OneWorks geometric definitions, with matte shading, revised sheep anatomy and an articulated hooked parrot beak.
+- Gentler species-specific motion and finite expression transitions that settle cleanly.
+- A fuller alpaca head with rounded ears, a projecting muzzle and animation-safe framing at small widget sizes.
+- Authoring validation data is retained in the repository and excluded from the runtime asset bundle.
+
+### Fixed
+
+- Cursor movement now resumes a settled animation loop, and the initial cursor sample no longer triggers a false startle.
+- The native window bridge binds directly to the pet panel; local hover events also supply cursor input.
+- In-app companions resume animation when switched from static to live mode.
+
+### Removed
+
+- Redundant Python importer launcher; the Node importer is the supported entry point.
 
 ## [1.15.0] - 2026-11-23
 

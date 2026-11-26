@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
+import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 
 /// Per-emotion multipliers/offsets applied on top of the scene's authored face.
 class _Expression {
@@ -367,21 +368,70 @@ final RegExp _earParts = RegExp(r'(^|-)(ear|crest|whisker)');
 
 /// Droops/perks and swings ears, crests and whiskers; the left/right sign comes from the part's x.
 List<AvatarPart> poseParts(List<AvatarPart> parts, FaceRig rig) {
-  if (rig.earDroop.abs() < 0.01 && rig.earRot.abs() < 0.1) return parts;
-  return [
-    for (final p in parts)
-      if (_earParts.hasMatch(p.id))
-        p.copyWith(
-          rotationZ:
-              p.rotationZ +
-              rig.earDroop * 28 * p.x.sign +
-              rig.earRot * (p.id.contains('whisker') ? 0.5 : 1),
-          y: p.y + rig.earDroop * 10,
-        )
-      else
-        p,
-  ];
+  if (rig.isCloseTo(FaceRig.neutral)) return parts;
+  return [for (final p in parts) _posePart(p, parts, rig)];
 }
+
+AvatarPart _posePart(AvatarPart p, List<AvatarPart> parts, FaceRig rig) {
+  if (_earParts.hasMatch(p.id)) {
+    final sign = p.x.sign;
+    AvatarPart root = p;
+    for (final candidate in parts) {
+      if (candidate.id.startsWith('ear-') && candidate.x.sign == sign) {
+        root = candidate;
+        break;
+      }
+    }
+    // Rotate the whole ear assembly around its embedded root, including lining.
+    final pivotX = root.x * .85;
+    final pivotY = root.y + root.scaleY * 90;
+    final degrees = rig.earDroop * 12 * sign + rig.earRot.clamp(-8.0, 8.0);
+    final angle = degrees * math.pi / 180;
+    final dx = p.x - pivotX, dy = p.y - pivotY;
+    return p.copyWith(
+      x: pivotX + dx * math.cos(angle) - dy * math.sin(angle),
+      y: pivotY + dx * math.sin(angle) + dy * math.cos(angle),
+      rotationZ: p.rotationZ + degrees,
+    );
+  }
+  if (p.id == 'beak-lower' || p.id == 'bill-lower') {
+    return p.copyWith(
+      y: p.y + rig.beak.clamp(0.0, .8) * 9,
+      rotationX: p.rotationX + rig.beak.clamp(0.0, 1.0) * 9,
+    );
+  }
+  if (p.hasFace && p.muzzleProjection > 0) {
+    return p.copyWith(
+      muzzleProjection: p.muzzleProjection * (1 + rig.cheek * .045),
+      muzzleWidth: p.muzzleWidth * (1 + rig.cheek * .035),
+    );
+  }
+  if (p.id == 'nose') return p.copyWith(y: p.y - rig.nose * 1.2);
+  return p;
+}
+
+/// Single owner for expression and behavior channels, used by the live widget
+/// and validation renderer. Tracking has priority over expression secondary motion.
+FaceRig composeFaceRig(
+  String preset,
+  FaceRig emotion,
+  PetBehaviorSnapshot snapshot, {
+  double earLag = 0,
+  double nosePulse = 0,
+}) => FaceRig(
+  cheek: emotion.cheek + snapshot.cheekLift * .2,
+  browAsym: emotion.browAsym,
+  earDroop: (emotion.earDroop - snapshot.earPose * .3).clamp(-1.0, 1.0),
+  earRot: earLag * 10,
+  beak: math.max(emotion.beak, snapshot.beakOpen),
+  nose:
+      snapshot.noseTwitch +
+      ({'rabbit', 'hamster', 'chinchilla', 'guinea-pig'}.contains(preset)
+          ? emotion.nose * nosePulse
+          : 0),
+  pitch: emotion.pitch,
+  nod: emotion.nod,
+);
 
 /// Blush opacity derived from emotion intensity.
 double blushFor(PetEmotionState state) {
@@ -430,7 +480,7 @@ AvatarFaceStyle expressFace(
 
     leftEyeRotation: face.leftEyeRotation + expression.outerTilt * t,
     rightEyeRotation: face.rightEyeRotation - expression.outerTilt * t,
-    mouthEnabled: mouth == null ? face.mouthEnabled : mouth.enabled,
+    mouthEnabled: face.mouthEnabled && (mouth?.enabled ?? true),
 
     mouthShape: mouth?.shape != null && t > 0.5 ? mouth!.shape : null,
     mouthCurve: mouth == null
@@ -445,9 +495,7 @@ AvatarFaceStyle expressFace(
     mouthRotation: mouth == null
         ? face.mouthRotation
         : face.mouthRotation + mouth.rotation * t,
-    highlightEnabled: highlight == null
-        ? face.highlightEnabled
-        : highlight.enabled,
+    highlightEnabled: face.highlightEnabled && (highlight?.enabled ?? true),
     highlightSize: highlight == null
         ? face.highlightSize
         : face.highlightSize * blend(highlight.size),

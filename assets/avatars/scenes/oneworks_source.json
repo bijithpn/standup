@@ -1,0 +1,3477 @@
+{
+  "repository": "https://github.com/oneworks-ai/avatar",
+  "commit": "a06ba84c123cf82e2b1a59c36b403392e22f9d08",
+  "license": "../LICENSE",
+  "importer": "tool/import_oneworks_heads.mjs",
+  "parts": "Authored upstream models, including upstream bear breed definitions for panda, red panda and raccoon.",
+  "markings": "Upstream boundaries and surface sampling in part-local 3D coordinates.",
+  "foundationOnly": false,
+  "geometryChecks": [
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.78465885429227,
+        45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "cloud",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.78465885429227,
+        45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -82.47756588723286,
+        -54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -89.54625852603905,
+        0,
+        106.3130640325439
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -82.47756588723286,
+        54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -54.12914958090242,
+        128.02747816640104
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        139
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        54.12914958090242,
+        128.02747816640104
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        82.47756588723286,
+        -54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        89.54625852603905,
+        0,
+        106.3130640325439
+      ]
+    },
+    {
+      "preset": "sun",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        82.47756588723286,
+        54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.78465885429227,
+        45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "cat",
+      "partId": "cat-head",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.78465885429227,
+        45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -76.74941734893743,
+        -68.67749021548278,
+        86.34206460676076
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -92.14437582987533,
+        0,
+        94.41100747349562
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -97.33416907657964,
+        68.67749021548278,
+        92.02375133166224
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -68.67749021548278,
+        103.96421102965212
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        113.67999999999999
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        68.67749021548278,
+        110.80551231613745
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        76.74941734893743,
+        -68.67749021548278,
+        86.34206460676076
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        92.14437582987533,
+        0,
+        94.41100747349562
+      ]
+    },
+    {
+      "preset": "dog",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        97.33416907657964,
+        68.67749021548278,
+        92.02375133166224
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -70.32923967858935,
+        104.09742596037295
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        113.67999999999999
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        70.32923967858935,
+        111.11779845594656
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "bear",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -93.19241347861303,
+        -64.46001437613279,
+        84.50360788935417
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -102.67732078905236,
+        0,
+        92.72538802355531
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -99.72156629646557,
+        64.46001437613279,
+        89.7123094363706
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -64.46001437613279,
+        103.60021510421123
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        113.67999999999999
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        64.46001437613279,
+        109.98600873081118
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        93.19241347861303,
+        -64.46001437613279,
+        84.50360788935417
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        102.67732078905236,
+        0,
+        92.72538802355531
+      ]
+    },
+    {
+      "preset": "rabbit",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        99.72156629646557,
+        64.46001437613279,
+        89.7123094363706
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -86.3461171328285,
+        45.951364392420764,
+        81.74296810993535
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        106.87560057344284
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "fox",
+      "partId": "fox-head",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        86.3461171328285,
+        45.951364392420764,
+        81.74296810993535
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.93109313862615,
+        45.951364392420764,
+        85.13682748714395
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.31293344240791
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "hamster",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.93109313862615,
+        45.951364392420764,
+        85.13682748714395
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -92.51916961050026,
+        -65.48945894860329,
+        84.9605645957502
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -102.41448976823425,
+        0,
+        93.14395026387844
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -100.16699548882514,
+        65.48945894860329,
+        90.28368667342714
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -65.48945894860329,
+        103.69237031372087
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        113.67999999999999
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        65.48945894860329,
+        110.18911557818478
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        92.51916961050026,
+        -65.48945894860329,
+        84.9605645957502
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        102.41448976823425,
+        0,
+        93.14395026387844
+      ]
+    },
+    {
+      "preset": "capybara",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        100.16699548882514,
+        65.48945894860329,
+        90.28368667342714
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.44323256802583,
+        45.951364392420764,
+        85.6216645410309
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.94683813797435
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "otter",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.44323256802583,
+        45.951364392420764,
+        85.6216645410309
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.18716285332599,
+        45.951364392420764,
+        85.37924601408743
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.62988579019112
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "pig",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.18716285332599,
+        45.951364392420764,
+        85.37924601408743
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -88.7361011366936,
+        45.951364392420764,
+        84.00554102807442
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        109.83382248608622
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "deer",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        88.7361011366936,
+        45.951364392420764,
+        84.00554102807442
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.01644971019277,
+        45.951364392420764,
+        85.21763366279178
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.41858422500232
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "sheep",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.01644971019277,
+        45.951364392420764,
+        85.21763366279178
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.76037999549294,
+        45.951364392420764,
+        84.9752151358483
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.10163187721909
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "alpaca",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.76037999549294,
+        45.951364392420764,
+        84.9752151358483
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.76037999549294,
+        45.951364392420764,
+        84.9752151358483
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.10163187721909
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "cow",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.76037999549294,
+        45.951364392420764,
+        84.9752151358483
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.07752742296005,
+        45.951364392420764,
+        84.32876573066571
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        110.25642561646384
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "squirrel",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.07752742296005,
+        45.951364392420764,
+        84.32876573066571
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.5043102807931,
+        45.951364392420764,
+        84.73279660890483
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        110.78467952943588
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "tiger",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.5043102807931,
+        45.951364392420764,
+        84.73279660890483
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.3335971376599,
+        45.951364392420764,
+        84.57118425760919
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        110.57337796424707
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "lion",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.3335971376599,
+        45.951364392420764,
+        84.57118425760919
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -87.71182227789427,
+        45.951364392420764,
+        83.03586692030053
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        108.56601309495333
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "hedgehog",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        87.71182227789427,
+        45.951364392420764,
+        83.03586692030053
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.67502342392633,
+        45.951364392420764,
+        84.89440896020048
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        110.9959810946247
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "seal",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.67502342392633,
+        45.951364392420764,
+        84.89440896020048
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.84573656705955,
+        45.951364392420764,
+        85.05602131149612
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.2072826598135
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "beaver",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.84573656705955,
+        45.951364392420764,
+        85.05602131149612
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.01644971019277,
+        45.951364392420764,
+        85.21763366279178
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.41858422500232
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "guinea-pig",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.01644971019277,
+        45.951364392420764,
+        85.21763366279178
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.76037999549294,
+        45.951364392420764,
+        84.9752151358483
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.10163187721909
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "chinchilla",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.76037999549294,
+        45.951364392420764,
+        84.9752151358483
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -87.114326276928,
+        45.951364392420764,
+        82.47022369076576
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        107.8264576167925
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "ferret",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        87.114326276928,
+        45.951364392420764,
+        82.47022369076576
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.4189537092265,
+        45.951364392420764,
+        84.65199043325701
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        110.67902874684148
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "monkey",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.4189537092265,
+        45.951364392420764,
+        84.65199043325701
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.10180628175938,
+        45.951364392420764,
+        85.29843983843959
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.52423500759672
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "chick",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.10180628175938,
+        45.951364392420764,
+        85.29843983843959
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.35787599645923,
+        45.951364392420764,
+        85.54085836538307
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.84118735537994
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "duck",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.35787599645923,
+        45.951364392420764,
+        85.54085836538307
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.18716285332599,
+        45.951364392420764,
+        85.37924601408743
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        111.62988579019112
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "penguin",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.18716285332599,
+        45.951364392420764,
+        85.37924601408743
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -90.52858913959244,
+        45.951364392420764,
+        85.70247071667873
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        112.05248892056876
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "owl",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        90.52858913959244,
+        45.951364392420764,
+        85.70247071667873
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.67502342392633,
+        45.951364392420764,
+        84.89440896020048
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        110.9959810946247
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "parrot",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.67502342392633,
+        45.951364392420764,
+        84.89440896020048
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -89.5043102807931,
+        45.951364392420764,
+        84.73279660890483
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -45.951364392420764,
+        112.36944126835198
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        122
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        45.951364392420764,
+        110.78467952943588
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        90.78465885429227,
+        -45.951364392420764,
+        85.9448892436222
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        98.56530614736673,
+        0,
+        93.3107468487076
+      ]
+    },
+    {
+      "preset": "goose",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        89.5043102807931,
+        45.951364392420764,
+        84.73279660890483
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -82.47756588723286,
+        -54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -89.54625852603905,
+        0,
+        106.3130640325439
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -82.47756588723286,
+        54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -54.12914958090242,
+        128.02747816640104
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        139
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        54.12914958090242,
+        128.02747816640104
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        82.47756588723286,
+        -54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        89.54625852603905,
+        0,
+        106.3130640325439
+      ]
+    },
+    {
+      "preset": "bun",
+      "partId": "bun-body",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        82.47756588723286,
+        54.12914958090242,
+        97.92081643330727
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -70.32923967858935,
+        104.09742596037295
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        113.67999999999999
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        70.32923967858935,
+        111.11779845594656
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "panda",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -70.32923967858935,
+        104.09742596037295
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        113.67999999999999
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        70.32923967858935,
+        111.11779845594656
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "red-panda",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": -0.4,
+      "point": [
+        -88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0,
+      "point": [
+        -100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": -0.7,
+      "latitude": 0.4,
+      "point": [
+        -102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": -0.4,
+      "point": [
+        0,
+        -70.32923967858935,
+        104.09742596037295
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0,
+      "point": [
+        0,
+        0,
+        113.67999999999999
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": 0,
+      "latitude": 0.4,
+      "point": [
+        0,
+        70.32923967858935,
+        111.11779845594656
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": -0.4,
+      "point": [
+        88.26802124557301,
+        -70.32923967858935,
+        87.0387304307444
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0,
+      "point": [
+        100.58243449125578,
+        0,
+        95.05098501795436
+      ]
+    },
+    {
+      "preset": "raccoon",
+      "partId": "primary",
+      "longitude": 0.7,
+      "latitude": 0.4,
+      "point": [
+        102.1513243858078,
+        70.32923967858935,
+        92.90865760260598
+      ]
+    }
+  ],
+  "adaptations": "Original proportions and palettes retained except for documented local refinements. Dog face is raised per upstream renderer; other muzzle-bearing heads use small eye-placement corrections to prevent occlusion. Local matte art direction and alpaca/sheep/parrot refinements are applied by pet_character_refinements.mjs."
+}

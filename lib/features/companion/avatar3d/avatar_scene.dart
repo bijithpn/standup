@@ -1,6 +1,7 @@
 import 'dart:ui' show Color;
 
 import 'package:breakmate/features/companion/avatar3d/avatar_shape.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_math.dart';
 
 Color? _parseColor(Object? value) {
   if (value is! String) return null;
@@ -42,6 +43,11 @@ class AvatarPart {
     required this.shadowColor,
     required this.hasFace,
     required this.occludedByFace,
+    this.muzzleProjection = 0,
+    this.muzzleWidth = 65,
+    this.muzzleY = 40,
+    this.jawTaper = 0,
+    this.muzzleColor,
     this.roundness,
     this.topScale,
     this.bottomTaper = 0,
@@ -74,23 +80,36 @@ class AvatarPart {
 
   final bool occludedByFace;
 
+  final double muzzleProjection;
+  final double muzzleWidth;
+  final double muzzleY;
+  final double jawTaper;
+  final Color? muzzleColor;
   final double? roundness;
   final double? topScale;
   final double bottomTaper;
   final double cutAngle;
 
-  AvatarPart copyWith({double? y, double? rotationZ, double? scaleY}) {
+  AvatarPart copyWith({
+    double? x,
+    double? y,
+    double? rotationX,
+    double? rotationZ,
+    double? scaleY,
+    double? muzzleProjection,
+    double? muzzleWidth,
+  }) {
     return AvatarPart(
       id: id,
       label: label,
       shape: shape,
-      x: x,
+      x: x ?? this.x,
       y: y ?? this.y,
       z: z,
       scaleX: scaleX,
       scaleY: scaleY ?? this.scaleY,
       scaleZ: scaleZ,
-      rotationX: rotationX,
+      rotationX: rotationX ?? this.rotationX,
       rotationY: rotationY,
       rotationZ: rotationZ ?? this.rotationZ,
       baseColor: baseColor,
@@ -99,6 +118,11 @@ class AvatarPart {
       shadowColor: shadowColor,
       hasFace: hasFace,
       occludedByFace: occludedByFace,
+      muzzleProjection: muzzleProjection ?? this.muzzleProjection,
+      muzzleWidth: muzzleWidth ?? this.muzzleWidth,
+      muzzleY: muzzleY,
+      jawTaper: jawTaper,
+      muzzleColor: muzzleColor,
       roundness: roundness,
       topScale: topScale,
       bottomTaper: bottomTaper,
@@ -107,6 +131,10 @@ class AvatarPart {
   }
 
   ShapeOptions get shapeOptions => ShapeOptions(
+    muzzleProjection: muzzleProjection,
+    muzzleWidth: muzzleWidth,
+    muzzleY: muzzleY,
+    jawTaper: jawTaper,
     bottomTaper: bottomTaper,
     cutAngle: cutAngle,
     roundness: roundness,
@@ -140,6 +168,11 @@ class AvatarPart {
       shadowColor: _parseColor(json['shadowColor']) ?? base,
       hasFace: json['face'] == true,
       occludedByFace: json['occludedByFace'] == true,
+      muzzleProjection: _toDouble(json['muzzleProjection'], 0),
+      muzzleWidth: _toDouble(json['muzzleWidth'], 65),
+      muzzleY: _toDouble(json['muzzleY'], 40),
+      jawTaper: _toDouble(json['jawTaper'], 0),
+      muzzleColor: _parseColor(json['muzzleColor']),
       roundness: json['roundness'] is num
           ? (json['roundness'] as num).toDouble()
           : null,
@@ -268,6 +301,7 @@ class AvatarShadowStyle {
 class AvatarFaceStyle {
   const AvatarFaceStyle({
     this.gap = 42,
+    this.eyeOffsetY = 0,
     this.width = 22,
     this.height = 64,
     this.rotation = 0,
@@ -297,6 +331,7 @@ class AvatarFaceStyle {
   });
 
   final double gap;
+  final double eyeOffsetY;
   final double width;
   final double height;
   final double rotation;
@@ -333,6 +368,7 @@ class AvatarFaceStyle {
     double mix(double a, double b) => a + (b - a) * t;
     final late = t >= 0.5;
     return AvatarFaceStyle(
+      eyeOffsetY: mix(eyeOffsetY, other.eyeOffsetY),
       gap: mix(gap, other.gap),
       width: mix(width, other.width),
       height: mix(height, other.height),
@@ -350,10 +386,12 @@ class AvatarFaceStyle {
 
       mouthEnabled: mouthEnabled || other.mouthEnabled,
       mouthShape: late ? other.mouthShape : mouthShape,
-      mouthWidth: mix(
-        mouthEnabled ? mouthWidth : other.mouthWidth * 0.3,
-        other.mouthEnabled ? other.mouthWidth : mouthWidth * 0.3,
-      ),
+      mouthWidth: !mouthEnabled && !other.mouthEnabled
+          ? mix(mouthWidth, other.mouthWidth)
+          : mix(
+              mouthEnabled ? mouthWidth : other.mouthWidth * .3,
+              other.mouthEnabled ? other.mouthWidth : mouthWidth * .3,
+            ),
       mouthHeight: mix(mouthHeight, other.mouthHeight),
       mouthY: mix(mouthY, other.mouthY),
       mouthCurve: mix(mouthCurve, other.mouthCurve),
@@ -363,10 +401,12 @@ class AvatarFaceStyle {
       highlightOffsetX: mix(highlightOffsetX, other.highlightOffsetX),
       highlightOffsetY: mix(highlightOffsetY, other.highlightOffsetY),
       highlightOpacity: mix(highlightOpacity, other.highlightOpacity),
-      highlightSize: mix(
-        highlightEnabled ? highlightSize : other.highlightSize * 0.4,
-        other.highlightEnabled ? other.highlightSize : highlightSize * 0.4,
-      ),
+      highlightSize: !highlightEnabled && !other.highlightEnabled
+          ? mix(highlightSize, other.highlightSize)
+          : mix(
+              highlightEnabled ? highlightSize : other.highlightSize * .4,
+              other.highlightEnabled ? other.highlightSize : highlightSize * .4,
+            ),
     );
   }
 
@@ -376,6 +416,7 @@ class AvatarFaceStyle {
         mouthShape == other.mouthShape &&
         highlightEnabled == other.highlightEnabled &&
         near(gap, other.gap) &&
+        near(eyeOffsetY, other.eyeOffsetY) &&
         near(width, other.width) &&
         near(height, other.height) &&
         near(leftEyeRotation, other.leftEyeRotation) &&
@@ -412,6 +453,7 @@ class AvatarFaceStyle {
     bool? highlightEnabled,
   }) {
     return AvatarFaceStyle(
+      eyeOffsetY: eyeOffsetY,
       gap: gap ?? this.gap,
       width: width ?? this.width,
       height: height ?? this.height,
@@ -459,6 +501,7 @@ class AvatarFaceStyle {
     double? highlightSize,
   }) {
     return AvatarFaceStyle(
+      eyeOffsetY: eyeOffsetY,
       gap: gap ?? this.gap,
       width: width ?? this.width,
       height: height ?? this.height,
@@ -501,6 +544,7 @@ class AvatarFaceStyle {
     double? highlightSize,
   }) {
     return AvatarFaceStyle(
+      eyeOffsetY: eyeOffsetY,
       gap: gap ?? this.gap,
       width: width ?? this.width,
       height: height ?? this.height,
@@ -533,6 +577,7 @@ class AvatarFaceStyle {
 
   AvatarFaceStyle copyWith({double? height, double? gap}) {
     return AvatarFaceStyle(
+      eyeOffsetY: eyeOffsetY,
       gap: gap ?? this.gap,
       width: width,
       height: height ?? this.height,
@@ -571,6 +616,7 @@ class AvatarFaceStyle {
         : null;
 
     return AvatarFaceStyle(
+      eyeOffsetY: _toDouble(json['eyeOffsetY'], 0),
       gap: _toDouble(json['gap'], 42),
       width: _toDouble(json['width'], 22),
       height: _toDouble(json['height'], 64),
@@ -603,6 +649,36 @@ class AvatarFaceStyle {
   }
 }
 
+/// An upstream-authored marking bound to a real part-local surface.
+class AvatarMarkingPoint {
+  const AvatarMarkingPoint(this.position, this.normal);
+  final Vec3 position;
+  final Vec3 normal;
+}
+
+List<List<AvatarMarkingPoint>> _readSurfaceRegions(Object? value) {
+  if (value is! List) return const [];
+  return [
+    for (final region in value.whereType<List>())
+      [
+        for (final p in region.whereType<List>())
+          if (p.length == 6 && p.every((v) => v is num && v.isFinite))
+            AvatarMarkingPoint(
+              Vec3(
+                (p[0] as num).toDouble(),
+                (p[1] as num).toDouble(),
+                (p[2] as num).toDouble(),
+              ),
+              Vec3(
+                (p[3] as num).toDouble(),
+                (p[4] as num).toDouble(),
+                (p[5] as num).toDouble(),
+              ),
+            ),
+      ],
+  ];
+}
+
 class AvatarMarking {
   const AvatarMarking({
     required this.shape,
@@ -615,6 +691,7 @@ class AvatarMarking {
     this.rotation = 0,
     this.opacity = 1,
     this.onFace = true,
+    this.surfaceRegions = const [],
   });
 
   final String shape;
@@ -629,6 +706,7 @@ class AvatarMarking {
   final double opacity;
 
   final bool onFace;
+  final List<List<AvatarMarkingPoint>> surfaceRegions;
 
   AvatarMarking withColor(Color color) => AvatarMarking(
     shape: shape,
@@ -641,6 +719,7 @@ class AvatarMarking {
     rotation: rotation,
     opacity: opacity,
     onFace: onFace,
+    surfaceRegions: surfaceRegions,
   );
 
   static AvatarMarking? fromJson(Map<String, dynamic> json) {
@@ -658,6 +737,7 @@ class AvatarMarking {
       rotation: _toDouble(json['rotation'], 0),
       opacity: (_toDouble(json['opacity'], 100) / 100).clamp(0.0, 1.0),
       onFace: json['side'] != 'front',
+      surfaceRegions: _readSurfaceRegions(json['surfaceRegions']),
     );
   }
 }
@@ -672,6 +752,8 @@ class AvatarScene {
     required this.outlineStyle,
     required this.shadowStyle,
     required this.cameraBackground,
+    this.matte = false,
+    this.framePadding = .09,
     this.gridDensity = 100,
     this.lightAzimuth = -35,
     this.lightElevation = 40,
@@ -690,6 +772,10 @@ class AvatarScene {
 
   final Color? cameraBackground;
 
+  final bool matte;
+
+  /// Minimum camera margin for this silhouette, including secondary ear motion.
+  final double framePadding;
   final double gridDensity;
   final double lightAzimuth;
   final double lightElevation;
@@ -719,6 +805,8 @@ class AvatarScene {
       outlineStyle: outlineStyle ?? this.outlineStyle,
       shadowStyle: shadowStyle,
       cameraBackground: cameraBackground,
+      matte: matte,
+      framePadding: framePadding,
       gridDensity: gridDensity,
       lightAzimuth: lightAzimuth,
       lightElevation: lightElevation,
@@ -747,6 +835,8 @@ class AvatarScene {
       outlineStyle: outlineStyle ?? this.outlineStyle,
       shadowStyle: shadowStyle,
       cameraBackground: cameraBackground,
+      matte: matte,
+      framePadding: framePadding,
       gridDensity: gridDensity ?? this.gridDensity,
       lightAzimuth: lightAzimuth ?? this.lightAzimuth,
       lightElevation: lightElevation ?? this.lightElevation,
@@ -795,6 +885,8 @@ class AvatarScene {
             : null,
       ),
       cameraBackground: _parseColor(sceneMap?['cameraBackground']),
+      matte: sceneMap?['matte'] == true,
+      framePadding: _toDouble(sceneMap?['framePadding'], .09).clamp(0, .35),
       gridDensity: _toDouble(sceneMap?['gridDensity'], 100),
       lightAzimuth: _toDouble(sceneMap?['lightAzimuth'], -35),
       lightElevation: _toDouble(sceneMap?['lightElevation'], 40),

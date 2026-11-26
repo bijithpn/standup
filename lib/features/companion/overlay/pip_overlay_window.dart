@@ -639,6 +639,21 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   bool get _hasBackdrop => _backdrop != 'none' && _backdrop != 'transparent';
 
+  void _trackLocalPointer(Offset position) {
+    // Local events remain usable while the native frame query is catching up
+    // after a resize or drag. Both eye and pointer share screen coordinates.
+    final stage = _stageLocalRect;
+    final size = context.size;
+    if (stage == null || size == null) return;
+    final origin = _windowRect.topLeft;
+    _engine
+      ..setViewport(
+        origin & size,
+        eye: origin + Offset(stage.center.dx, stage.top + stage.height * .38),
+      )
+      ..pointerMoved(origin + position);
+  }
+
   double get _petSizeFactor {
     final normalized = ((_scale - 2.0) / 13.0).clamp(0.0, 1.0);
     return 0.88 + normalized * 0.12;
@@ -657,7 +672,11 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       body: Opacity(
         opacity: _pipOpacity.clamp(0.2, 1.0),
         child: MouseRegion(
-          onEnter: (_) => _setHovered(true),
+          onEnter: (event) {
+            _setHovered(true);
+            _trackLocalPointer(event.localPosition);
+          },
+          onHover: (event) => _trackLocalPointer(event.localPosition),
           onExit: (_) => _setHovered(false),
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
@@ -786,6 +805,28 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
           child: Stack(
             children: <Widget>[
               Positioned(
+                bottom: 12,
+                left: 8,
+                child: _ChromeButton(
+                  icon: CupertinoIcons.minus,
+                  background: _chromeBackground,
+                  foreground: _chromeForeground,
+                  tooltip: 'Smaller companion window',
+                  onTap: () => unawaited(_resizePetWindow(1 / 1.15)),
+                ),
+              ),
+              Positioned(
+                bottom: 12,
+                right: 8,
+                child: _ChromeButton(
+                  icon: CupertinoIcons.plus,
+                  background: _chromeBackground,
+                  foreground: _chromeForeground,
+                  tooltip: 'Larger companion window',
+                  onTap: () => unawaited(_resizePetWindow(1.15)),
+                ),
+              ),
+              Positioned(
                 top: 6,
                 left: 0,
                 right: 0,
@@ -881,5 +922,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         ),
       ),
     );
+  }
+
+  Future<void> _resizePetWindow(double factor) async {
+    await _windowManager.setSize(_windowManager.currentSize * factor);
+    await _syncViewport();
+    if (mounted) setState(() {});
+    _requestFrames();
   }
 }

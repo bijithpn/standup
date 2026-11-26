@@ -1,8 +1,7 @@
 name: breakmate
 description: "BreakMate — a desktop break-reminder and wellness companion for macOS, Windows and Linux that protects your eyes, posture, and focus."
 publish_to: "none"
-version: 1.15.0+54
-#BreakMate
+version: 1.16.0+55
 environment:
   sdk: ^3.10.4
 
@@ -52,19 +51,14 @@ dev_dependencies:
   mocktail: ^1.0.5
   fake_async: ^1.3.1
 
-
 flutter:
   uses-material-design: true
   config:
     enable-swift-package-manager: false
   assets:
-    # OneWorks Avatar — Species Snapshots (alpaca, bear, cat, dog, etc.)
     - assets/avatars/species/
-    # OneWorks Avatar — Breed Snapshots (bear--brown-bear, cat--black-cat, etc.)
     - assets/avatars/breeds/
-    # OneWorks Avatar — Pixel Style Snapshots
-    # OneWorks Avatar — authored 3D scenes (primitives, face, camera, light)
-    - assets/avatars/scenes/
+    - assets/avatars/scenes/avatar_scenes.json
     - assets/icons/
     - assets/audio/
     - assets/audio/soundscapes/

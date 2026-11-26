@@ -383,7 +383,9 @@ class PetBehaviorEngine extends ChangeNotifier {
     _affection = math.min(1.0, _affection + 0.35);
     _loneliness = math.max(0.0, _loneliness - 0.5);
     _sinceInteraction = 0.0;
-    if (!_reducedMotion && _animations) _bounceVelocity = -150.0;
+    if (!_reducedMotion && _animations) {
+      _bounceVelocity = -110.0 * (.55 + .45 * _p.bounce);
+    }
     _rock(3.5);
     _wake();
   }
@@ -396,7 +398,9 @@ class PetBehaviorEngine extends ChangeNotifier {
     _affection = math.min(1.0, _affection + 0.2);
     _loneliness = math.max(0.0, _loneliness - 0.6);
     _sinceInteraction = 0.0;
-    if (!_reducedMotion && _animations) _bounceVelocity = -260.0;
+    if (!_reducedMotion && _animations) {
+      _bounceVelocity = -190.0 * (.55 + .45 * _p.bounce);
+    }
     _rock(9.0);
     _wake();
   }
@@ -409,7 +413,9 @@ class PetBehaviorEngine extends ChangeNotifier {
     _affection = math.min(1.0, _affection + 0.5);
     _loneliness = 0.0;
     _sinceInteraction = 0.0;
-    if (!_reducedMotion && _animations) _bounceVelocity = -110.0;
+    if (!_reducedMotion && _animations) {
+      _bounceVelocity = -80.0 * (.55 + .45 * _p.bounce);
+    }
     _rock(2.0);
     _wake();
   }
@@ -536,6 +542,7 @@ class PetBehaviorEngine extends ChangeNotifier {
 
   void _onCursor(CursorSample sample) {
     if (!_gazeSettings.enabled || _suspended) return;
+    final hadCursor = _hasCursor;
     final wasResting = _cursorResting;
     _cursor = sample.position;
     _cursorSpeed = sample.speed;
@@ -547,7 +554,8 @@ class PetBehaviorEngine extends ChangeNotifier {
 
     final distance = (sample.position - _eye).distance;
 
-    if (!_reducedMotion &&
+    if (hadCursor &&
+        !_reducedMotion &&
         _animations &&
         distance < _intimateRadius * 1.6 &&
         sample.speed > 1900 &&
@@ -562,6 +570,8 @@ class PetBehaviorEngine extends ChangeNotifier {
       if (wasResting && distance < _interestRadius) {
         _attention = math.max(_attention, 0.55);
       }
+      // A resting ticker must be resumed by input, including after sleep.
+      onNeedsFrames?.call();
     }
   }
 

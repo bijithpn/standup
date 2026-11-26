@@ -362,8 +362,8 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       return;
     }
 
-    const stiffness = 210.0;
-    const damping = 14.0;
+    const stiffness = 180.0;
+    const damping = 20.0;
     _bounceVelocity += (-stiffness * _bounce - damping * _bounceVelocity) * dt;
     _bounce += _bounceVelocity * dt;
     if (_bounce.abs() < 0.05 && _bounceVelocity.abs() < 0.5) {
@@ -381,7 +381,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
 
     final target = _held ? math.sin(_clock.inMilliseconds / 260.0) * 0.12 : 0.0;
     _wobbleVelocity +=
-        ((target - _wobble) * 120.0 - _wobbleVelocity * 5.5) * dt;
+        ((target - _wobble) * 100.0 - _wobbleVelocity * 14.0) * dt;
     _wobble += _wobbleVelocity * dt;
     if ((_wobble - target).abs() < 0.0008 && _wobbleVelocity.abs() < 0.01) {
       _wobble = target;
@@ -439,7 +439,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
         if (_tiltHold <= 0) _tiltGoal = 0.0;
       }
     }
-    if (_bobbing) _bobPhase += dt * 7.0 * _p.speed;
+    if (_bobbing) _bobPhase += dt * 4.2 * _p.speed;
   }
 
   (double, double, double, double) get _expressionTarget {
@@ -590,7 +590,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
   void _publish() {
     final breath = math.sin(_breathPhase);
     final startleRecoil = _motionAllowed ? _startle * 8.0 : 0.0;
-    final delightLift = _motionAllowed ? _delight * 6.0 : 0.0;
+    final delightLift = _motionAllowed ? _delight * 4.0 : 0.0;
 
     final travelVigour = _travel.distance;
     final trot = travelVigour == 0
@@ -613,7 +613,12 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
               0,
               math.sin(_bobPhase) * _p.bob * 0.06 * idleWeight * _intensity,
             )
-          : _head,
+          : _head.translate(
+              0,
+              _asleep && _motionAllowed
+                  ? (.5 + .5 * math.sin(_breathPhase * .5)) * .055
+                  : 0,
+            ),
       bodyLean: Offset(
         (_body.dx + _travel.dx * 0.55).clamp(-1.0, 1.0),
         (_body.dy + _travel.dy * 0.3).clamp(-1.0, 1.0),
@@ -624,10 +629,10 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       squash: !_motionAllowed
           ? 1.0
           : 1.0 +
-                (_idleMotion ? breath * 0.012 * _p.breathDepth : 0.0) +
-                _delight * 0.05 -
+                (_idleMotion ? breath * 0.007 * _p.breathDepth : 0.0) +
+                _delight * 0.035 -
                 _startle * 0.03 +
-                (_bounce * 0.0045).clamp(-0.14, 0.16),
+                (_bounce * 0.0035).clamp(-0.08, 0.10),
       tilt: _tilt + _travel.dx * 0.11 + _wobble,
       arousal: _arousal.clamp(0.0, 1.0),
       attention: _attention.clamp(0.0, 1.0),

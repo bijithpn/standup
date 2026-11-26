@@ -20,8 +20,16 @@ class PartGeometry {
     required this.mesh,
     required this.outline,
     required this.depth,
+    this.positions,
+    this.vertexColors,
+    this.vertexDepths,
+    this.indices,
   });
 
+  final Float32List? positions;
+  final Int32List? vertexColors;
+  final Float32List? vertexDepths;
+  final Uint16List? indices;
   final AvatarPart part;
   final List<SurfaceCell> cells;
 
@@ -34,10 +42,11 @@ class PartGeometry {
 }
 
 class FaceFeature {
-  const FaceFeature(this.path, this.depth);
+  const FaceFeature(this.path, this.depth, [this.vertices = const []]);
 
   final ui.Path path;
   final double depth;
+  final List<Vec3> vertices;
 }
 
 class FaceGeometry {
@@ -63,8 +72,10 @@ class AvatarGeometry {
     required this.face,
     required this.facePartId,
     required this.bounds,
+    this.visibleRegions = const {},
   });
 
+  final Map<String, ui.Path> visibleRegions;
   final List<PartGeometry> parts;
   final FaceGeometry face;
   final String? facePartId;
@@ -78,6 +89,40 @@ const int _ellipseSteps = 40;
 const int _faceEdgeSteps = 8;
 // Cells facing away from the camera below this threshold are culled.
 const double _minimumFacing = 0.015;
+
+/// Bounded shared cache of part-local surfaces. Pose, lighting and palette never
+/// enter the key; instances reuse authored geometry across animation frames.
+final _surfaceCache = <String, List<Vec3>>{};
+const _surfaceCacheLimit = 128;
+
+List<Vec3> _surfaceGrid(AvatarPart part, int latitudes, int longitudes) {
+  final key =
+      '${part.shape}:${part.roundness}:${part.topScale}:'
+      '${part.bottomTaper}:${part.cutAngle}:${part.muzzleProjection}:'
+      '${part.muzzleWidth}:${part.muzzleY}:${part.jawTaper}:$latitudes:$longitudes';
+  final cached = _surfaceCache.remove(key);
+  if (cached != null) {
+    _surfaceCache[key] = cached;
+    return cached;
+  }
+  final spec = kShapeSpecs[part.shape]!;
+  final options = part.shapeOptions;
+  final grid = List<Vec3>.generate(
+    (latitudes + 1) * (longitudes + 1),
+    (i) => surfacePoint(
+      spec,
+      -math.pi + (i % (longitudes + 1)) / longitudes * math.pi * 2,
+      -math.pi / 2 + (i ~/ (longitudes + 1)) / latitudes * math.pi,
+      options: options,
+    ),
+    growable: false,
+  );
+  if (_surfaceCache.length >= _surfaceCacheLimit) {
+    _surfaceCache.remove(_surfaceCache.keys.first);
+  }
+  _surfaceCache[key] = grid;
+  return grid;
+}
 
 /// Rotates each part by view yaw/pitch, tessellates its surface, culls back-facing cells and projects to 2D; densityScale trades detail for speed.
 AvatarGeometry buildAvatarGeometry(
@@ -114,6 +159,7 @@ AvatarGeometry buildAvatarGeometry(
       view,
       light,
       scene.lightDistance,
+      matte: scene.matte,
       latitudeSteps: latitudeSteps,
       longitudeSteps: longitudeSteps,
     );
@@ -143,6 +189,9 @@ AvatarGeometry buildAvatarGeometry(
     face: face,
     facePartId: facePart?.id,
     bounds: bounds,
+    visibleRegions: scene.faceStyle.eyeShape.startsWith('reference-')
+        ? _resolveVisibleRegions(parts, bounds, densityScale)
+        : const {},
   );
 }
 
@@ -153,10 +202,8 @@ PartGeometry _buildPart(
   double lightDistance, {
   required int latitudeSteps,
   required int longitudeSteps,
+  bool matte = false,
 }) {
-  final spec = kShapeSpecs[part.shape]!;
-  final options = part.shapeOptions;
-
   Vec3 transformPoint(Vec3 point) {
     final scaled = Vec3(
       point.x * part.scaleX,
@@ -182,18 +229,18 @@ PartGeometry _buildPart(
   final points = List<Vec3>.filled(count, const Vec3(0, 0, 0));
   final normals = List<Vec3>.filled(count, const Vec3(0, 0, 0));
   final positions = Float32List(count * 2);
+  final vertexDepths = Float32List(count);
   final colors = Int32List(count);
   final projected = <Vec2>[];
+  final localPoints = _surfaceGrid(part, latitudeSteps, longitudeSteps);
 
   for (var lat = 0; lat <= latitudeSteps; lat++) {
-    final latitude = -math.pi / 2 + lat / latitudeSteps * math.pi;
     for (var lon = 0; lon <= longitudeSteps; lon++) {
-      final longitude = -math.pi + lon / longitudeSteps * math.pi * 2;
       final i = lat * stride + lon;
-      final point = transformPoint(
-        surfacePoint(spec, longitude, latitude, options: options),
-      );
+      final local = localPoints[i];
+      final point = transformPoint(local);
       points[i] = point;
+      vertexDepths[i] = point.z;
       final flat = project(point);
       projected.add(flat);
       positions[i * 2] = flat.x;
@@ -227,15 +274,34 @@ PartGeometry _buildPart(
     }
   }
   for (var i = 0; i < count; i++) {
+    if (matte) {
+      colors[i] = part.baseColor.toARGB32();
+      continue;
+    }
     final normal = normals[i];
     final shade = clampDouble(
       normal.x * light.x + normal.y * light.y + normal.z * light.z,
       -1,
       1,
     );
-    final tint = shade >= 0 ? part.highlightColor : part.shadowColor;
-    colors[i] = ui.Color.lerp(
+    final local = localPoints[i];
+    final muzzleWeight = part.muzzleColor == null || local.z < 0
+        ? 0.0
+        : (1 -
+                  (math.pow(local.x / (part.muzzleWidth * 1.12), 4) +
+                          math.pow((local.y - part.muzzleY - 12) / 43, 4))
+                      .toDouble())
+              .clamp(0.0, 1.0);
+    final base = ui.Color.lerp(
       part.baseColor,
+      part.muzzleColor ?? part.baseColor,
+      muzzleWeight,
+    )!;
+    final tint = shade >= 0
+        ? ui.Color.lerp(base, part.highlightColor, .65)!
+        : part.shadowColor;
+    colors[i] = ui.Color.lerp(
+      base,
       tint,
       surfaceShadeOpacity(shade, lightDistance).clamp(0.0, 1.0),
     )!.toARGB32();
@@ -285,6 +351,54 @@ PartGeometry _buildPart(
     indices[at + 5] = a + stride;
   }
 
+  ui.Vertices? matteMesh;
+  if (matte && order.isNotEmpty) {
+    final flatIndices = Uint16List(order.length * 6);
+    // Four corners per cell, shared by its two triangles; a single flat tone.
+    final cellPositions = Float32List(order.length * 8);
+    final cellColors = Int32List(order.length * 4);
+    for (var k = 0; k < order.length; k++) {
+      final a = order[k];
+      final ns = [
+        normals[a],
+        normals[a + 1],
+        normals[a + stride + 1],
+        normals[a + stride],
+      ];
+      final shade =
+          ns.fold<double>(
+            0,
+            (v, n) => v + n.x * light.x + n.y * light.y + n.z * light.z,
+          ) /
+          4;
+      final band = (shade * 4).round() / 4;
+      final tint = band >= 0 ? part.highlightColor : part.shadowColor;
+      final strength = (band >= 0 ? .055 : .19) * band.abs();
+      final color = ui.Color.lerp(part.baseColor, tint, strength)!.toARGB32();
+      final vertices = [a, a + 1, a + stride + 1, a + stride];
+      for (var j = 0; j < 4; j++) {
+        cellPositions[(k * 4 + j) * 2] = positions[vertices[j] * 2];
+        cellPositions[(k * 4 + j) * 2 + 1] = positions[vertices[j] * 2 + 1];
+        cellColors[k * 4 + j] = color;
+      }
+      final offset = k * 4, at = k * 6;
+      flatIndices.setRange(at, at + 6, [
+        offset,
+        offset + 1,
+        offset + 2,
+        offset,
+        offset + 2,
+        offset + 3,
+      ]);
+    }
+    matteMesh = ui.Vertices.raw(
+      ui.VertexMode.triangles,
+      cellPositions,
+      colors: cellColors,
+      indices: flatIndices,
+    );
+  }
+
   final hull = convexHull(projected);
   final outline = ui.Path();
   if (hull.isNotEmpty) {
@@ -298,18 +412,145 @@ PartGeometry _buildPart(
   return PartGeometry(
     part: part,
     cells: cells,
-    mesh: cells.isEmpty
-        ? null
-        : ui.Vertices.raw(
-            ui.VertexMode.triangles,
-            positions,
-            colors: colors,
-            indices: indices,
-          ),
+    mesh:
+        matteMesh ??
+        (cells.isEmpty
+            ? null
+            : ui.Vertices.raw(
+                ui.VertexMode.triangles,
+                positions,
+                colors: colors,
+                indices: indices,
+              )),
     outline: outline,
     depth: cells.isEmpty ? 0 : depthSum / cells.length,
+    positions: positions,
+    vertexColors: colors,
+    vertexDepths: vertexDepths,
+    indices: indices,
   );
 }
+
+/// Resolve actual surface ownership with a bounded software depth buffer. The
+/// resulting part-local clips let vector eyes and markings retain smooth edges
+/// while intersecting cheeks, muzzles and ears occlude each other correctly.
+Map<String, ui.Path> _resolveVisibleRegions(
+  List<PartGeometry> parts,
+  ui.Rect bounds,
+  double density,
+) {
+  final resolution = (density * 280).round().clamp(192, 448);
+  final extent = math.max(bounds.width, bounds.height) + 4;
+  final step = extent / resolution;
+  final origin = ui.Offset(
+    bounds.center.dx - extent / 2,
+    bounds.center.dy - extent / 2,
+  );
+  final depth = Float32List(resolution * resolution);
+  for (var i = 0; i < depth.length; i++) {
+    depth[i] = double.negativeInfinity;
+  }
+  final owner = Int16List(resolution * resolution);
+  owner.fillRange(0, owner.length, -1);
+  for (var id = 0; id < parts.length; id++) {
+    final xy = parts[id].positions,
+        z = parts[id].vertexDepths,
+        indices = parts[id].indices;
+    if (xy == null || z == null || indices == null) continue;
+    for (var i = 0; i < indices.length; i += 3) {
+      final a = indices[i], b = indices[i + 1], c = indices[i + 2];
+      final ax = (xy[a * 2] - origin.dx) / step,
+          ay = (xy[a * 2 + 1] - origin.dy) / step;
+      final bx = (xy[b * 2] - origin.dx) / step,
+          by = (xy[b * 2 + 1] - origin.dy) / step;
+      final cx = (xy[c * 2] - origin.dx) / step,
+          cy = (xy[c * 2 + 1] - origin.dy) / step;
+      final denominator = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+      if (denominator.abs() < 1e-8) continue;
+      final left = math
+          .min(ax, math.min(bx, cx))
+          .floor()
+          .clamp(0, resolution - 1);
+      final right = math
+          .max(ax, math.max(bx, cx))
+          .ceil()
+          .clamp(0, resolution - 1);
+      final top = math
+          .min(ay, math.min(by, cy))
+          .floor()
+          .clamp(0, resolution - 1);
+      final bottom = math
+          .max(ay, math.max(by, cy))
+          .ceil()
+          .clamp(0, resolution - 1);
+      for (var y = top; y <= bottom; y++) {
+        for (var x = left; x <= right; x++) {
+          final u =
+              ((by - cy) * (x + .5 - cx) + (cx - bx) * (y + .5 - cy)) /
+              denominator;
+          final v =
+              ((cy - ay) * (x + .5 - cx) + (ax - cx) * (y + .5 - cy)) /
+              denominator;
+          if (u < -.00001 || v < -.00001 || u + v > 1.00001) continue;
+          final d = u * z[a] + v * z[b] + (1 - u - v) * z[c];
+          final at = y * resolution + x;
+          if (d > depth[at]) {
+            depth[at] = d;
+            owner[at] = id;
+          }
+        }
+      }
+    }
+  }
+  final paths = [for (final _ in parts) ui.Path()];
+  // Merge equal runs vertically to avoid thousands of internal clip edges.
+  var active = <(int, int, int), ui.Rect>{};
+  for (var y = 0; y <= resolution; y++) {
+    final next = <(int, int, int), ui.Rect>{};
+    if (y < resolution) {
+      var x = 0;
+      while (x < resolution) {
+        final id = owner[y * resolution + x], start = x++;
+        while (x < resolution && owner[y * resolution + x] == id) {
+          x++;
+        }
+        if (id < 0) continue;
+        final key = (id, start, x), previous = active.remove(key);
+        next[key] = ui.Rect.fromLTRB(
+          start.toDouble(),
+          previous?.top ?? y.toDouble(),
+          x.toDouble(),
+          y + 1.0,
+        );
+      }
+    }
+    for (final entry in active.entries) {
+      final r = entry.value;
+      paths[entry.key.$1].addRect(
+        ui.Rect.fromLTRB(
+          origin.dx + r.left * step,
+          origin.dy + r.top * step,
+          origin.dx + r.right * step,
+          origin.dy + r.bottom * step,
+        ).inflate(step * .15),
+      );
+    }
+    active = next;
+  }
+  return {for (var i = 0; i < parts.length; i++) parts[i].part.id: paths[i]};
+}
+
+/// Eyelid changes reuse the cached body meshes and ownership masks.
+AvatarGeometry updateAvatarFace(AvatarGeometry geometry, AvatarScene scene) =>
+    AvatarGeometry(
+      parts: geometry.parts,
+      facePartId: geometry.facePartId,
+      bounds: geometry.bounds,
+      visibleRegions: geometry.visibleRegions,
+      face: scene.facePart == null
+          ? const FaceGeometry(eyes: [], highlights: [])
+          : _buildFace(scene.facePart!, scene.faceStyle, scene.viewState),
+    );
 
 List<Vec2> _ellipseBoundary(
   double centerX,
@@ -330,6 +571,46 @@ List<Vec2> _ellipseBoundary(
       rotation,
     );
   });
+}
+
+// Rounded inverted-triangle construction adapted from OneWorks avatarGeometry.ts.
+// Copyright One Works contributors; see assets/avatars/LICENSE.
+List<Vec2> _roundedTriangleBoundary(
+  double x,
+  double y,
+  double w,
+  double h,
+  double rotation,
+) {
+  Vec2 p(double a, double b) => Vec2(x + w * a, y + h * b);
+  final left = p(-.5, -.18),
+      right = p(.5, -.18),
+      rt = p(.07, .45),
+      lt = p(-.07, .45);
+  final points = <Vec2>[left];
+  void curve(Vec2 a, Vec2 b, Vec2 c, Vec2 d) {
+    for (var i = 1; i <= 12; i++) {
+      final t = i / 12, u = 1 - t;
+      points.add(
+        Vec2(
+          u * u * u * a.x +
+              3 * u * u * t * b.x +
+              3 * u * t * t * c.x +
+              t * t * t * d.x,
+          u * u * u * a.y +
+              3 * u * u * t * b.y +
+              3 * u * t * t * c.y +
+              t * t * t * d.y,
+        ),
+      );
+    }
+  }
+
+  curve(left, p(-.45, -.5), p(.45, -.5), right);
+  curve(right, p(.5, .08), p(.18, .42), rt);
+  curve(rt, p(.04, .52), p(-.04, .52), lt);
+  curve(lt, p(-.18, .42), p(-.5, .08), left);
+  return [for (final point in points) rotateFacePoint(point, x, y, rotation)];
 }
 
 List<Vec2> _roundedRectBoundary(
@@ -572,7 +853,7 @@ FaceGeometry _buildFace(
     }
     path.close();
 
-    return FaceFeature(path, clampDouble(centerNormal.z, 0, 1));
+    return FaceFeature(path, clampDouble(centerNormal.z, 0, 1), visible);
   }
 
   final eyeOffset = style.gap / 2 + style.width / 2;
@@ -581,7 +862,7 @@ FaceGeometry _buildFace(
 
   for (var index = 0; index < 2; index++) {
     final centerX = index == 0 ? -eyeOffset : eyeOffset;
-    const centerY = 0.0;
+    final centerY = style.eyeOffsetY;
     final rotation =
         style.rotation +
         (index == 0 ? style.leftEyeRotation : style.rightEyeRotation);
@@ -630,7 +911,9 @@ FaceGeometry _buildFace(
     nose = projectFeature(
       0,
       style.noseY,
-      _ellipseBoundary(
+      (style.noseShape == 'inverted-triangle'
+          ? _roundedTriangleBoundary
+          : _ellipseBoundary)(
         0,
         style.noseY,
         style.noseWidth,

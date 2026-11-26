@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:breakmate/core/display/models/display_info.dart';
 import 'package:breakmate/core/native/macos_bridge.dart';
 import 'package:breakmate/core/native/linux_bridge.dart';
@@ -15,6 +16,7 @@ class NativeBridge {
   static NativeBridgePlatform get instance => _platform;
 
   static NativeBridgePlatform _getPlatformBridge() {
+    if (kIsWeb) return const FallbackBridge();
     if (Platform.isMacOS) {
       return MacOSBridge();
     } else if (Platform.isWindows) {
