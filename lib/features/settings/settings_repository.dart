@@ -394,6 +394,7 @@ class SettingsRepository extends ChangeNotifier {
       categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
         _storage.getString('category_daily_budget_minutes', defaultValue: ''),
       ),
+      officeHours: _storage.getInt('office_hours', defaultValue: 8),
       customBudgetCategories: _decodeCustomBudgetCategories(
         _storage.getString('custom_budget_categories', defaultValue: ''),
       ),
@@ -710,6 +711,7 @@ class SettingsRepository extends ChangeNotifier {
       categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
         _storage.getString('category_daily_budget_minutes', defaultValue: ''),
       ),
+      officeHours: _storage.getInt('office_hours', defaultValue: 8),
       customBudgetCategories: _decodeCustomBudgetCategories(
         _storage.getString('custom_budget_categories', defaultValue: ''),
       ),
@@ -1040,6 +1042,7 @@ class SettingsRepository extends ChangeNotifier {
       'category_daily_budget_minutes',
       jsonEncode(settings.categoryDailyBudgetMinutes),
     );
+    await _storage.setInt('office_hours', settings.officeHours);
     await _storage.setString(
       'custom_budget_categories',
       jsonEncode([for (final c in settings.customBudgetCategories) c.toJson()]),

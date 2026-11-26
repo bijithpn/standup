@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
@@ -7,7 +9,7 @@ import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Stepper UI for per-category daily time budgets (15-minute steps, max 4h); reports the full map via onChanged.
+/// Stepper UI for per-category daily time budgets (15-minute steps) that together fit inside the office day.
 class CategoryBudgetsCard extends StatelessWidget {
   static const _budgetableCategories = [
     AppCategory.coding,
@@ -16,35 +18,65 @@ class CategoryBudgetsCard extends StatelessWidget {
     AppCategory.design,
   ];
   static const _stepMinutes = 15;
-  static const _maxMinutes = 240;
+  static const _maxOfficeHours = 16;
 
   final Map<String, int> budgetMinutes;
   final ValueChanged<Map<String, int>> onChanged;
   final List<CustomBudgetCategory> customCategories;
   final ValueChanged<List<CustomBudgetCategory>>? onCustomChanged;
 
+  final int officeHours;
+  final ValueChanged<int> onOfficeHoursChanged;
+
   const CategoryBudgetsCard({
     super.key,
+    required this.officeHours,
+    required this.onOfficeHoursChanged,
     required this.budgetMinutes,
     required this.onChanged,
     this.customCategories = const [],
     this.onCustomChanged,
   });
 
+  int get _allocated =>
+      budgetMinutes.values.fold(0, (a, b) => a + b) +
+      customCategories.fold(0, (a, c) => a + c.minutes);
+
+  int get _remaining => officeHours * 60 - _allocated;
+
+  /// One step up, shortened to whatever is left of the office day.
+  int _raised(int minutes) => minutes + math.min(_stepMinutes, _remaining);
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildRow(
+          icon: CupertinoIcons.briefcase,
+          label: 'Office hours',
+          detail: _remaining < 0
+              ? '${formatUsageDuration(-_remaining * 60)} over. Lower a budget'
+              : '${formatUsageDuration(_remaining * 60)} left to budget',
+          value: '${officeHours}h',
+          decreaseTooltip: 'Decrease office hours',
+          increaseTooltip: 'Increase office hours',
+          onDecrease: officeHours > 1 && (officeHours - 1) * 60 >= _allocated
+              ? () => onOfficeHoursChanged(officeHours - 1)
+              : null,
+          onIncrease: officeHours < _maxOfficeHours
+              ? () => onOfficeHoursChanged(officeHours + 1)
+              : null,
+        ),
         for (final category in _budgetableCategories)
-          _buildRow(
+          _budgetRow(
             icon: category.icon,
             label: category.label,
             minutes: budgetMinutes[category.name] ?? 0,
             onMinutes: (m) => _setMinutes(category, m),
           ),
         for (final custom in customCategories)
-          _buildRow(
+          _budgetRow(
             icon: custom.icon,
             label: custom.name,
             minutes: custom.minutes,
@@ -53,14 +85,12 @@ class CategoryBudgetsCard extends StatelessWidget {
               _stepperButton(
                 icon: CupertinoIcons.pencil,
                 tooltip: 'Edit ${custom.name}',
-                enabled: true,
                 onPressed: () => _editCustom(context, custom),
               ),
               const SizedBox(width: 6),
               _stepperButton(
                 icon: CupertinoIcons.delete,
                 tooltip: 'Delete ${custom.name}',
-                enabled: true,
                 onPressed: () => onCustomChanged?.call([
                   for (final c in customCategories)
                     if (c.id != custom.id) c,
@@ -88,7 +118,11 @@ class CategoryBudgetsCard extends StatelessWidget {
   Future<void> _addCustom(BuildContext context) async {
     final created = await showCustomBudgetDialog(context);
     if (created != null) {
-      onCustomChanged?.call([...customCategories, created]);
+      final minutes = math.max(0, math.min(created.minutes, _remaining));
+      onCustomChanged?.call([
+        ...customCategories,
+        created.copyWith(minutes: minutes),
+      ]);
     }
   }
 
@@ -106,14 +140,40 @@ class CategoryBudgetsCard extends StatelessWidget {
     ]);
   }
 
-  Widget _buildRow({
+  Widget _budgetRow({
     required IconData icon,
     required String label,
     required int minutes,
     required ValueChanged<int> onMinutes,
     List<Widget> actions = const [],
   }) {
-    final isSet = minutes > 0;
+    return _buildRow(
+      icon: icon,
+      label: label,
+      value: minutes > 0 ? formatUsageDuration(minutes * 60) : 'Off',
+      muted: minutes <= 0,
+      decreaseTooltip: 'Decrease $label budget',
+      increaseTooltip: 'Increase $label budget',
+      onDecrease: minutes > 0
+          ? () => onMinutes(math.max(0, minutes - _stepMinutes))
+          : null,
+      onIncrease: _remaining > 0 ? () => onMinutes(_raised(minutes)) : null,
+      actions: actions,
+    );
+  }
+
+  Widget _buildRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String decreaseTooltip,
+    required String increaseTooltip,
+    required VoidCallback? onDecrease,
+    required VoidCallback? onIncrease,
+    String? detail,
+    bool muted = false,
+    List<Widget> actions = const [],
+  }) {
     return Column(
       children: [
         Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
@@ -124,44 +184,58 @@ class CategoryBudgetsCard extends StatelessWidget {
               Icon(icon, size: 16, color: AppTheme.textSecondary),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFeatures: AppTheme.tabular,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFeatures: AppTheme.tabular,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    if (detail != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        detail,
+                        style: TextStyle(
+                          fontFeatures: AppTheme.tabular,
+                          fontSize: 12,
+                          color: _remaining < 0
+                              ? AppTheme.warning
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               _stepperButton(
                 icon: CupertinoIcons.minus,
-                tooltip: 'Decrease $label budget',
-                enabled: isSet,
-                onPressed: () =>
-                    onMinutes((minutes - _stepMinutes).clamp(0, _maxMinutes)),
+                tooltip: decreaseTooltip,
+                onPressed: onDecrease,
               ),
               SizedBox(
                 width: 76,
                 child: Text(
-                  isSet ? formatUsageDuration(minutes * 60) : 'Off',
+                  value,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFeatures: AppTheme.tabular,
                     fontFamilyFallback: const ['Menlo', 'monospace'],
                     fontSize: 13,
-                    color: isSet ? AppTheme.textPrimary : AppTheme.textMuted,
+                    color: muted ? AppTheme.textMuted : AppTheme.textPrimary,
                   ),
                 ),
               ),
               _stepperButton(
                 icon: CupertinoIcons.plus,
-                tooltip: 'Increase $label budget',
-                enabled: minutes < _maxMinutes,
-                onPressed: () =>
-                    onMinutes((minutes + _stepMinutes).clamp(0, _maxMinutes)),
+                tooltip: increaseTooltip,
+                onPressed: onIncrease,
               ),
               if (actions.isNotEmpty) ...[
                 const SizedBox(width: 14),
@@ -177,13 +251,12 @@ class CategoryBudgetsCard extends StatelessWidget {
   Widget _stepperButton({
     required IconData icon,
     required String tooltip,
-    required bool enabled,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        onTap: enabled ? onPressed : null,
+        onTap: onPressed,
         borderRadius: BorderRadius.circular(AppTheme.radiusXs),
         child: Container(
           width: 28,
@@ -195,7 +268,9 @@ class CategoryBudgetsCard extends StatelessWidget {
           child: Icon(
             icon,
             size: 13,
-            color: enabled ? AppTheme.textPrimary : AppTheme.textMuted,
+            color: onPressed == null
+                ? AppTheme.textMuted
+                : AppTheme.textPrimary,
           ),
         ),
       ),

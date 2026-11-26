@@ -173,6 +173,9 @@ class SettingsModel {
 
   final List<CustomBudgetCategory> customBudgetCategories;
 
+  /// Daily ceiling shared by all app budgets.
+  final int officeHours;
+
   const SettingsModel({
     this.experience = const ExperiencePreferences(),
     this.autoStart = true,
@@ -294,6 +297,7 @@ class SettingsModel {
     this.activityHistoryRetentionDays = 30,
     this.categoryDailyBudgetMinutes = const {},
     this.customBudgetCategories = const [],
+    this.officeHours = 8,
   });
 
   SettingsModel copyWith({
@@ -407,6 +411,7 @@ class SettingsModel {
     int? activityHistoryRetentionDays,
     Map<String, int>? categoryDailyBudgetMinutes,
     List<CustomBudgetCategory>? customBudgetCategories,
+    int? officeHours,
     String? pipBackgroundStyle,
     double? pipOpacity,
     bool? pipDraggableClickable,
@@ -567,6 +572,7 @@ class SettingsModel {
           categoryDailyBudgetMinutes ?? this.categoryDailyBudgetMinutes,
       customBudgetCategories:
           customBudgetCategories ?? this.customBudgetCategories,
+      officeHours: officeHours ?? this.officeHours,
       pipBackgroundStyle: pipBackgroundStyle ?? this.pipBackgroundStyle,
       pipOpacity: pipOpacity ?? this.pipOpacity,
       pipDraggableClickable:
@@ -698,6 +704,7 @@ class SettingsModel {
     'appUsageTrackingEnabled': appUsageTrackingEnabled,
     'activityHistoryRetentionDays': activityHistoryRetentionDays,
     'categoryDailyBudgetMinutes': categoryDailyBudgetMinutes,
+    'officeHours': officeHours,
     'customBudgetCategories': [
       for (final c in customBudgetCategories) c.toJson(),
     ],
@@ -859,6 +866,7 @@ class SettingsModel {
             (k, v) => MapEntry(k as String, v as int),
           ) ??
           const {},
+      officeHours: map['officeHours'] as int? ?? 8,
       customBudgetCategories: CustomBudgetCategory.listFromJson(
         map['customBudgetCategories'],
       ),

@@ -19,7 +19,7 @@ class _Budget {
   final int limit;
 }
 
-/// Budgets as compact ring tiles, each showing its share of the user's work day.
+/// Budgets as compact ring tiles, each showing its share of the user's office day.
 class DailyBudgetsCard extends StatelessWidget {
   const DailyBudgetsCard({
     super.key,
@@ -68,7 +68,7 @@ class DailyBudgetsCard extends StatelessWidget {
     return ProductivitySection(
       title: 'Daily budgets',
       subtitle: workDaySeconds > 0
-          ? 'Slices of your ${formatUsageDuration(workDaySeconds)} work day. '
+          ? 'Slices of your ${formatUsageDuration(workDaySeconds)} office day. '
                 'Nothing is blocked.'
           : 'Soft limits from Personal Goals. Nothing is blocked.',
       child: LayoutBuilder(
