@@ -79,6 +79,33 @@ class AvatarPart {
   final double bottomTaper;
   final double cutAngle;
 
+  AvatarPart copyWith({double? y, double? rotationZ, double? scaleY}) {
+    return AvatarPart(
+      id: id,
+      label: label,
+      shape: shape,
+      x: x,
+      y: y ?? this.y,
+      z: z,
+      scaleX: scaleX,
+      scaleY: scaleY ?? this.scaleY,
+      scaleZ: scaleZ,
+      rotationX: rotationX,
+      rotationY: rotationY,
+      rotationZ: rotationZ ?? this.rotationZ,
+      baseColor: baseColor,
+      foregroundColor: foregroundColor,
+      highlightColor: highlightColor,
+      shadowColor: shadowColor,
+      hasFace: hasFace,
+      occludedByFace: occludedByFace,
+      roundness: roundness,
+      topScale: topScale,
+      bottomTaper: bottomTaper,
+      cutAngle: cutAngle,
+    );
+  }
+
   ShapeOptions get shapeOptions => ShapeOptions(
     bottomTaper: bottomTaper,
     cutAngle: cutAngle,

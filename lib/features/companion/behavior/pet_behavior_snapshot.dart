@@ -42,6 +42,13 @@ class PetBehaviorSnapshot {
     this.emotion = PetEmotionState.neutral,
     this.gazeDirection = GazeDirection.center,
     this.mood = CompanionMood.idle,
+    this.browRaise = 0.0,
+    this.cheekLift = 0.0,
+    this.earPose = 0.0,
+    this.beakOpen = 0.0,
+    this.noseTwitch = 0.0,
+    this.gazeX = 0.0,
+    this.gazeY = 0.0,
   });
 
   final Offset gaze;
@@ -72,6 +79,25 @@ class PetBehaviorSnapshot {
 
   final CompanionMood mood;
 
+  /// -1 lowered/worried .. 1 raised.
+  final double browRaise;
+
+  /// 0..1 smile-driven cheek lift.
+  final double cheekLift;
+
+  /// -1 drooped .. 1 perked, including brief twitches.
+  final double earPose;
+
+  /// 0..1 beak/mouth opening beyond the emotion face.
+  final double beakOpen;
+
+  /// 0..1 nose twitch pulse.
+  final double noseTwitch;
+
+  /// Same as gaze.dx / gaze.dy, -1..1.
+  final double gazeX;
+  final double gazeY;
+
   bool get isAwake =>
       activity != PetActivity.sleeping && activity != PetActivity.drowsy;
 
@@ -90,6 +116,13 @@ class PetBehaviorSnapshot {
     PetEmotionState? emotion,
     GazeDirection? gazeDirection,
     CompanionMood? mood,
+    double? browRaise,
+    double? cheekLift,
+    double? earPose,
+    double? beakOpen,
+    double? noseTwitch,
+    double? gazeX,
+    double? gazeY,
   }) {
     return PetBehaviorSnapshot(
       gaze: gaze ?? this.gaze,
@@ -106,6 +139,13 @@ class PetBehaviorSnapshot {
       emotion: emotion ?? this.emotion,
       gazeDirection: gazeDirection ?? this.gazeDirection,
       mood: mood ?? this.mood,
+      browRaise: browRaise ?? this.browRaise,
+      cheekLift: cheekLift ?? this.cheekLift,
+      earPose: earPose ?? this.earPose,
+      beakOpen: beakOpen ?? this.beakOpen,
+      noseTwitch: noseTwitch ?? this.noseTwitch,
+      gazeX: gazeX ?? this.gazeX,
+      gazeY: gazeY ?? this.gazeY,
     );
   }
 

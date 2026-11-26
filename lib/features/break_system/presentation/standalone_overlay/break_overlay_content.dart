@@ -14,6 +14,8 @@ class BreakOverlayContent extends StatelessWidget {
   final ValueNotifier<int> remainingSecondsNotifier;
   final VoidCallback onSkip;
   final VoidCallback onSnooze;
+  final VoidCallback onClose;
+  final VoidCallback onDragStart;
   final bool canDismiss;
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -25,6 +27,8 @@ class BreakOverlayContent extends StatelessWidget {
     required this.remainingSecondsNotifier,
     required this.onSkip,
     required this.onSnooze,
+    required this.onClose,
+    required this.onDragStart,
     required this.canDismiss,
     required this.breakInfo,
     required this.settings,
@@ -51,6 +55,8 @@ class BreakOverlayContent extends StatelessWidget {
         remainingSecondsNotifier: remainingSecondsNotifier,
         onSkip: canDismiss ? onSkip : null,
         onSnooze: canDismiss && !config.snoozeLocked ? onSnooze : null,
+        onClose: onClose,
+        onDragStart: onDragStart,
         allowFullPoster:
             config.overlayType == 'quickReminder' && config.allowFullPoster,
         templateId: config.breakTemplate,

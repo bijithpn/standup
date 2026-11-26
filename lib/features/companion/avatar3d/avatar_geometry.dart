@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:breakmate/features/companion/avatar3d/avatar_math.dart';
@@ -6,9 +7,7 @@ import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_shape.dart';
 
 class SurfaceCell {
-  const SurfaceCell(this.path, this.shade, this.depth);
-
-  final ui.Path path;
+  const SurfaceCell(this.shade, this.depth);
 
   final double shade;
   final double depth;
@@ -18,12 +17,16 @@ class PartGeometry {
   const PartGeometry({
     required this.part,
     required this.cells,
+    required this.mesh,
     required this.outline,
     required this.depth,
   });
 
   final AvatarPart part;
   final List<SurfaceCell> cells;
+
+  /// Gouraud-shaded visible surface: shared grid vertices, one colour each, indexed back to front.
+  final ui.Vertices? mesh;
 
   final ui.Path outline;
 
@@ -69,10 +72,8 @@ class AvatarGeometry {
   final ui.Rect bounds;
 }
 
-const int _baseLatitudeSteps = 14;
-const int _baseLongitudeSteps = 28;
-const int _outlineLatitudeSteps = 28;
-const int _outlineLongitudeSteps = 72;
+const int _baseLatitudeSteps = 20;
+const int _baseLongitudeSteps = 40;
 const int _ellipseSteps = 40;
 const int _faceEdgeSteps = 8;
 // Cells facing away from the camera below this threshold are culled.
@@ -112,6 +113,7 @@ AvatarGeometry buildAvatarGeometry(
       part,
       view,
       light,
+      scene.lightDistance,
       latitudeSteps: latitudeSteps,
       longitudeSteps: longitudeSteps,
     );
@@ -147,7 +149,8 @@ AvatarGeometry buildAvatarGeometry(
 PartGeometry _buildPart(
   AvatarPart part,
   AvatarViewState view,
-  Vec3 light, {
+  Vec3 light,
+  double lightDistance, {
   required int latitudeSteps,
   required int longitudeSteps,
 }) {
@@ -174,100 +177,115 @@ PartGeometry _buildPart(
     return rotateByPose(placed, view.yaw, view.pitch);
   }
 
-  Vec3 transformNormal(Vec3 normal) {
-    final scaled = normalize(
-      Vec3(
-        normal.x / part.scaleX,
-        normal.y / part.scaleY,
-        normal.z / part.scaleZ,
-      ),
-    );
-    final rotated = rotateLocal(
-      scaled,
-      rotationX: part.rotationX,
-      rotationY: part.rotationY,
-      rotationZ: part.rotationZ,
-    );
-    return rotateByPose(rotated, view.yaw, view.pitch);
+  final stride = longitudeSteps + 1;
+  final count = (latitudeSteps + 1) * stride;
+  final points = List<Vec3>.filled(count, const Vec3(0, 0, 0));
+  final normals = List<Vec3>.filled(count, const Vec3(0, 0, 0));
+  final positions = Float32List(count * 2);
+  final colors = Int32List(count);
+  final projected = <Vec2>[];
+
+  for (var lat = 0; lat <= latitudeSteps; lat++) {
+    final latitude = -math.pi / 2 + lat / latitudeSteps * math.pi;
+    for (var lon = 0; lon <= longitudeSteps; lon++) {
+      final longitude = -math.pi + lon / longitudeSteps * math.pi * 2;
+      final i = lat * stride + lon;
+      final point = transformPoint(
+        surfacePoint(spec, longitude, latitude, options: options),
+      );
+      points[i] = point;
+      final flat = project(point);
+      projected.add(flat);
+      positions[i * 2] = flat.x;
+      positions[i * 2 + 1] = flat.y;
+    }
   }
 
-  final cells = <SurfaceCell>[];
-  var depthSum = 0.0;
-  var depthCount = 0;
-
-  for (var latIndex = 0; latIndex < latitudeSteps; latIndex++) {
-    final latStart = -math.pi / 2 + latIndex / latitudeSteps * math.pi;
-    final latEnd = -math.pi / 2 + (latIndex + 1) / latitudeSteps * math.pi;
-
-    for (var lonIndex = 0; lonIndex < longitudeSteps; lonIndex++) {
-      final lonStart = -math.pi + lonIndex / longitudeSteps * math.pi * 2;
-      final lonEnd = -math.pi + (lonIndex + 1) / longitudeSteps * math.pi * 2;
-
-      final normal = transformNormal(
-        surfaceNormal(
-          spec,
-          (lonStart + lonEnd) / 2,
-          (latStart + latEnd) / 2,
-          options: options,
+  // Central differences on the grid itself: one surface sample per vertex instead of four.
+  for (var lat = 1; lat < latitudeSteps; lat++) {
+    for (var lon = 0; lon <= longitudeSteps; lon++) {
+      final i = lat * stride + lon;
+      final west = lon == 0 ? i + longitudeSteps - 1 : i - 1;
+      final east = lon == longitudeSteps ? i - longitudeSteps + 1 : i + 1;
+      normals[i] = normalize(
+        cross(
+          subtract(points[east], points[west]),
+          subtract(points[i + stride], points[i - stride]),
         ),
       );
-
-      if (normal.z <= _minimumFacing) continue;
-
-      final corners = <Vec3>[
-        transformPoint(
-          surfacePoint(spec, lonStart, latStart, options: options),
-        ),
-        transformPoint(surfacePoint(spec, lonEnd, latStart, options: options)),
-        transformPoint(surfacePoint(spec, lonEnd, latEnd, options: options)),
-        transformPoint(surfacePoint(spec, lonStart, latEnd, options: options)),
-      ];
-
-      final path = ui.Path();
-      for (var index = 0; index < corners.length; index++) {
-        final projected = project(corners[index]);
-        if (index == 0) {
-          path.moveTo(projected.x, projected.y);
-        } else {
-          path.lineTo(projected.x, projected.y);
-        }
-      }
-      path.close();
-
+    }
+  }
+  for (final (pole, ring) in [(0, 1), (latitudeSteps, latitudeSteps - 1)]) {
+    var sum = const Vec3(0, 0, 0);
+    for (var lon = 0; lon < longitudeSteps; lon++) {
+      final n = normals[ring * stride + lon];
+      sum = Vec3(sum.x + n.x, sum.y + n.y, sum.z + n.z);
+    }
+    final n = normalize(sum);
+    for (var lon = 0; lon <= longitudeSteps; lon++) {
+      normals[pole * stride + lon] = n;
+    }
+  }
+  for (var i = 0; i < count; i++) {
+    final normal = normals[i];
+    final shade = clampDouble(
+      normal.x * light.x + normal.y * light.y + normal.z * light.z,
+      -1,
+      1,
+    );
+    final tint = shade >= 0 ? part.highlightColor : part.shadowColor;
+    colors[i] = ui.Color.lerp(
+      part.baseColor,
+      tint,
+      surfaceShadeOpacity(shade, lightDistance).clamp(0.0, 1.0),
+    )!.toARGB32();
+  }
+  final cells = <SurfaceCell>[];
+  final order = <int>[];
+  final depths = List<double>.filled(count, 0);
+  var depthSum = 0.0;
+  for (var lat = 0; lat < latitudeSteps; lat++) {
+    for (var lon = 0; lon < longitudeSteps; lon++) {
+      final a = lat * stride + lon;
+      final n0 = normals[a], n1 = normals[a + 1];
+      final n2 = normals[a + stride + 1], n3 = normals[a + stride];
+      if (n0.z + n1.z + n2.z + n3.z <= 4 * _minimumFacing) continue;
       final shade = clampDouble(
-        normal.x * light.x + normal.y * light.y + normal.z * light.z,
+        ((n0.x + n1.x + n2.x + n3.x) * light.x +
+                (n0.y + n1.y + n2.y + n3.y) * light.y +
+                (n0.z + n1.z + n2.z + n3.z) * light.z) /
+            4,
         -1,
         1,
       );
       final depth =
-          corners.fold<double>(0, (sum, point) => sum + point.z) /
-          corners.length;
-
+          (points[a].z +
+              points[a + 1].z +
+              points[a + stride + 1].z +
+              points[a + stride].z) /
+          4;
+      depths[a] = depth;
       depthSum += depth;
-      depthCount++;
-      cells.add(SurfaceCell(path, shade, depth));
+      order.add(a);
+      cells.add(SurfaceCell(shade, depth));
     }
   }
+  order.sort((l, r) => depths[l].compareTo(depths[r]));
+  cells.sort((l, r) => l.depth.compareTo(r.depth));
 
-  cells.sort((left, right) => left.depth.compareTo(right.depth));
-
-  final silhouettePoints = <Vec2>[];
-  for (var latIndex = 0; latIndex <= _outlineLatitudeSteps; latIndex++) {
-    final latitude = -math.pi / 2 + latIndex / _outlineLatitudeSteps * math.pi;
-    for (var lonIndex = 0; lonIndex <= _outlineLongitudeSteps; lonIndex++) {
-      final longitude =
-          -math.pi + lonIndex / _outlineLongitudeSteps * math.pi * 2;
-      silhouettePoints.add(
-        project(
-          transformPoint(
-            surfacePoint(spec, longitude, latitude, options: options),
-          ),
-        ),
-      );
-    }
+  final indices = Uint16List(order.length * 6);
+  for (var k = 0; k < order.length; k++) {
+    final a = order[k];
+    final at = k * 6;
+    indices[at] = a;
+    indices[at + 1] = a + 1;
+    indices[at + 2] = a + stride + 1;
+    indices[at + 3] = a;
+    indices[at + 4] = a + stride + 1;
+    indices[at + 5] = a + stride;
   }
 
-  final hull = convexHull(silhouettePoints);
+  final hull = convexHull(projected);
   final outline = ui.Path();
   if (hull.isNotEmpty) {
     outline.moveTo(hull.first.x, hull.first.y);
@@ -280,8 +298,16 @@ PartGeometry _buildPart(
   return PartGeometry(
     part: part,
     cells: cells,
+    mesh: cells.isEmpty
+        ? null
+        : ui.Vertices.raw(
+            ui.VertexMode.triangles,
+            positions,
+            colors: colors,
+            indices: indices,
+          ),
     outline: outline,
-    depth: depthCount == 0 ? 0 : depthSum / depthCount,
+    depth: cells.isEmpty ? 0 : depthSum / cells.length,
   );
 }
 

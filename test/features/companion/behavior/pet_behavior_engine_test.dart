@@ -983,8 +983,16 @@ void main() {
       final calm = PetBehaviorEngine(random: math.Random(7))..startLocal();
       calm.setViewport(_viewport, eye: _center);
       addTearDown(calm.dispose);
-      _advance(calm, 10.0);
-      final calmInterval = calm.frameInterval;
+      var calmInterval = Duration.zero;
+      _advance(
+        calm,
+        10.0,
+        each: (_) {
+          if (calm.frameInterval > calmInterval) {
+            calmInterval = calm.frameInterval;
+          }
+        },
+      );
 
       final busy = PetBehaviorEngine(random: math.Random(7))..startLocal();
       busy.setViewport(_viewport, eye: _center);

@@ -48,6 +48,7 @@ class CompanionPetState extends State<CompanionPet>
 
   late final PetBehaviorEngine _engine = PetBehaviorEngine(
     reducedMotion: widget.isStatic,
+    species: widget.definition?.species,
   );
   Ticker? _ticker;
   final Stopwatch _clock = Stopwatch()..start();
@@ -76,6 +77,9 @@ class CompanionPetState extends State<CompanionPet>
   @override
   void didUpdateWidget(CompanionPet oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.definition?.species != widget.definition?.species) {
+      _engine.configure(species: widget.definition?.species);
+    }
     if (oldWidget.trackCursor != widget.trackCursor ||
         oldWidget.isStatic != widget.isStatic) {
       _bindCursor();

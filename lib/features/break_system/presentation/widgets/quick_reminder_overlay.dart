@@ -20,6 +20,8 @@ class QuickReminderOverlay extends StatefulWidget {
   final ValueNotifier<int>? remainingSecondsNotifier;
   final VoidCallback? onSkip;
   final VoidCallback? onSnooze;
+  final VoidCallback? onClose;
+  final VoidCallback? onDragStart;
 
   final bool allowFullPoster;
   final String templateId;
@@ -34,6 +36,8 @@ class QuickReminderOverlay extends StatefulWidget {
     this.remainingSecondsNotifier,
     this.onSkip,
     this.onSnooze,
+    this.onClose,
+    this.onDragStart,
     this.allowFullPoster = false,
     this.templateId = defaultWellnessTemplateId,
   });
@@ -81,6 +85,8 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
         remainingSecondsNotifier: remainingSecondsNotifier,
         onSkip: onSkip,
         onSnooze: onSnooze,
+        onClose: widget.onClose,
+        onDragStart: widget.onDragStart,
       );
     }
 

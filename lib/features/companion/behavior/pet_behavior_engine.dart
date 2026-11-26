@@ -4,11 +4,14 @@ import 'dart:ui' show Offset, Rect;
 
 import 'package:flutter/foundation.dart';
 
+import 'package:breakmate/features/companion/behavior/behavior_layers.dart';
 import 'package:breakmate/features/companion/behavior/companion_mood_machine.dart';
 import 'package:breakmate/features/companion/behavior/cursor_feed.dart';
 import 'package:breakmate/features/companion/behavior/gaze_sector.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
+import 'package:breakmate/features/companion/behavior/species_personality.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 
 part 'pet_behavior_simulation.dart';
 
@@ -21,16 +24,25 @@ class PetBehaviorEngine extends ChangeNotifier {
     math.Random? random,
     bool reducedMotion = false,
     GazeSettings gaze = const GazeSettings(),
+    AvatarSpecies? species,
   }) : _cursorFeed = cursorFeed ?? CursorFeed.instance,
        _random = random ?? math.Random(),
        _reducedMotion = reducedMotion,
-       _gazeSettings = gaze {
+       _gazeSettings = gaze,
+       _p = personalityFor(species) {
     _sectors.deadZone = gaze.deadZone;
     _machine = CompanionMoodMachine(config: _moodConfig());
   }
 
   final CursorFeed _cursorFeed;
   final math.Random _random;
+
+  SpeciesPersonality _p;
+  double _intensity = 1.0;
+  final BehaviorLayers _layers = BehaviorLayers();
+
+  /// Idle-layer weight; zero while asleep and ramps back up after a wake.
+  double get idleWeight => _layers.weight(BehaviorLayer.idle);
 
   bool get reducedMotion => _reducedMotion;
   bool _reducedMotion;
@@ -75,7 +87,11 @@ class PetBehaviorEngine extends ChangeNotifier {
     bool? animations,
     bool? interactions,
     bool? reducedMotion,
+    AvatarSpecies? species,
+    double? motionIntensity,
   }) {
+    if (species != null) _p = personalityFor(species);
+    if (motionIntensity != null) _intensity = motionIntensity.clamp(0.0, 1.5);
     var moodChanged = false;
     if (gaze != null && gaze != _gazeSettings) {
       _gazeSettings = gaze;
@@ -132,9 +148,11 @@ class PetBehaviorEngine extends ChangeNotifier {
     );
   }
 
-  Duration get frameInterval => _isCalm
-      ? const Duration(milliseconds: 66)
-      : const Duration(milliseconds: 33);
+  Duration get frameInterval => !_isCalm
+      ? const Duration(milliseconds: 33)
+      : _asleep
+      ? const Duration(milliseconds: 120)
+      : const Duration(milliseconds: 66);
 
   bool get _isCalm =>
       _attention < 0.1 &&
@@ -146,7 +164,8 @@ class PetBehaviorEngine extends ChangeNotifier {
       _bounce == 0.0 &&
       _travel == Offset.zero &&
       (_gaze - _gazeTarget).distance < 0.02 &&
-      _headVelocity.distance < 0.05;
+      _headVelocity.distance < 0.05 &&
+      !_bobbing;
 
   void onBreakCompleted() {
     onBreakTaken();
@@ -244,6 +263,17 @@ class PetBehaviorEngine extends ChangeNotifier {
 
   double _idleActionTimer = 6.0;
 
+  double _earKick = 0.0;
+  double _noseKick = 0.0;
+  double _tiltGoal = 0.0;
+  double _tiltHold = 0.0;
+  double _bobPhase = 0.0;
+  bool _secondBlink = false;
+  double _browRaise = 0.0;
+  double _cheekLift = 0.0;
+  double _earBase = 0.0;
+  double _beakOpen = 0.0;
+
   bool _held = false;
   double _heldSeconds = 0.0;
   double _dizzy = 0.0;
@@ -277,7 +307,8 @@ class PetBehaviorEngine extends ChangeNotifier {
         _delight == 0.0 &&
         _dizzy == 0.0 &&
         _playing == 0.0 &&
-        _travel == Offset.zero;
+        _travel == Offset.zero &&
+        _lifeSettled;
   }
 
   /// Starts the engine and subscribes to the global cursor feed (if gaze is enabled).
@@ -547,6 +578,11 @@ class PetBehaviorEngine extends ChangeNotifier {
         (a.bounce - b.bounce).abs() < 0.01 &&
         (a.squash - b.squash).abs() < eps &&
         (a.tilt - b.tilt).abs() < eps &&
+        (a.browRaise - b.browRaise).abs() < eps &&
+        (a.cheekLift - b.cheekLift).abs() < eps &&
+        (a.earPose - b.earPose).abs() < eps &&
+        (a.beakOpen - b.beakOpen).abs() < eps &&
+        (a.noseTwitch - b.noseTwitch).abs() < eps &&
         a.activity == b.activity &&
         a.emotion.emotion == b.emotion.emotion &&
         (a.emotion.intensity - b.emotion.intensity).abs() < 0.01;

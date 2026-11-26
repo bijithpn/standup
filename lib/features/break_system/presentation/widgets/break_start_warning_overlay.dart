@@ -11,6 +11,8 @@ class BreakStartWarningOverlay extends StatelessWidget {
   final ValueNotifier<int>? remainingSecondsNotifier;
   final VoidCallback? onSkip;
   final VoidCallback? onSnooze;
+  final VoidCallback? onClose;
+  final VoidCallback? onDragStart;
 
   const BreakStartWarningOverlay({
     super.key,
@@ -21,14 +23,16 @@ class BreakStartWarningOverlay extends StatelessWidget {
     this.remainingSecondsNotifier,
     this.onSkip,
     this.onSnooze,
+    this.onClose,
+    this.onDragStart,
   });
 
-  Widget _action(String label, VoidCallback onTap) => TextButton(
+  Widget _action(Widget child, VoidCallback onTap) => TextButton(
     onPressed: onTap,
     style:
         TextButton.styleFrom(
-          minimumSize: const Size(48, 32),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          minimumSize: const Size(32, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           foregroundColor: AppTheme.textSecondary,
           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
           shape: RoundedRectangleBorder(
@@ -41,7 +45,7 @@ class BreakStartWarningOverlay extends StatelessWidget {
                 : null,
           ),
         ),
-    child: Text(label),
+    child: child,
   );
 
   @override
@@ -62,63 +66,82 @@ class BreakStartWarningOverlay extends StatelessWidget {
                 reverseCurve: Curves.easeIn,
               ),
             ),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 340),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceCard.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                border: Border.all(color: AppTheme.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.scrim,
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  Icon(CupertinoIcons.timer, color: AppTheme.accent, size: 16),
-                  ValueListenableBuilder<int>(
-                    valueListenable:
-                        remainingSecondsNotifier ??
-                        ValueNotifier<int>(durationSeconds),
-                    builder: (context, remaining, _) {
-                      final displaySec = remaining > 0 ? remaining : 1;
-                      return Text.rich(
-                        TextSpan(
-                          text: 'Break starting in ',
-                          children: [
-                            TextSpan(
-                              text: '${displaySec}s',
-                              style: TextStyle(
-                                color: AppTheme.accent,
-                                fontFeatures: AppTheme.tabular,
-                              ),
-                            ),
-                          ],
-                        ),
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Inter',
-                        ),
-                      );
-                    },
-                  ),
-                  if (onSnooze != null)
-                    _action(
-                      'Snooze ${SkipPolicy.snoozeMinutes} min',
-                      onSnooze!,
+            child: GestureDetector(
+              onPanStart: onDragStart == null ? null : (_) => onDragStart!(),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 380),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceCard.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  border: Border.all(color: AppTheme.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.scrim,
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
-                  if (onSkip != null) _action('Skip', onSkip!),
-                ],
+                  ],
+                ),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    Icon(
+                      CupertinoIcons.timer,
+                      color: AppTheme.accent,
+                      size: 16,
+                    ),
+                    ValueListenableBuilder<int>(
+                      valueListenable:
+                          remainingSecondsNotifier ??
+                          ValueNotifier<int>(durationSeconds),
+                      builder: (context, remaining, _) {
+                        final displaySec = remaining > 0 ? remaining : 1;
+                        return Text.rich(
+                          TextSpan(
+                            text: 'Break starting in ',
+                            children: [
+                              TextSpan(
+                                text: '${displaySec}s',
+                                style: TextStyle(
+                                  color: AppTheme.accent,
+                                  fontFeatures: AppTheme.tabular,
+                                ),
+                              ),
+                            ],
+                          ),
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Inter',
+                          ),
+                        );
+                      },
+                    ),
+                    if (onSnooze != null)
+                      _action(
+                        Text('Snooze ${SkipPolicy.snoozeMinutes} min'),
+                        onSnooze!,
+                      ),
+                    if (onSkip != null) _action(const Text('Skip'), onSkip!),
+                    if (onClose != null)
+                      _action(
+                        const Icon(
+                          CupertinoIcons.xmark,
+                          size: 16,
+                          semanticLabel: 'Dismiss',
+                        ),
+                        onClose!,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

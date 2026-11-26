@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
 
+import 'package:breakmate/features/companion/avatar3d/avatar_face_expression.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_geometry.dart';
-import 'package:breakmate/features/companion/avatar3d/avatar_math.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 
 /// Paints AvatarGeometry: outlines first, then parts, markings and face; front-standing parts (ears etc.) draw after the face host.
@@ -17,6 +17,7 @@ class AvatarScenePainter extends CustomPainter {
     this.fitPadding = 0.09,
     this.fitBounds,
     this.blush = 0,
+    this.rig = FaceRig.neutral,
   });
 
   final AvatarGeometry geometry;
@@ -32,6 +33,8 @@ class AvatarScenePainter extends CustomPainter {
   final Rect? fitBounds;
 
   final double blush;
+
+  final FaceRig rig;
 
   // Caps scale so the head never exceeds this fraction of the box, keeping big bodies from over-zooming.
   static const double _maxHeadFraction = 0.74;
@@ -150,16 +153,49 @@ class AvatarScenePainter extends CustomPainter {
 
     canvas.drawPath(geometry.outline, Paint()..color = part.baseColor);
 
-    for (final cell in geometry.cells) {
-      final opacity = surfaceShadeOpacity(cell.shade, scene.lightDistance);
-      if (opacity <= 0.004) continue;
+    final mesh = geometry.mesh;
+    if (mesh != null) canvas.drawVertices(mesh, BlendMode.dst, Paint());
+    if (_beakParts.hasMatch(part.id)) _paintBeakGap(canvas, geometry);
+  }
 
-      final tint = cell.shade >= 0 ? part.highlightColor : part.shadowColor;
-      canvas.drawPath(
-        cell.path,
+  static final RegExp _beakParts = RegExp('^(beak|bill)');
+
+  void _paintBeakGap(Canvas canvas, PartGeometry beak) {
+    if (rig.beak < 0.08) return;
+    final box = beak.outline.getBounds();
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(box.center.dx, box.bottom - box.height * 0.3),
+        width: box.width * 0.6,
+        height: box.height * 0.34 * rig.beak,
+      ),
+      Paint()..color = beak.part.foregroundColor,
+    );
+  }
+
+  void _paintBrows(Canvas canvas, FaceGeometry face, Color color) {
+    final strength =
+        (rig.browAngle.abs() / 20 + rig.browLift.abs() + rig.browAsym.abs())
+            .clamp(0.0, 1.0);
+    if (strength < 0.12 || face.eyes.length < 2) return;
+    final boxes = face.eyes.map((e) => e.path.getBounds()).toList();
+    final mid =
+        boxes.map((b) => b.center.dx).reduce((a, b) => a + b) / boxes.length;
+    for (final box in boxes) {
+      final dir = box.center.dx >= mid ? 1.0 : -1.0;
+      final unit = math.max(box.width, box.height);
+      final lift =
+          rig.browLift + (dir > 0 ? rig.browAsym : -rig.browAsym * 0.3);
+      final half = box.width * 0.7;
+      final y = box.center.dy - unit * (0.78 + lift * 0.7);
+      final dy = half * math.sin(rig.browAngle * math.pi / 180);
+      canvas.drawLine(
+        Offset(box.center.dx + dir * half, y + dy),
+        Offset(box.center.dx - dir * half, y - dy),
         Paint()
-          ..color = tint.withValues(alpha: opacity.clamp(0.0, 1.0))
-          ..isAntiAlias = false,
+          ..color = color.withValues(alpha: strength)
+          ..strokeWidth = box.width * 0.2
+          ..strokeCap = StrokeCap.round,
       );
     }
   }
@@ -228,6 +264,7 @@ class AvatarScenePainter extends CustomPainter {
         boxes.map((b) => b.center.dx).reduce((a, b) => a + b) / boxes.length;
     final paint = Paint()
       ..color = const Color(0xFFFF7A93).withValues(alpha: 0.5 * blush);
+    final puff = 1 + rig.cheek * 0.25;
     for (final box in boxes) {
       final outward = box.center.dx >= mid ? 1.0 : -1.0;
       final radius = math.max(box.width, box.height) * 0.62;
@@ -235,10 +272,10 @@ class AvatarScenePainter extends CustomPainter {
         Rect.fromCenter(
           center: Offset(
             box.center.dx + outward * box.width * 0.55,
-            box.bottom + radius * 0.75,
+            box.bottom + radius * (0.75 - rig.cheek * 0.2),
           ),
-          width: radius * 1.9,
-          height: radius * 1.15,
+          width: radius * 1.9 * puff,
+          height: radius * 1.15 * puff,
         ),
         paint,
       );
@@ -265,9 +302,20 @@ class AvatarScenePainter extends CustomPainter {
     }
 
     if (!_hasOwnMouthParts) {
-      if (face.nose != null) canvas.drawPath(face.nose!.path, ink);
+      final nose = face.nose;
+      if (nose != null) {
+        final c = nose.path.getBounds().center;
+        canvas.save();
+        canvas.translate(c.dx, c.dy);
+        canvas.scale(1 + rig.nose * 0.3);
+        canvas.translate(-c.dx, -c.dy - rig.nose);
+        canvas.drawPath(nose.path, ink);
+        canvas.restore();
+      }
       if (face.mouth != null) canvas.drawPath(face.mouth!.path, ink);
     }
+
+    _paintBrows(canvas, face, host.part.foregroundColor);
 
     if (face.highlights.isEmpty) return;
     final highlight = Paint()
@@ -285,6 +333,7 @@ class AvatarScenePainter extends CustomPainter {
         oldDelegate.background != background ||
         oldDelegate.showOutline != showOutline ||
         oldDelegate.showShadow != showShadow ||
-        oldDelegate.blush != blush;
+        oldDelegate.blush != blush ||
+        !identical(oldDelegate.rig, rig);
   }
 }

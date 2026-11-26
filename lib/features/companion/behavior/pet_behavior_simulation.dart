@@ -14,6 +14,18 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _updatePointerProximity(tracking);
     _updateQuietPeriod();
     if (_machine.advance(_clock)) _emotion = _resolveEmotion();
+    _layers.update(
+      dt,
+      asleep: _asleep,
+      emotion: _emotion.emotion != PetEmotion.content,
+      activity: _attention > 0.22,
+      interaction:
+          _held ||
+          _delight > 0.25 ||
+          _startle > 0.25 ||
+          _playing > 0.2 ||
+          _dizzy > 0.05,
+    );
 
     _updateAttention(dt, distance);
     _updateArousal(dt);
@@ -23,10 +35,12 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _updateDizzy(dt);
     _updateBlink(dt);
     _updateImpulses(dt);
+    _updateLife(dt);
+    _updateExpression(dt);
     _updateDrives(dt);
 
     if (_idleMotion) {
-      _breathPhase += dt * _breathRate();
+      _breathPhase += dt * _breathRate() * _p.breathRate;
       if (_breathPhase > math.pi * 2) _breathPhase -= math.pi * 2;
     }
   }
@@ -159,9 +173,10 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
 
     _idleGazeTimer -= dt;
     if (_idleGazeTimer <= 0) {
-      _idleGazeTimer = 1.4 + _random.nextDouble() * 3.0;
+      _idleGazeTimer =
+          (1.4 + _random.nextDouble() * 3.0) / (_p.glance * _p.speed);
       final drowsy = _quietSeconds > PetBehaviorEngine._drowsyAfter;
-      final spread = drowsy ? 0.25 : 0.62;
+      final spread = drowsy ? 0.25 : 0.62 * _p.amplitude * _intensity;
       _setGazeTarget(
         Offset(
           (_random.nextDouble() * 2 - 1) * spread,
@@ -245,9 +260,10 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     _bodyVelocity = bodyResult.$2;
 
     final drift = _idleMotion ? 1.0 : 0.0;
-    final tiltTarget = _attention > 0.5
+    var tiltTarget = _attention > 0.5
         ? _head.dx * 0.16 + math.sin(_breathPhase * 0.37) * 0.02 * drift
         : math.sin(_breathPhase * 0.31) * 0.03 * drift;
+    tiltTarget += _tiltGoal;
     _tilt += (tiltTarget - _tilt) * math.min(1.0, 3.0 * dt);
   }
 
@@ -256,8 +272,9 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     if (_dizzy <= 0) return;
 
     _dizzy = math.max(0.0, _dizzy - dt / PetBehaviorEngine._dizzySeconds);
-    _dizzyPhase += dt * 6.5;
-    final fade = math.min(1.0, _dizzy * 3.0);
+    // Phase slows and amplitude eases out together so the wobble settles instead of cutting off.
+    _dizzyPhase += dt * 6.5 * (0.35 + 0.65 * _dizzy);
+    final fade = _dizzy * (2.0 - _dizzy);
     final orbit = Offset(math.cos(_dizzyPhase), math.sin(_dizzyPhase));
     final k = math.min(1.0, 10.0 * dt);
 
@@ -292,7 +309,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     }
 
     if (_blinkProgress >= 0) {
-      _blinkProgress += dt;
+      _blinkProgress += dt * _p.speed;
       const close = 0.045;
       const hold = 0.03;
       const open = 0.085;
@@ -308,7 +325,8 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       } else {
         value = 0.0;
         _blinkProgress = -1.0;
-        _blinkTimer = _nextBlinkDelay();
+        _secondBlink = !_secondBlink && _random.nextDouble() < _p.doubleBlink;
+        _blinkTimer = _secondBlink ? 0.14 : _nextBlinkDelay();
       }
       _blink = math.max(_blink, value.clamp(0.0, 1.0));
       if (_blinkProgress < 0) {
@@ -323,9 +341,9 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
   }
 
   double _nextBlinkDelay() {
-    final u = 1.0 - _random.nextDouble();
-    final mean = _arousal > 0.7 ? 2.6 : 4.2;
-    return 1.1 + -math.log(u) * mean;
+    final skewed = math.pow(_random.nextDouble(), 1.3);
+    final delay = _p.blinkMin + (_p.blinkMax - _p.blinkMin) * skewed;
+    return _arousal > 0.7 ? delay * 0.75 : delay;
   }
 
   void _updateImpulses(double dt) {
@@ -372,27 +390,96 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
   }
 
   void _updateIdleAction(double dt) {
-    if (!_idleMotion || _held) return;
-    if (_quietSeconds > PetBehaviorEngine._drowsyAfter) {
-      return;
-    }
+    if (!_idleMotion || _held || idleWeight < 0.6) return;
     _idleActionTimer -= dt;
     if (_idleActionTimer > 0) return;
-    _idleActionTimer = 7.0 + _random.nextDouble() * 12.0;
+    final pace = (0.4 + _p.energy * 1.2) * _p.speed;
+    _idleActionTimer = (7.0 + _random.nextDouble() * 12.0) / pace;
 
+    final k = _p.bounce * _p.amplitude * _intensity;
     switch (_random.nextInt(4)) {
       case 0:
-        _bounceVelocity = -70.0;
-        _rock(2.5);
+        _bounceVelocity = -70.0 * k;
+        _rock(2.5 * k);
       case 1:
-        _rock(6.0);
+        _rock(6.0 * k);
       case 2:
-        _bounceVelocity = 40.0;
+        _bounceVelocity = 40.0 * k;
         _attention = math.max(_attention, 0.5);
       default:
-        _rock(3.0);
+        _rock(3.0 * k);
         _idleGazeTimer = 0.0;
     }
+  }
+
+  bool get _asleep =>
+      _quietSeconds > PetBehaviorEngine._drowsyAfter ||
+      _machine.mood == CompanionMood.resting;
+
+  bool get _bobbing => _p.bob > 0 && _idleMotion && idleWeight > 0.05;
+
+  /// Ear/nose twitches, head tilts and bobbing; all scaled by the idle layer so they stop while asleep or interacting.
+  void _updateLife(double dt) {
+    final life = _idleMotion && !_held ? idleWeight * _intensity : 0.0;
+    _earKick = PetBehaviorEngine._decay(_earKick, 5.0, dt);
+    _noseKick = PetBehaviorEngine._decay(_noseKick, 4.0, dt);
+
+    if (life < 0.3) {
+      _tiltHold = 0.0;
+      _tiltGoal = 0.0;
+    } else {
+      if (_random.nextDouble() < _p.earTwitch * dt) _earKick = 1.0;
+      if (_random.nextDouble() < _p.noseTwitch * dt) _noseKick = 1.0;
+      if (_tiltHold <= 0 && _random.nextDouble() < _p.headTilt * dt) {
+        _tiltHold = 1.5 + _random.nextDouble() * 2.0;
+        _tiltGoal =
+            (_random.nextBool() ? 1.0 : -1.0) * 0.1 * _p.amplitude * _intensity;
+      } else if (_tiltHold > 0) {
+        _tiltHold -= dt;
+        if (_tiltHold <= 0) _tiltGoal = 0.0;
+      }
+    }
+    if (_bobbing) _bobPhase += dt * 7.0 * _p.speed;
+  }
+
+  (double, double, double, double) get _expressionTarget {
+    final i = _emotion.intensity;
+    final (brow, cheek, ear, beak) = switch (_emotion.emotion) {
+      PetEmotion.content => (0.0, 0.1, 0.0, 0.0),
+      PetEmotion.happy => (0.15, 0.7, 0.2, 0.0),
+      PetEmotion.excited => (0.4, 0.5, 0.7, 0.25),
+      PetEmotion.curious => (0.45, 0.0, 0.8, 0.0),
+      PetEmotion.affectionate => (0.1, 0.8, 0.1, 0.0),
+      PetEmotion.lonely => (-0.5, 0.0, -0.6, 0.0),
+      PetEmotion.weary => (-0.3, 0.0, -0.5, 0.0),
+      PetEmotion.sleepy => (-0.2, 0.0, -0.4, 0.0),
+      PetEmotion.startled => (1.0, 0.0, 1.0, 0.35),
+      PetEmotion.playful => (0.3, 0.6, 0.5, 0.3),
+      PetEmotion.laughing => (0.2, 1.0, 0.3, 0.6),
+      PetEmotion.dizzy => (-0.1, 0.0, -0.3, 0.15),
+    };
+    return (brow * i, cheek * i, ear * i, beak * i);
+  }
+
+  void _updateExpression(double dt) {
+    final (brow, cheek, ear, beak) = _expressionTarget;
+    final k = math.min(1.0, 4.0 * dt);
+    _browRaise += (brow - _browRaise) * k;
+    _cheekLift += (cheek - _cheekLift) * k;
+    _earBase += (ear - _earBase) * k;
+    _beakOpen += (beak - _beakOpen) * k;
+  }
+
+  bool get _lifeSettled {
+    if (_earKick != 0.0 || _noseKick != 0.0 || _tiltHold > 0 || _bobbing) {
+      return false;
+    }
+    final (brow, cheek, ear, beak) = _expressionTarget;
+    const eps = 0.004;
+    return (brow - _browRaise).abs() < eps &&
+        (cheek - _cheekLift).abs() < eps &&
+        (ear - _earBase).abs() < eps &&
+        (beak - _beakOpen).abs() < eps;
   }
 
   /// Slow emotional drives (affection, loneliness, weariness since last break) that feed emotion resolution.
@@ -513,7 +600,20 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
     final previous = _snapshot;
     _snapshot = PetBehaviorSnapshot(
       gaze: _gaze,
-      headTurn: _head,
+      gazeX: _gaze.dx,
+      gazeY: _gaze.dy,
+      browRaise: _browRaise,
+      cheekLift: _cheekLift,
+      earPose: (_earBase + _earKick * 0.6).clamp(-1.0, 1.0),
+      beakOpen: _beakOpen,
+      noseTwitch:
+          _noseKick * (0.5 + 0.5 * math.sin(_clock.inMilliseconds / 26.0)),
+      headTurn: _bobbing
+          ? _head.translate(
+              0,
+              math.sin(_bobPhase) * _p.bob * 0.06 * idleWeight * _intensity,
+            )
+          : _head,
       bodyLean: Offset(
         (_body.dx + _travel.dx * 0.55).clamp(-1.0, 1.0),
         (_body.dy + _travel.dy * 0.3).clamp(-1.0, 1.0),
@@ -524,7 +624,7 @@ extension _PetBehaviorSimulation on PetBehaviorEngine {
       squash: !_motionAllowed
           ? 1.0
           : 1.0 +
-                (_idleMotion ? breath * 0.012 : 0.0) +
+                (_idleMotion ? breath * 0.012 * _p.breathDepth : 0.0) +
                 _delight * 0.05 -
                 _startle * 0.03 +
                 (_bounce * 0.0045).clamp(-0.14, 0.16),

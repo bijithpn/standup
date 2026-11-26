@@ -197,10 +197,13 @@ void SecondaryWindows::AddOverlayChannels(Surface* surface) {
         } else if (method == "checkIsMainEngine") {
           g_autoptr(FlValue) no = fl_value_new_bool(false);
           Ok(call, no);
-        } else if (method == "hideOverlay") {
-          HideOverlay();
+        } else if (method == "startDragging") {
+          gint x = 0, y = 0;
+          GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
+          gdk_device_get_position(gdk_seat_get_pointer(seat), nullptr, &x, &y);
+          gtk_window_begin_move_drag(GTK_WINDOW(surface->window), 1, x, y, GDK_CURRENT_TIME);
           Ok(call);
-        } else if (method == "skipBreak" || method == "completeBreak" || method == "snoozeBreak") {
+        } else if (method == "hideOverlay" || method == "skipBreak" || method == "completeBreak" || method == "snoozeBreak") {
           ForwardToMain(method.c_str(), args);
           HideOverlay();
           Ok(call);
@@ -404,6 +407,7 @@ void SecondaryWindows::ShowOverlay(FlValue* args) {
     PlaceOnMonitor(surface, i, !transparent);
     if (warning) {
       // Card-sized and centered so Skip is clickable without blocking the screen.
+      // TODO(overlay-drag): remember the dragged position, as the macOS runner does.
       const int w = static_cast<int>(Num(args, "warningWidth", 380)), h = static_cast<int>(Num(args, "warningHeight", 100));
       gtk_window_set_default_size(window, w, h);
       gtk_window_resize(window, w, h);

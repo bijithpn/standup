@@ -29,6 +29,31 @@ void main() {
     expect(snoozed, 1);
   });
 
+  testWidgets('dismiss and drag work even when skipping is not allowed', (
+    tester,
+  ) async {
+    var closed = 0, dragged = 0;
+    await tester.pumpWidget(
+      _host(
+        BreakStartWarningOverlay(
+          fadeAnimation: const AlwaysStoppedAnimation(1),
+          title: 'Eye break',
+          durationSeconds: 3,
+          isPreBreak: true,
+          onClose: () => closed++,
+          onDragStart: () => dragged++,
+        ),
+      ),
+    );
+    await tester.tap(find.bySemanticsLabel('Dismiss'));
+    await tester.drag(
+      find.textContaining('Break starting'),
+      const Offset(50, 0),
+    );
+    expect(closed, 1);
+    expect(dragged, 1);
+  });
+
   testWidgets('buttons are hidden when skipping is not allowed', (
     tester,
   ) async {

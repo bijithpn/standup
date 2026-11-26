@@ -119,7 +119,7 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
   ),
 
   PetEmotion.weary: _Expression(
-    eyeHeight: 0.5,
+    eyeHeight: 0.42,
     eyeWidth: 1.05,
     outerTilt: 9,
     mouth: _Mouth(enabled: true, curve: -15, width: 0.7, height: 0.7),
@@ -166,11 +166,11 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
   ),
 
   PetEmotion.dizzy: _Expression(
-    eyeHeight: 0.8,
-    eyeWidth: 1.3,
+    eyeHeight: 1.0,
+    eyeWidth: 1.15,
     eyeGap: 1.04,
     eyeRoundness: 1.7,
-    outerTilt: 24,
+    outerTilt: 6,
     mouth: _Mouth(
       enabled: true,
       shape: 'ellipse',
@@ -197,6 +197,191 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
     highlight: _Highlight(enabled: false),
   ),
 };
+
+/// Brow, cheek, ear, beak and head-nod channels layered on the eye/mouth expression; all zero is a neutral face.
+class FaceRig {
+  const FaceRig({
+    this.browAngle = 0,
+    this.browLift = 0,
+    this.browAsym = 0,
+    this.cheek = 0,
+    this.earDroop = 0,
+    this.earRot = 0,
+    this.beak = 0,
+    this.nose = 0,
+    this.pitch = 0,
+    this.nod = 0,
+  });
+
+  /// Degrees; positive raises the inner brow ends (worried), negative lowers them (stern).
+  final double browAngle;
+
+  /// In eye widths; positive raises both brows.
+  final double browLift;
+
+  /// Extra lift on the right brow (and a smaller dip on the left).
+  final double browAsym;
+
+  final double cheek;
+
+  /// Positive droops ears/crests outward and down, negative perks them up.
+  final double earDroop;
+
+  /// Degrees added to every ear, used for secondary lag.
+  final double earRot;
+
+  final double beak;
+
+  /// Nose twitch amplitude at rest; the view animates it.
+  final double nose;
+
+  /// Head nod offset in radians (positive looks down) and an animated nod amplitude.
+  final double pitch;
+  final double nod;
+
+  static const FaceRig neutral = FaceRig();
+
+  FaceRig copyWith({double? earRot, double? nose, double? pitch}) => FaceRig(
+    browAngle: browAngle,
+    browLift: browLift,
+    browAsym: browAsym,
+    cheek: cheek,
+    earDroop: earDroop,
+    earRot: earRot ?? this.earRot,
+    beak: beak,
+    nose: nose ?? this.nose,
+    pitch: pitch ?? this.pitch,
+    nod: nod,
+  );
+
+  FaceRig lerpTo(FaceRig o, double t) {
+    double m(double a, double b) => a + (b - a) * t;
+    return FaceRig(
+      browAngle: m(browAngle, o.browAngle),
+      browLift: m(browLift, o.browLift),
+      browAsym: m(browAsym, o.browAsym),
+      cheek: m(cheek, o.cheek),
+      earDroop: m(earDroop, o.earDroop),
+      earRot: m(earRot, o.earRot),
+      beak: m(beak, o.beak),
+      nose: m(nose, o.nose),
+      pitch: m(pitch, o.pitch),
+      nod: m(nod, o.nod),
+    );
+  }
+
+  bool isCloseTo(FaceRig o, {double epsilon = 0.01}) =>
+      (browAngle - o.browAngle).abs() < epsilon * 20 &&
+      (browLift - o.browLift).abs() < epsilon &&
+      (browAsym - o.browAsym).abs() < epsilon &&
+      (cheek - o.cheek).abs() < epsilon &&
+      (earDroop - o.earDroop).abs() < epsilon &&
+      (earRot - o.earRot).abs() < epsilon * 30 &&
+      (beak - o.beak).abs() < epsilon &&
+      (nose - o.nose).abs() < epsilon &&
+      (pitch - o.pitch).abs() < epsilon &&
+      (nod - o.nod).abs() < epsilon;
+}
+
+const Map<PetEmotion, FaceRig> _rigs = <PetEmotion, FaceRig>{
+  PetEmotion.content: FaceRig(browLift: 0.05, cheek: 0.2),
+  PetEmotion.happy: FaceRig(
+    browLift: 0.3,
+    cheek: 0.8,
+    earDroop: -0.3,
+    beak: 0.25,
+  ),
+  PetEmotion.excited: FaceRig(
+    browLift: 0.8,
+    cheek: 0.3,
+    earDroop: -0.9,
+    beak: 0.6,
+    nose: 0.5,
+  ),
+  PetEmotion.curious: FaceRig(
+    browLift: 0.25,
+    browAsym: 0.8,
+    earDroop: -0.6,
+    nose: 1,
+  ),
+  PetEmotion.affectionate: FaceRig(
+    browAngle: 10,
+    browLift: 0.15,
+    cheek: 0.6,
+    earDroop: 0.15,
+    beak: 0.1,
+  ),
+  PetEmotion.lonely: FaceRig(
+    browAngle: 24,
+    browLift: -0.05,
+    earDroop: 1,
+    pitch: 0.16,
+  ),
+  PetEmotion.weary: FaceRig(
+    browAngle: 6,
+    browLift: -0.4,
+    earDroop: 0.6,
+    pitch: 0.08,
+  ),
+  PetEmotion.sleepy: FaceRig(
+    browLift: -0.55,
+    earDroop: 0.7,
+    pitch: 0.1,
+    nod: 1,
+  ),
+  PetEmotion.startled: FaceRig(
+    browAngle: 6,
+    browLift: 1,
+    earDroop: -1,
+    beak: 0.75,
+    nose: 0.4,
+  ),
+  PetEmotion.playful: FaceRig(
+    browLift: 0.4,
+    browAsym: 0.5,
+    cheek: 0.5,
+    earDroop: -0.5,
+    beak: 0.3,
+  ),
+  PetEmotion.dizzy: FaceRig(
+    browAngle: 14,
+    browAsym: -0.6,
+    earDroop: 0.3,
+    beak: 0.2,
+  ),
+  PetEmotion.laughing: FaceRig(
+    browLift: 0.5,
+    cheek: 1,
+    earDroop: -0.2,
+    beak: 1,
+  ),
+};
+
+/// Target rig for the emotion; every channel scales with intensity.
+FaceRig rigFor(PetEmotionState state) => FaceRig.neutral.lerpTo(
+  _rigs[state.emotion] ?? FaceRig.neutral,
+  state.intensity.clamp(0.0, 1.0),
+);
+
+final RegExp _earParts = RegExp(r'(^|-)(ear|crest|whisker)');
+
+/// Droops/perks and swings ears, crests and whiskers; the left/right sign comes from the part's x.
+List<AvatarPart> poseParts(List<AvatarPart> parts, FaceRig rig) {
+  if (rig.earDroop.abs() < 0.01 && rig.earRot.abs() < 0.1) return parts;
+  return [
+    for (final p in parts)
+      if (_earParts.hasMatch(p.id))
+        p.copyWith(
+          rotationZ:
+              p.rotationZ +
+              rig.earDroop * 28 * p.x.sign +
+              rig.earRot * (p.id.contains('whisker') ? 0.5 : 1),
+          y: p.y + rig.earDroop * 10,
+        )
+      else
+        p,
+  ];
+}
 
 /// Blush opacity derived from emotion intensity.
 double blushFor(PetEmotionState state) {
@@ -231,7 +416,11 @@ AvatarFaceStyle expressFace(
   final highlight = expression.highlight;
 
   return face.copyWithExpression(
-    height: face.height * blend(expression.eyeHeight) * lidsOpen,
+    height:
+        face.height *
+        blend(expression.eyeHeight) *
+        (1 - 0.18 * (_rigs[state.emotion]?.cheek ?? 0) * t) *
+        lidsOpen,
     width: face.width * blend(expression.eyeWidth),
     gap: face.gap * blend(expression.eyeGap),
     eyeRoundness: math.min(

@@ -132,6 +132,17 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     });
   }
 
+  /// Hides the warning only; the break still starts on schedule.
+  void closeWarning(AnimationController fadeController) {
+    if (isDismissing) return;
+    isDismissing = true;
+    fadeController.reverse().whenComplete(() {
+      bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
+    });
+  }
+
+  void startDragging() => bridgeChannel.invokeMethod('startDragging');
+
   @override
   void dispose() {
     localTimer?.cancel();

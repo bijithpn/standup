@@ -61,6 +61,7 @@ static bool IsPreBreakWarning(const ArgMap& args) {
 }
 
 // Card-sized and centered, so Skip is clickable without blocking the rest of the screen.
+// TODO(overlay-drag): remember the dragged position, as the macOS runner does.
 static RECT WarningRect(const RECT& monitor, HMONITOR hMonitor, const ArgMap& args) {
   double scale = FlutterDesktopGetDpiForMonitor(hMonitor) / 96.0;
   int w = static_cast<int>(NumberArg(args, "warningWidth", 380) * scale);

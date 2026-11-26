@@ -345,6 +345,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       reactions: _reactions,
       animations: _animationsEnabled,
       reducedMotion: reduced,
+      species: _isBlob ? null : _avatarDefinition.species,
     );
 
     _wanderer.enabled = _wanderingRequested && _animationsEnabled && !reduced;

@@ -139,7 +139,7 @@ class TrayAvatarRenderer {
     final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, _px, _px));
     canvas.translate(_px / 2, _px / 2 + bounce);
     canvas.rotate(tilt);
-    canvas.scale(1 / squash, squash);
+    canvas.scale(math.sqrt(squash), 1 / squash);
     canvas.translate(-_px / 2, -_px / 2);
     AvatarScenePainter(
       geometry: geometry,
