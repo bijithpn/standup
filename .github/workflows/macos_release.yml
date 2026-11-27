@@ -180,39 +180,6 @@ jobs:
               echo "**Full changelog:** https://github.com/${REPO}/compare/${PREV_TAG}...${TAG_NAME}"
               echo
             fi
-            cat <<EOF
-          ### 🍎 Installing on macOS
-
-          BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show *"Apple could not verify BreakMate…"*. Use either fix:
-
-          **Option 1: one-line install (recommended)**
-          \`\`\`bash
-          curl -fsSL https://github.com/${REPO}/releases/latest/download/install.sh | bash
-          \`\`\`
-
-          **Option 2: you already downloaded the DMG**
-          \`\`\`bash
-          xattr -cr /Applications/BreakMate.app
-          \`\`\`
-          or open **System Settings → Privacy & Security → Open Anyway**.
-
-          **Homebrew**
-          \`\`\`bash
-          brew tap bijithpn/standup https://github.com/${REPO}
-          brew install --cask breakmate
-          \`\`\`
-
-          **Uninstall:** \`curl -fsSL https://github.com/${REPO}/releases/latest/download/uninstall.sh | bash\` (add \`-s -- --purge\` to also delete settings). Linux: \`uninstall_linux.sh\`, Windows: \`uninstall.ps1\`.
-
-          ### 🐧 Linux / 🪟 Windows one-liners
-
-          \`\`\`bash
-          curl -fsSL https://github.com/${REPO}/releases/latest/download/install_linux.sh | bash
-          \`\`\`
-          \`\`\`powershell
-          irm https://github.com/${REPO}/releases/latest/download/install.ps1 | iex
-          \`\`\`
-          EOF
           } > release_notes.md
 
           cat release_notes.md

@@ -11,11 +11,6 @@ import os
 import re
 import sys
 
-INSTALL_NOTE = """<h4>Installation Note (macOS)</h4>
-                <p>Since BreakMate is not notarized by Apple, macOS may show a security
-                warning on first launch. Open System Settings &gt; Privacy and Security
-                and click Allow Anyway next to BreakMate.</p>"""
-
 
 def _inline(text):
     """Escape HTML, then apply inline Markdown (code, bold, italic, links)."""
@@ -76,35 +71,6 @@ def markdown_to_html(md):
     return "\n                ".join(out)
 
 
-def rerender_existing(content):
-    """Repair legacy release-note layouts so every entry is clean HTML.
-
-    Handles: raw Markdown inside <p>, bare Markdown with no HTML wrapper, and
-    HTML tags that were entity-escaped (&lt;li&gt;) by older release scripts.
-    """
-    notes_pat = re.compile(r"(<h3>BreakMate v[^<]*</h3>\s*)<p>(.*?)</p>(\s*<h4>Installation Note)", re.DOTALL)
-    escaped_tag = re.compile(r"&lt;(/?(?:p|ul|ol|li|h[1-6]|strong|em|code|a|br)\b[^&]*?)&gt;")
-    md_hint = re.compile(r"^\s*(#|[-*]\s)|\n", re.M)
-
-    def fix_notes(m):
-        raw = html.unescape(m.group(2))
-        if not md_hint.search(raw):
-            return m.group(0)
-        return m.group(1) + markdown_to_html(raw) + m.group(3)
-
-    def fix_description(m):
-        body = m.group(1)
-        if escaped_tag.search(body):
-            body = re.sub(r"<br>\s*", "\n                ", body)
-            body = escaped_tag.sub(r"<\1>", body)
-            body = body.replace("&amp;", "&amp;")
-        elif not re.search(r"<(h[1-6]|p|ul|ol)\b", body, re.I):
-            body = "\n                " + markdown_to_html(html.unescape(body).strip()) + "\n            "
-        return "<description><![CDATA[" + notes_pat.sub(fix_notes, body) + "]]></description>"
-
-    return re.sub(r"<description><!\[CDATA\[(.*?)\]\]></description>", fix_description, content, flags=re.DOTALL)
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Update appcast.xml for Sparkle")
     parser.add_argument("--appcast", default="appcast.xml", help="Path to appcast.xml")
@@ -114,7 +80,6 @@ def parse_args():
     parser.add_argument("--size", default="0", help="DMG file size in bytes")
     parser.add_argument("--url", help="DMG download URL")
     parser.add_argument("--os", choices=("macos", "windows", "linux"), default="macos", help="Release platform")
-    parser.add_argument("--rerender", action="store_true", help="Only convert existing Markdown notes to HTML")
     parser.add_argument("--notes-file", default="", help="Path to release notes file")
     parser.add_argument("--notes", default="", help="Inline release notes")
     parser.add_argument("--dry-run", action="store_true", help="Print preview without writing")
@@ -128,16 +93,6 @@ def main():
     if not os.path.isfile(appcast_path):
         print(f"[ERROR] {appcast_path} not found.", file=sys.stderr)
         sys.exit(1)
-
-    if args.rerender:
-        with open(appcast_path, "r", encoding="utf-8") as f:
-            old = f.read()
-        new = rerender_existing(old)
-        if not args.dry_run:
-            with open(appcast_path, "w", encoding="utf-8") as f:
-                f.write(new)
-        print("[OK] Existing release notes re-rendered." if new != old else "[OK] Nothing to re-render.")
-        return
 
     if not (args.version and args.build and args.url):
         print("[ERROR] --version, --build and --url are required.", file=sys.stderr)
@@ -188,14 +143,12 @@ def main():
     else:
         print(f"[PATCH] Inserting new v{args.version} entry at top of feed.")
         platform_attribute = f' sparkle:os="{args.os}"' if args.os != "macos" else ""
-        install_note = INSTALL_NOTE if args.os == "macos" else ""
         new_item = f"""        <item>
             <title>Version {args.version}</title>
             <pubDate>{pub_date}</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v{args.version}</h3>
                 {notes_html}
-                {install_note}
             ]]></description>
             <enclosure url="{html.escape(args.url, quote=True)}"{platform_attribute}
                        sparkle:version="{args.build}"
