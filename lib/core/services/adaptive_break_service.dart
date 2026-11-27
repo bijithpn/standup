@@ -27,6 +27,15 @@ class AdaptiveBreakService {
     _checkNewDay();
   }
 
+  /// Re-reads storage after a backup restore.
+  void reload() {
+    _activityPatterns = {};
+    _focusSessions = [];
+    _lastActiveDate = '';
+    _loadActivityPatterns();
+    _checkNewDay();
+  }
+
   // Resets the daily session count on date rollover.
   void _checkNewDay() {
     final today = _getTodayString();

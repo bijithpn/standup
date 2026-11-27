@@ -56,6 +56,13 @@ class BreakHistoryService extends ChangeNotifier {
     _events.removeWhere((e) => e.time.isBefore(cutoff));
   }
 
+  /// Re-reads storage after a backup restore.
+  void reload() {
+    _events.clear();
+    _load();
+    notifyListeners();
+  }
+
   void _load() {
     final raw = _storage.getString(AppConstants.keyBreakHistoryData);
     if (raw.isEmpty) return;

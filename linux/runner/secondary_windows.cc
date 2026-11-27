@@ -198,6 +198,7 @@ void SecondaryWindows::AddOverlayChannels(Surface* surface) {
           g_autoptr(FlValue) no = fl_value_new_bool(false);
           Ok(call, no);
         } else if (method == "startDragging") {
+          // TODO(overlay-drag): the window manager can move this off screen; clamp it to the monitor work area.
           gint x = 0, y = 0;
           GdkSeat* seat = gdk_display_get_default_seat(gdk_display_get_default());
           gdk_device_get_position(gdk_seat_get_pointer(seat), nullptr, &x, &y);

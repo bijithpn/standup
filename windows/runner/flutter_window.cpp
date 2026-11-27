@@ -1146,6 +1146,25 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     return HTTRANSPARENT;
   }
 
+  // Only user drags send WM_MOVING; keep dragged overlay cards on screen.
+  if (is_overlay_ && message == WM_MOVING) {
+    RECT* rect = reinterpret_cast<RECT*>(lparam);
+    POINT cursor;
+    MONITORINFO info = {};
+    info.cbSize = sizeof(MONITORINFO);
+    if (GetCursorPos(&cursor) &&
+        GetMonitorInfo(MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST), &info)) {
+      const RECT& work = info.rcWork;
+      int dx = 0, dy = 0;
+      if (rect->right > work.right) dx = work.right - rect->right;
+      if (rect->left + dx < work.left) dx = work.left - rect->left;
+      if (rect->bottom > work.bottom) dy = work.bottom - rect->bottom;
+      if (rect->top + dy < work.top) dy = work.top - rect->top;
+      OffsetRect(rect, dx, dy);
+      return TRUE;
+    }
+  }
+
   if (is_pip_) {
     switch (message) {
       case WM_NCCALCSIZE: {

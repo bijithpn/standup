@@ -55,6 +55,17 @@ class ActivitySegment {
     this.kind = 0,
   });
 
+  /// Leaves the id unset so the receiving database assigns its own.
+  factory ActivitySegment.fromMap(Map<String, dynamic> map) => ActivitySegment(
+    appKey: map['appKey'] ?? '',
+    appName: map['appName'] ?? '',
+    categoryName: map['categoryName'] ?? '',
+    date: map['date'] ?? '',
+    startedAtMs: map['startedAtMs'] ?? 0,
+    endedAtMs: map['endedAtMs'] ?? 0,
+    kind: map['kind'] ?? 0,
+  );
+
   DateTime get startedAt => DateTime.fromMillisecondsSinceEpoch(startedAtMs);
 
   DateTime get endedAt => DateTime.fromMillisecondsSinceEpoch(endedAtMs);

@@ -213,7 +213,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Working in an app'), findsOneWidget);
+      expect(find.text('App'), findsOneWidget);
       expect(find.text('On a break'), findsOneWidget);
       expect(find.text('Away'), findsOneWidget);
       expect(find.textContaining('Most active around 10am'), findsOneWidget);

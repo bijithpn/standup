@@ -9,8 +9,6 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
-import 'package:breakmate/core/storage/models/daily_stats.dart';
-import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     show StatsService;
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -114,8 +112,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     String ext = 'csv',
   }) async {
     try {
-      final stats = _storage.dailyStatsBox?.getAll() ?? [];
-      stats.sort((a, b) => b.date.compareTo(a.date));
+      final stats = _backups.dailyStats()
+        ..sort((a, b) => '${b['date']}'.compareTo('${a['date']}'));
 
       final header = [
         'Date',
@@ -128,11 +126,11 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       for (final s in stats) {
         buffer.writeln(
           [
-            s.date,
-            s.breaksCompleted,
-            s.breaksSkipped,
-            s.usageMinutes,
-            s.wellnessActions,
+            s['date'],
+            s['breaksCompleted'] ?? 0,
+            s['breaksSkipped'] ?? 0,
+            s['usageMinutes'] ?? 0,
+            s['wellnessActions'] ?? 0,
           ].join(delimiter),
         );
       }
@@ -189,7 +187,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         actions: [
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(ctx, 'json'),
-            child: const Text('JSON — full backup (settings + stats)'),
+            child: const Text('JSON — full backup (settings, stats, activity)'),
           ),
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(ctx, 'csv'),
@@ -235,16 +233,16 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         await _importStatsTable(picked.content);
       }
     } catch (e) {
-      if (mounted) Toast.showError(context, 'Failed to import: $e');
+      if (mounted) await _showReport("Couldn't read this file", _reason(e));
     }
   }
 
-  Future<bool> _confirmReplace(String what) async {
+  Future<bool> _confirmReplace(String what, [String note = '']) async {
     final ok = await showCupertinoDialog<bool>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
         title: const Text('Replace existing data?'),
-        content: Text('Importing will replace your current $what.'),
+        content: Text('Importing will replace your current $what.$note'),
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.pop(ctx, false),
@@ -261,23 +259,46 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return ok ?? false;
   }
 
-  // Validates the backup shape and asks for confirmation before replacing settings and stats.
+  static String _reason(Object error) =>
+      error is AppException ? error.message : '$error';
+
+  static String _bullets(List<String> lines) =>
+      lines.map((line) => '• $line').join('\n\n');
+
+  Future<void> _showReport(String title, String body) =>
+      showCupertinoDialog<void>(
+        context: context,
+        builder: (ctx) => CupertinoAlertDialog(
+          title: Text(title),
+          content: Text(body),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+
   Future<void> _importBackupJson(String content) async {
     try {
       final data = BackupService.parse(content);
-      if (!await _confirmRestore(BackupService.preview(data))) return;
-      await _backups.restore(data);
-      if (sl.isRegistered<StatsService>()) {
-        await sl<StatsService>().initialize();
-      }
+      final expected = _backups.check(data).issues;
+      if (!await _confirmRestore(BackupService.preview(data), expected)) return;
+      final issues = await _backups.restore(data);
       await _loadStats();
-      if (mounted) Toast.showSuccess(context, 'Backup restored');
+      if (!mounted) return;
+      if (issues.isEmpty) {
+        Toast.showSuccess(context, 'Backup restored');
+      } else {
+        await _showReport('Restored, with exceptions', _bullets(issues));
+      }
     } catch (e) {
-      if (mounted) Toast.showError(context, 'Failed to import backup: $e');
+      if (mounted) await _showReport("Couldn't import this file", _reason(e));
     }
   }
 
-  Future<bool> _confirmRestore(BackupPreview pv) async {
+  Future<bool> _confirmRestore(BackupPreview pv, List<String> issues) async {
     final when = pv.savedAt == null
         ? 'unknown date'
         : DateFormat.yMMMd().add_jm().format(pv.savedAt!);
@@ -289,7 +310,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           'Saved $when\n'
           '${pv.statDays} days of stats, ${pv.breaksCompleted} breaks'
           '${pv.hasSettings ? ', settings included' : ''}\n\n'
-          'This replaces your current settings and statistics.',
+          'This replaces your current settings, statistics and activity history.'
+          '${issues.isEmpty ? '' : '\n\nNot everything can be imported:\n\n'
+                    '${_bullets(issues)}'}',
         ),
         actions: [
           CupertinoDialogAction(
@@ -312,132 +335,41 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _importStatsTable(String picked) async {
     try {
-      final content = picked.replaceFirst('\uFEFF', '');
-      final lines = content.split(RegExp(r'\r?\n'));
-      if (lines.length <= 1) {
-        throw AppException(
-          type: AppErrorType.backup,
-          message: "CSV file is empty",
-        );
-      }
-
-      String clean(String v) => v.trim().replaceAll('"', '');
-      // Tolerates tab, semicolon and comma exports (e.g. spreadsheet re-saves) and a leading BOM.
-      final delimiter = lines.first.contains('\t')
-          ? '\t'
-          : lines.first.contains(';') && !lines.first.contains(',')
-          ? ';'
-          : ',';
-      final header = lines.first
-          .split(delimiter)
-          .map((h) => clean(h).toLowerCase());
-      final cols = header.toList();
-      int col(String name, int fallback) {
-        final i = cols.indexOf(name);
-        return i >= 0 ? i : fallback;
-      }
-
-      final iDate = col('date', 0);
-      final iDone = col('breakscompleted', 1);
-      final iSkip = col('breaksskipped', 2);
-      final iUsage = col('usageminutes', 3);
-      final iWell = col('wellnessactions', 4);
-
-      final List<DailyStats> statsList = [];
-      for (int i = 1; i < lines.length; i++) {
-        final line = lines[i].trim();
-        if (line.isEmpty) continue;
-        final parts = line.split(delimiter).map(clean).toList();
-        String at(int idx) => idx < parts.length ? parts[idx] : '';
-        final date = at(iDate);
-        if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) continue;
-
-        statsList.add(
-          DailyStats(
-            id: 0,
-            date: date,
-            breaksCompleted: int.tryParse(at(iDone)) ?? 0,
-            breaksSkipped: int.tryParse(at(iSkip)) ?? 0,
-            usageMinutes: int.tryParse(at(iUsage)) ?? 0,
-            wellnessActions: int.tryParse(at(iWell)) ?? 0,
-          ),
-        );
-      }
-
-      if (statsList.isEmpty) {
-        throw AppException(
-          type: AppErrorType.backup,
-          message: "No valid stats found in CSV",
-        );
-      }
-
-      if (!await _confirmReplace('daily statistics')) return;
-      _storage.dailyStatsBox?.removeAll();
-      for (final s in statsList) {
-        _storage.dailyStatsBox?.put(s);
+      final table = BackupService.parseStatsTable(picked);
+      final statsList = table.rows;
+      final skipped = table.skipped.isEmpty
+          ? ''
+          : '${table.skipped.length} rows can\'t be read and will be skipped '
+                '(line ${table.skipped.take(10).join(', ')}).';
+      if (!await _confirmReplace(
+        'daily statistics',
+        skipped.isEmpty ? '' : '\n\n$skipped',
+      )) {
+        return;
       }
 
       statsList.sort((a, b) => a.date.compareTo(b.date));
-
-      final jsonList = statsList
-          .map(
-            (e) => {
-              'date': e.date,
-              'breaksCompleted': e.breaksCompleted,
-              'breaksSkipped': e.breaksSkipped,
-              'usageMinutes': e.usageMinutes,
-              'wellnessActions': e.wellnessActions,
-            },
-          )
-          .toList();
-      final String weeklyDataJson = jsonEncode(jsonList);
-
-      await _storage.setString(AppConstants.keyWeeklyStats, weeklyDataJson);
-      SimplePrefs.instance.setString(
+      await _storage.setString(
         AppConstants.keyWeeklyStats,
-        weeklyDataJson,
+        jsonEncode([for (final s in statsList) s.toMap()..remove('id')]),
       );
 
-      int totalCompleted = 0;
-      int totalSkipped = 0;
-      for (final s in statsList) {
-        totalCompleted += s.breaksCompleted;
-        totalSkipped += s.breaksSkipped;
-      }
-
-      await _storage.setInt(AppConstants.keyBreaksCompleted, totalCompleted);
-      SimplePrefs.instance.setInt(
-        AppConstants.keyBreaksCompleted,
-        totalCompleted,
-      );
-
-      await _storage.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
-      SimplePrefs.instance.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
-
+      // The counters hold today's numbers only.
       final now = DateTime.now();
-      final todayStr =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      DailyStats? todayRow;
-      for (final s in statsList) {
-        if (s.date == todayStr) {
-          todayRow = s;
-          break;
-        }
-      }
-
-      if (todayRow != null) {
-        await _storage.setInt(
-          AppConstants.keyDailyUsageMinutes,
-          todayRow.usageMinutes,
-        );
-        SimplePrefs.instance.setInt(
-          AppConstants.keyDailyUsageMinutes,
-          todayRow.usageMinutes,
-        );
-      } else {
-        await _storage.setInt(AppConstants.keyDailyUsageMinutes, 0);
-        SimplePrefs.instance.setInt(AppConstants.keyDailyUsageMinutes, 0);
-      }
+      final today = DateFormat('yyyy-MM-dd').format(now);
+      final todayRow = statsList.where((s) => s.date == today).firstOrNull;
+      await _storage.setInt(
+        AppConstants.keyBreaksCompleted,
+        todayRow?.breaksCompleted ?? 0,
+      );
+      await _storage.setInt(
+        AppConstants.keyBreaksSkipped,
+        todayRow?.breaksSkipped ?? 0,
+      );
+      await _storage.setInt(
+        AppConstants.keyDailyUsageMinutes,
+        todayRow?.usageMinutes ?? 0,
+      );
 
       if (sl.isRegistered<StatsService>()) {
         await sl<StatsService>().initialize();
@@ -445,10 +377,14 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       await _loadStats();
 
       if (mounted) {
-        Toast.showSuccess(context, 'Stats imported from CSV');
+        Toast.showSuccess(
+          context,
+          'Imported ${statsList.length} days of stats'
+          '${skipped.isEmpty ? '' : ', ${table.skipped.length} rows skipped'}',
+        );
       }
     } catch (e) {
-      if (mounted) Toast.showError(context, 'Failed to import table: $e');
+      if (mounted) await _showReport("Couldn't import this file", _reason(e));
     }
   }
 

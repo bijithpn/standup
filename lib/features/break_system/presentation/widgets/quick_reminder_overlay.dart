@@ -200,13 +200,6 @@ class _ReminderCard extends StatelessWidget {
             color: surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: contrast ? foreground : palette.border),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 24,
-                offset: Offset(0, 8),
-              ),
-            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

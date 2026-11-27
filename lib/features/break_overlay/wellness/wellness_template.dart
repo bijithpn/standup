@@ -114,13 +114,6 @@ class CompactBreakCard extends StatelessWidget {
           color: p.canvas,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: p.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x33000000),
-              blurRadius: 24,
-              offset: Offset(0, 8),
-            ),
-          ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),

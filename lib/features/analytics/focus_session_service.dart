@@ -101,6 +101,13 @@ class FocusSessionService extends ChangeNotifier {
     });
   }
 
+  /// Re-reads storage after a backup restore.
+  void reload() {
+    _cache.clear();
+    _load();
+    notifyListeners();
+  }
+
   void _load() {
     final raw = _storage.getString(AppConstants.keyFocusSessionData);
     if (raw.isEmpty) return;

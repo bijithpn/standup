@@ -7,13 +7,14 @@ import 'package:breakmate/features/analytics/presentation/productivity/productiv
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// Day timeline of active/idle/break stretches with hover readout, hourly bars and key facts.
+/// Day timeline in split 15-minute columns with hover readout and key facts.
 class ActivityTimelineView extends StatefulWidget {
   const ActivityTimelineView({
     super.key,
     required this.entries,
-    this.height = 64,
+    this.height = 120,
     this.now,
+    this.appKeys = const <String>[],
   });
 
   final List<TimelineEntry> entries;
@@ -22,12 +23,15 @@ class ActivityTimelineView extends StatefulWidget {
 
   final DateTime? now;
 
+  /// Most used first, so blocks match the colours of the application list.
+  final List<String> appKeys;
+
   @override
   State<ActivityTimelineView> createState() => _ActivityTimelineViewState();
 }
 
 class _ActivityTimelineViewState extends State<ActivityTimelineView> {
-  TimelineEntry? _hovered;
+  DateTime? _hovered;
 
   DateTime get _now => widget.now ?? DateTime.now();
 
@@ -84,7 +88,8 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
     }
 
     final (startHour, endHour) = _bounds;
-    final byHour = activeSecondsByHour(widget.entries);
+    final blocks = timelineBlocks(widget.entries);
+    final hovered = blocks.where((b) => b.start == _hovered).firstOrNull;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -97,6 +102,7 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
             builder: (context, constraints) {
               return MouseRegion(
                 onHover: (event) => _updateHover(
+                  blocks,
                   event.localPosition,
                   constraints.maxWidth,
                   startHour,
@@ -109,7 +115,8 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
                     widget.height + _TimelinePainter.axisHeight,
                   ),
                   painter: _TimelinePainter(
-                    entries: widget.entries,
+                    blocks: blocks,
+                    appKeys: widget.appKeys,
                     startHour: startHour,
                     endHour: endHour,
                     ribbonHeight: widget.height,
@@ -118,24 +125,32 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
                     trackColor: AppTheme.surfaceElevated,
                     nowMarker: _isToday ? _now : null,
                     nowColor: AppTheme.accent,
-                    highlighted: _hovered,
+                    highlighted: hovered,
                   ),
                 ),
               );
             },
           ),
         ),
-        const SizedBox(height: 14),
-        _HourBars(byHour: byHour, startHour: startHour, endHour: endHour),
         const SizedBox(height: 12),
-        const _TimelineLegend(),
+        _TimelineLegend(blocks: blocks, appKeys: widget.appKeys),
         const SizedBox(height: 8),
-        _Readout(entry: _hovered, idleHint: busiestHourCaption(widget.entries)),
+        _Readout(
+          block: hovered,
+          appKeys: widget.appKeys,
+          idleHint: busiestHourCaption(widget.entries),
+        ),
       ],
     );
   }
 
-  void _updateHover(Offset position, double width, int startHour, int endHour) {
+  void _updateHover(
+    List<TimelineBlock> blocks,
+    Offset position,
+    double width,
+    int startHour,
+    int endHour,
+  ) {
     final span = (endHour - startHour) * 3600;
     if (span <= 0 || width <= 0) return;
 
@@ -148,16 +163,103 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
       startHour,
     ).add(Duration(seconds: secondsFromStart.round()));
 
-    TimelineEntry? found;
-    for (final entry in widget.entries) {
-      if (!moment.isBefore(entry.startedAt) && moment.isBefore(entry.endedAt)) {
-        found = entry;
-        break;
-      }
-    }
+    final found = blocks
+        .where(
+          (b) =>
+              !moment.isBefore(b.start) &&
+              moment.isBefore(b.start.add(_blockLength)),
+        )
+        .firstOrNull
+        ?.start;
     if (found != _hovered) setState(() => _hovered = found);
   }
 }
+
+typedef TimelinePart = ({
+  ActivityKind kind,
+  String appKey,
+  String appName,
+  int seconds,
+});
+
+/// One column of the timeline; [parts] are largest first.
+typedef TimelineBlock = ({DateTime start, List<TimelinePart> parts});
+
+const Duration _blockLength = Duration(minutes: 15);
+const double _minSlice = 4;
+
+List<TimelineBlock> timelineBlocks(List<TimelineEntry> entries) {
+  final buckets = <DateTime, Map<(ActivityKind, String), TimelinePart>>{};
+  for (final entry in entries) {
+    var cursor = entry.startedAt;
+    while (cursor.isBefore(entry.endedAt)) {
+      final bucket = DateTime(
+        cursor.year,
+        cursor.month,
+        cursor.day,
+        cursor.hour,
+        cursor.minute - cursor.minute % _blockLength.inMinutes,
+      );
+      final next = bucket.add(_blockLength);
+      final end = next.isBefore(entry.endedAt) ? next : entry.endedAt;
+      final parts = buckets[bucket] ??= {};
+      final key = (entry.kind, entry.appKey);
+      parts[key] = (
+        kind: entry.kind,
+        appKey: entry.appKey,
+        appName: entry.appName,
+        seconds: (parts[key]?.seconds ?? 0) + end.difference(cursor).inSeconds,
+      );
+      cursor = end;
+    }
+  }
+
+  return <TimelineBlock>[
+    for (final MapEntry(key: start, value: parts) in buckets.entries)
+      (
+        start: start,
+        parts: parts.values.toList()
+          ..sort((a, b) => b.seconds.compareTo(a.seconds)),
+      ),
+  ];
+}
+
+/// Slice heights as a share of the block, with a floor so that a break of a few
+/// seconds stays visible.
+List<double> timelineSliceHeights(List<int> seconds, double height) {
+  final raw = <double>[
+    for (final value in seconds)
+      math.max(_minSlice, value / _blockLength.inSeconds * height),
+  ];
+  final total = raw.fold<double>(0, (a, b) => a + b);
+  if (total <= height) return raw;
+  return <double>[for (final value in raw) value * height / total];
+}
+
+/// Position in the application list; unlisted apps go last.
+int _rank(TimelinePart part, List<String> appKeys) {
+  final index = appKeys.indexOf(part.appKey);
+  return index < 0 ? appKeys.length : index;
+}
+
+Color _partColor(TimelinePart part, List<String> appKeys) {
+  switch (part.kind) {
+    case ActivityKind.active:
+      final rank = appKeys.indexOf(part.appKey);
+      return rank < 0 ? AppTheme.gray500 : appColor(rank);
+    // Neutral, because green already belongs to an application.
+    case ActivityKind.onBreak:
+      return AppTheme.textSecondary;
+    case ActivityKind.idle:
+      return AppTheme.gray700;
+  }
+}
+
+String _partLabel(TimelinePart part) => switch (part.kind) {
+  ActivityKind.active => part.appName,
+  ActivityKind.onBreak => 'Break',
+  ActivityKind.idle => 'Away',
+};
 
 Map<int, int> activeSecondsByHour(List<TimelineEntry> entries) {
   final perHour = <int, int>{};
@@ -261,209 +363,54 @@ class _Fact extends StatelessWidget {
   }
 }
 
-class _HourBars extends StatelessWidget {
-  const _HourBars({
-    required this.byHour,
-    required this.startHour,
-    required this.endHour,
-  });
-
-  final Map<int, int> byHour;
-  final int startHour;
-  final int endHour;
-
-  static const double _barArea = 40;
-
-  @override
-  Widget build(BuildContext context) {
-    final hours = endHour - startHour;
-    if (hours <= 0) return const SizedBox.shrink();
-
-    var peakHour = -1;
-    var peak = 0;
-    byHour.forEach((hour, seconds) {
-      if (seconds > peak) {
-        peak = seconds;
-        peakHour = hour;
-      }
-    });
-
-    const scale = 3600;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          'Active time per hour',
-          style: TextStyle(
-            fontFeatures: AppTheme.tabular,
-            fontFamily: 'Inter',
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: _barArea + 16,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: <Widget>[
-              for (var hour = startHour; hour < endHour; hour++)
-                Expanded(
-                  child: _HourBar(
-                    hour: hour,
-                    seconds: byHour[hour] ?? 0,
-                    fraction: ((byHour[hour] ?? 0) / scale).clamp(0.0, 1.0),
-                    isPeak: hour == peakHour && peak >= 60,
-                    barArea: _barArea,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HourBar extends StatelessWidget {
-  const _HourBar({
-    required this.hour,
-    required this.seconds,
-    required this.fraction,
-    required this.isPeak,
-    required this.barArea,
-  });
-
-  final int hour;
-  final int seconds;
-  final double fraction;
-  final bool isPeak;
-  final double barArea;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isPeak
-        ? AppTheme.accent
-        : AppTheme.accent.withValues(alpha: 0.5);
-    final height = seconds <= 0 ? 0.0 : math.max(3.0, fraction * barArea);
-
-    return Tooltip(
-      message: seconds <= 0
-          ? '${formatHour(hour)}: no activity'
-          : '${formatHour(hour)}: ${formatDuration(seconds)} active',
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            SizedBox(
-              height: 14,
-              child: isPeak
-                  ? FittedBox(
-                      child: Text(
-                        formatDuration(seconds),
-                        style: TextStyle(
-                          fontFeatures: AppTheme.tabular,
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.accent,
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 2),
-            Container(
-              height: barArea,
-              alignment: Alignment.bottomCenter,
-              decoration: BoxDecoration(
-                color: AppTheme.textMuted.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Container(
-                height: height,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _Readout extends StatelessWidget {
-  const _Readout({this.entry, this.idleHint});
+  const _Readout({this.block, required this.appKeys, this.idleHint});
 
-  final TimelineEntry? entry;
-
+  final TimelineBlock? block;
+  final List<String> appKeys;
   final String? idleHint;
 
   @override
   Widget build(BuildContext context) {
-    final current = entry;
+    final style = TextStyle(
+      fontFeatures: AppTheme.tabular,
+      fontFamily: 'Inter',
+      fontSize: 12,
+      color: AppTheme.textMuted,
+    );
+    final current = block;
     if (current == null) {
       return Text(
         idleHint == null
-            ? 'Hover the timeline for detail'
-            : '$idleHint · hover the timeline for detail',
-        style: TextStyle(
-          fontFeatures: AppTheme.tabular,
-          fontFamily: 'Inter',
-          fontSize: 12,
-          color: AppTheme.textMuted,
-        ),
+            ? 'Hover a column for detail'
+            : '$idleHint · hover a column for detail',
+        style: style,
       );
     }
 
-    final colour = activityColor(current.kind, current.categoryName);
+    // Breaks lead, so truncation never hides them.
+    final parts = <TimelinePart>[
+      ...current.parts.where((p) => p.kind == ActivityKind.onBreak),
+      ...current.parts.where((p) => p.kind != ActivityKind.onBreak),
+    ];
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: colour, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 8),
         Text(
-          '${formatClock(current.startedAt)}–${formatClock(current.endedAt)}',
-          style: TextStyle(
-            fontFeatures: AppTheme.tabular,
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: AppTheme.textSecondary,
-          ),
+          '${formatClock(current.start)}–'
+          '${formatClock(current.start.add(_blockLength))}',
+          style: style.copyWith(color: AppTheme.textSecondary),
         ),
         const SizedBox(width: 10),
-        Flexible(
+        Expanded(
           child: Text(
-            current.kind == ActivityKind.active
-                ? current.appName
-                : activityLabel(current.kind),
+            <String>[
+              for (final part in parts)
+                '${_partLabel(part)} ${formatDuration(part.seconds)}',
+            ].join(' · '),
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFeatures: AppTheme.tabular,
-              fontFamily: 'Inter',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          formatDuration(current.seconds),
-          style: TextStyle(
-            fontFeatures: AppTheme.tabular,
-            fontFamily: 'Inter',
-            fontSize: 12,
-            color: AppTheme.textMuted,
+            style: style.copyWith(color: AppTheme.textPrimary),
           ),
         ),
       ],
@@ -472,10 +419,19 @@ class _Readout extends StatelessWidget {
 }
 
 class _TimelineLegend extends StatelessWidget {
-  const _TimelineLegend();
+  const _TimelineLegend({required this.blocks, required this.appKeys});
+
+  final List<TimelineBlock> blocks;
+  final List<String> appKeys;
 
   @override
   Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontFeatures: AppTheme.tabular,
+      fontFamily: 'Inter',
+      fontSize: 12,
+      color: AppTheme.textMuted,
+    );
     Widget dot(Color color, String label) => Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -488,34 +444,30 @@ class _TimelineLegend extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            fontFeatures: AppTheme.tabular,
-            fontFamily: 'Inter',
-            fontSize: 12,
-            color: AppTheme.textMuted,
-          ),
-        ),
+        Text(label, style: style),
       ],
     );
+
+    final apps =
+        <String, TimelinePart>{
+            for (final block in blocks)
+              for (final part in block.parts)
+                if (part.kind == ActivityKind.active) part.appKey: part,
+          }.values.toList()
+          ..sort((a, b) => _rank(a, appKeys).compareTo(_rank(b, appKeys)));
+
+    Color fixed(ActivityKind kind) =>
+        _partColor((kind: kind, appKey: '', appName: '', seconds: 0), appKeys);
 
     return Wrap(
       spacing: 14,
       runSpacing: 4,
       children: <Widget>[
-        dot(activityColor(ActivityKind.active, 'coding'), 'Working in an app'),
-        dot(activityColor(ActivityKind.onBreak, ''), 'On a break'),
-        dot(activityColor(ActivityKind.idle, ''), 'Away'),
-        Text(
-          'Empty = not recorded',
-          style: TextStyle(
-            fontFeatures: AppTheme.tabular,
-            fontFamily: 'Inter',
-            fontSize: 12,
-            color: AppTheme.textMuted,
-          ),
-        ),
+        for (final app in apps) dot(_partColor(app, appKeys), app.appName),
+        dot(fixed(ActivityKind.onBreak), 'On a break'),
+        dot(fixed(ActivityKind.idle), 'Away'),
+        Text('Each column is 15 minutes', style: style),
+        Text('Empty = not recorded', style: style),
       ],
     );
   }
@@ -523,7 +475,8 @@ class _TimelineLegend extends StatelessWidget {
 
 class _TimelinePainter extends CustomPainter {
   _TimelinePainter({
-    required this.entries,
+    required this.blocks,
+    required this.appKeys,
     required this.startHour,
     required this.endHour,
     required this.ribbonHeight,
@@ -535,7 +488,8 @@ class _TimelinePainter extends CustomPainter {
     this.highlighted,
   });
 
-  final List<TimelineEntry> entries;
+  final List<TimelineBlock> blocks;
+  final List<String> appKeys;
   final int startHour;
   final int endHour;
   final double ribbonHeight;
@@ -544,7 +498,7 @@ class _TimelinePainter extends CustomPainter {
   final Color trackColor;
   final Color nowColor;
   final DateTime? nowMarker;
-  final TimelineEntry? highlighted;
+  final TimelineBlock? highlighted;
 
   static const double axisHeight = 20;
 
@@ -554,9 +508,9 @@ class _TimelinePainter extends CustomPainter {
     if (span <= 0 || ribbonHeight <= 0) return;
 
     final dayStart = DateTime(
-      entries.first.startedAt.year,
-      entries.first.startedAt.month,
-      entries.first.startedAt.day,
+      blocks.first.start.year,
+      blocks.first.start.month,
+      blocks.first.start.day,
       startHour,
     );
 
@@ -575,41 +529,58 @@ class _TimelinePainter extends CustomPainter {
 
     canvas.save();
     canvas.clipRRect(track);
-    for (final entry in entries) {
-      final left = xFor(entry.startedAt).clamp(0.0, size.width);
-      final right = xFor(entry.endedAt).clamp(0.0, size.width);
+    Rect columnFor(TimelineBlock block) {
+      final left = xFor(block.start);
+      final right = xFor(block.start.add(_blockLength));
+      return Rect.fromLTRB(left + 1, 3, right - 1, ribbonHeight - 3);
+    }
 
-      final width = math.max(right - left, 2.5);
+    // Bottom to top: apps in list order, then breaks, then away.
+    const kinds = <ActivityKind>[
+      ActivityKind.active,
+      ActivityKind.onBreak,
+      ActivityKind.idle,
+    ];
+    for (final block in blocks) {
+      final column = columnFor(block);
+      final parts = block.parts.toList()
+        ..sort((a, b) {
+          final kind = kinds.indexOf(a.kind).compareTo(kinds.indexOf(b.kind));
+          return kind != 0
+              ? kind
+              : _rank(a, appKeys).compareTo(_rank(b, appKeys));
+        });
+      final heights = timelineSliceHeights([
+        for (final part in parts) part.seconds,
+      ], column.height);
 
-      final colour = activityColor(entry.kind, entry.categoryName);
-      final isHighlighted = identical(entry, highlighted);
-      final isActive = entry.kind == ActivityKind.active;
-
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(left, 3, width, ribbonHeight - 6),
-        const Radius.circular(4),
-      );
-
-      final base = isActive
-          ? colour.withValues(alpha: isHighlighted ? 1.0 : 0.88)
-          : colour.withValues(alpha: isHighlighted ? 0.75 : 0.4);
-      canvas.drawRRect(rect, Paint()..color = base);
-
-      if (isHighlighted) {
+      var bottom = column.bottom;
+      for (var i = 0; i < parts.length; i++) {
+        final top = bottom - heights[i];
         canvas.drawRRect(
-          rect,
+          RRect.fromRectAndRadius(
+            Rect.fromLTRB(column.left, top + 1, column.right, bottom),
+            const Radius.circular(2),
+          ),
           Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.6
-            ..color = AppTheme.textPrimary.withValues(alpha: 0.7),
+            ..color = _partColor(
+              parts[i],
+              appKeys,
+            ).withValues(alpha: parts[i].kind == ActivityKind.idle ? 0.6 : 0.9),
         );
+        bottom = top;
       }
+    }
 
-      if (isActive && width > 56) {
-        _paintLabel(canvas, entry.appName, left + 8, width - 16, base);
-      } else if (entry.kind == ActivityKind.onBreak && width > 44) {
-        _paintLabel(canvas, 'Break', left + 8, width - 16, base);
-      }
+    final hovered = highlighted;
+    if (hovered != null) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(columnFor(hovered), const Radius.circular(2)),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6
+          ..color = AppTheme.textPrimary.withValues(alpha: 0.8),
+      );
     }
     canvas.restore();
 
@@ -699,40 +670,6 @@ class _TimelinePainter extends CustomPainter {
     }
   }
 
-  void _paintLabel(
-    Canvas canvas,
-    String text,
-    double left,
-    double maxWidth,
-    Color bg,
-  ) {
-    if (maxWidth <= 8) return;
-    final painter = TextPainter(
-      text: const TextSpan(),
-      maxLines: 1,
-      ellipsis: '…',
-      textDirection: TextDirection.ltr,
-    );
-    painter.text = TextSpan(
-      text: text,
-      style: TextStyle(
-        fontFeatures: AppTheme.tabular,
-        fontFamily: 'Inter',
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: AppTheme.onColor(Color.alphaBlend(bg, AppTheme.surfaceCard)),
-      ),
-    );
-    painter.layout(maxWidth: maxWidth);
-    painter.paint(canvas, Offset(left, (ribbonHeight - painter.height) / 2));
-  }
-
   @override
-  bool shouldRepaint(_TimelinePainter old) =>
-      old.entries != entries ||
-      old.startHour != startHour ||
-      old.endHour != endHour ||
-      old.highlighted != highlighted ||
-      old.nowMarker != nowMarker ||
-      old.ribbonHeight != ribbonHeight;
+  bool shouldRepaint(_TimelinePainter old) => true;
 }

@@ -176,6 +176,12 @@ class AppUsageService extends ChangeNotifier {
     });
   }
 
+  void reload() {
+    _cache.clear();
+    _load();
+    notifyListeners();
+  }
+
   void _load() {
     final raw = _storage.getString(AppConstants.keyAppUsageData);
     if (raw.isEmpty) return;

@@ -403,6 +403,15 @@ class SettingsRepository extends ChangeNotifier {
         'activity_history_retention_days',
         defaultValue: 30,
       ),
+      companionWanderingEnabled: _storage.getBool(
+        'companion_wandering_enabled',
+        defaultValue: true,
+      ),
+      companionKeepOnScreen: _storage.getBool(
+        'companion_keep_on_screen',
+        defaultValue: true,
+      ),
+      companionAvatarDefinition: _optionalString('companion_avatar_definition'),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
         defaultValue: '',
@@ -429,6 +438,11 @@ class SettingsRepository extends ChangeNotifier {
         defaultValue: false,
       ),
     );
+  }
+
+  String? _optionalString(String key) {
+    final value = _storage.getString(key);
+    return value.isEmpty ? null : value;
   }
 
   List<String> _decodeStringList(String raw) {
@@ -720,6 +734,15 @@ class SettingsRepository extends ChangeNotifier {
         'activity_history_retention_days',
         defaultValue: 30,
       ),
+      companionWanderingEnabled: _storage.getBool(
+        'companion_wandering_enabled',
+        defaultValue: true,
+      ),
+      companionKeepOnScreen: _storage.getBool(
+        'companion_keep_on_screen',
+        defaultValue: true,
+      ),
+      companionAvatarDefinition: _optionalString('companion_avatar_definition'),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
         defaultValue: '',
@@ -1054,6 +1077,18 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setInt(
       'activity_history_retention_days',
       settings.activityHistoryRetentionDays,
+    );
+    await _storage.setBool(
+      'companion_wandering_enabled',
+      settings.companionWanderingEnabled,
+    );
+    await _storage.setBool(
+      'companion_keep_on_screen',
+      settings.companionKeepOnScreen,
+    );
+    await _storage.setString(
+      'companion_avatar_definition',
+      settings.companionAvatarDefinition ?? '',
     );
     await _storage.setString(
       'companion_preview_background',

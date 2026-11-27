@@ -83,8 +83,10 @@ jobs:
           while IFS= read -r item; do
             codesign --force --sign - "$item"
           done < <(find "$APP_PATH/Contents" \( -name "*.xpc" -o -name "*.app" -o -name "*.framework" -o -name "*.dylib" -o -name "Autoupdate" \) | awk '{print length, $0}' | sort -rn | cut -d' ' -f2-)
-          codesign --force --sign - "$APP_PATH"
+          # Re-signing drops entitlements unless passed again; file_picker refuses to open without them.
+          codesign --force --sign - --entitlements macos/Runner/Release.entitlements "$APP_PATH"
           codesign --verify --deep --verbose=2 "$APP_PATH"
+          codesign -d --entitlements - "$APP_PATH" | grep -q com.apple.security.files.user-selected.read-write
 
       - name: Create DMG
         run: |

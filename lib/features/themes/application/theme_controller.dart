@@ -46,6 +46,15 @@ class ThemeController extends ChangeNotifier {
     _applyCurrentPreset();
   }
 
+  /// Re-reads storage after a backup restore.
+  void reload() {
+    _currentPreset = AppThemePreset.nordicSlate;
+    _customAccent = null;
+    AppTheme.applyCustomAccent(null);
+    _loadFromStorage();
+    notifyListeners();
+  }
+
   Future<void> setPreset(String presetId) async {
     final preset = AppThemePreset.findById(presetId);
     _currentPreset = preset;

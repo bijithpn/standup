@@ -7,6 +7,39 @@ class OverlayPanel: NSPanel {
     
     override var canBecomeKey: Bool { return !isReminder }
     override var canBecomeMain: Bool { return !isReminder }
+
+    private var dragMonitor: Any?
+
+    static func clamp(_ origin: NSPoint, _ size: NSSize, to area: NSRect) -> NSPoint {
+        return NSPoint(x: min(max(origin.x, area.minX), area.maxX - size.width),
+                       y: min(max(origin.y, area.minY), area.maxY - size.height))
+    }
+
+    // Not performDrag: it lets the panel leave the screen, cutting off its buttons.
+    func dragWithinScreen() {
+        endDrag()
+        let mouseStart = NSEvent.mouseLocation
+        let originStart = frame.origin
+        dragMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged, .leftMouseUp]) { [weak self] event in
+            guard let self = self else { return event }
+            // The button may already be up by the time the Dart call arrives.
+            guard event.type == .leftMouseDragged else {
+                self.endDrag()
+                return event
+            }
+            let mouse = NSEvent.mouseLocation
+            if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? self.screen {
+                let moved = NSPoint(x: originStart.x + mouse.x - mouseStart.x, y: originStart.y + mouse.y - mouseStart.y)
+                self.setFrameOrigin(OverlayPanel.clamp(moved, self.frame.size, to: screen.visibleFrame))
+            }
+            return event
+        }
+    }
+
+    private func endDrag() {
+        if let monitor = dragMonitor { NSEvent.removeMonitor(monitor) }
+        dragMonitor = nil
+    }
 }
 
 class OverlayWindowManager: NSObject {
@@ -240,9 +273,8 @@ class OverlayWindowManager: NSObject {
             let size = NSSize(width: args?["warningWidth"] as? Double ?? 380, height: args?["warningHeight"] as? Double ?? 100)
             let f = screen.frame
             let offset = warningOffset ?? NSPoint(x: (f.width - size.width) / 2, y: (f.height - size.height) / 2)
-            let x = f.minX + min(max(offset.x, 0), f.width - size.width)
-            let y = f.minY + min(max(offset.y, 0), f.height - size.height)
-            instance.window.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
+            let origin = OverlayPanel.clamp(NSPoint(x: f.minX + offset.x, y: f.minY + offset.y), size, to: screen.visibleFrame)
+            instance.window.setFrame(NSRect(origin: origin, size: size), display: true)
             instance.window.placedOrigin = instance.window.frame.origin
             instance.window.ignoresMouseEvents = false
         }
@@ -583,8 +615,8 @@ class OverlayWindowManager: NSObject {
         channel.setMethodCallHandler { [weak window] call, result in
             switch call.method {
             case "startDragging":
-                if let window = window, window.isReminder, let event = NSApp.currentEvent {
-                    window.performDrag(with: event)
+                if let window = window, window.isReminder {
+                    window.dragWithinScreen()
                 }
                 result(nil)
             case "getOverlayData":

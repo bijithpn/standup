@@ -413,6 +413,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
               : '${formatClock(day.firstActivityAt!)} to '
                     '${formatClock(day.lastActivityAt!)}',
           child: ActivityTimelineView(
+            appKeys: [for (final app in day.apps) app.appKey],
             entries:
                 _repository?.timelineForDate(_todayKey) ??
                 const <TimelineEntry>[],

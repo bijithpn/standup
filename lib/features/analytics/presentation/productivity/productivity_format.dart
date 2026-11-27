@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 String formatDuration(int seconds) {
@@ -110,46 +109,6 @@ const List<Color> _appPalette = <Color>[
 
 /// Distinct colour per ranked application so the donut, list and detail sheet agree.
 Color appColor(int rank) => _appPalette[rank % _appPalette.length];
-
-Color categoryColor(String categoryName) {
-  switch (categoryName) {
-    case 'coding':
-      return AppTheme.accent;
-    case 'writing':
-      return AppTheme.info;
-    case 'browsing':
-      return AppTheme.warning;
-    case 'meeting':
-      return AppTheme.longBreak;
-    case 'design':
-      return AppTheme.shortBreak;
-    default:
-      return AppTheme.gray500;
-  }
-}
-
-// Idle and break get fixed colours; active uses the category colour.
-Color activityColor(ActivityKind kind, String categoryName) {
-  switch (kind) {
-    case ActivityKind.active:
-      return categoryColor(categoryName);
-    case ActivityKind.onBreak:
-      return AppTheme.success;
-    case ActivityKind.idle:
-      return AppTheme.gray700;
-  }
-}
-
-String activityLabel(ActivityKind kind) {
-  switch (kind) {
-    case ActivityKind.active:
-      return 'Active';
-    case ActivityKind.onBreak:
-      return 'Break';
-    case ActivityKind.idle:
-      return 'Idle';
-  }
-}
 
 /// "+12m vs yesterday"; hidden when there is no previous value to compare.
 class ComparisonLabel extends StatelessWidget {

@@ -136,7 +136,47 @@ void main() {
       expect(byHour[12], 10 * 60);
     });
 
-    testWidgets('shows the facts, hour bars and the legend', (tester) async {
+    test('15-minute blocks keep every app, break and away stretch', () {
+      TimelineEntry use(
+        int from,
+        int to,
+        String app, [
+        ActivityKind kind = ActivityKind.active,
+      ]) => TimelineEntry(
+        kind: kind,
+        appKey: app,
+        appName: app,
+        categoryName: '',
+        startedAt: _day.add(Duration(minutes: from)),
+        endedAt: _day.add(Duration(minutes: to)),
+      );
+
+      final blocks = timelineBlocks([
+        use(605, 607, 'code'),
+        use(607, 612, 'safari'),
+        use(612, 613, '', ActivityKind.onBreak),
+        use(613, 620, 'code'),
+        use(660, 661, 'code'),
+      ]);
+
+      expect(blocks.length, 3, reason: 'unrecorded time makes no block');
+      expect(blocks[0].start, _day.add(const Duration(minutes: 600)));
+      expect(blocks[0].parts.map((p) => (p.appKey, p.seconds)), [
+        ('safari', 300),
+        ('code', 240),
+        ('', 60),
+      ]);
+      expect(blocks[1].parts.single.seconds, 5 * 60);
+    });
+
+    test('a break of a few seconds still gets a visible slice', () {
+      final heights = timelineSliceHeights([881, 19], 114);
+      expect(heights.last, greaterThan(3.5));
+      expect(heights.reduce((a, b) => a + b), lessThanOrEqualTo(114.001));
+      expect(timelineSliceHeights([450], 114), [57]);
+    });
+
+    testWidgets('shows the facts and the legend', (tester) async {
       await pump(tester, [entry(600, 640), entry(700, 760)]);
       for (final fact in ['Started 10:00', 'Latest ', 'Longest focus ']) {
         expect(
@@ -145,7 +185,6 @@ void main() {
           reason: fact,
         );
       }
-      expect(find.text('Active time per hour'), findsOneWidget);
       expect(find.text('Empty = not recorded'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

@@ -78,13 +78,6 @@ class BreakStartWarningOverlay extends StatelessWidget {
                   color: AppTheme.surfaceCard.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   border: Border.all(color: AppTheme.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.scrim,
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
                 ),
                 child: Wrap(
                   alignment: WrapAlignment.center,
@@ -185,13 +178,6 @@ class BreakStartWarningOverlay extends StatelessWidget {
             color: AppTheme.surfaceCard,
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             border: Border.all(color: AppTheme.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.scrim,
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

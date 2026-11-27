@@ -96,6 +96,8 @@ class SimplePrefs {
     }
   }
 
+  Object? read(String key) => _data[key];
+
   bool getBool(String key, {bool defaultValue = false}) {
     final v = _data[key];
     if (v is bool) return v;
