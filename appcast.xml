@@ -3,7 +3,25 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                                                                                                                                                                                      <item>
+        <language>en</language>                                                                                                                                                                                                                                              <item>
+            <title>Version 1.17.0</title>
+            <pubDate>Fri, 27 Nov 2026 12:21:25 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.17.0</h3>
+                <h5>🔧 Build &amp; Maintenance</h5>
+                <ul><li>update version to 1.17.0 and enhance changelog for new features and fixes</li></ul>
+                <h5>Other Changes</h5>
+                <ul><li>Refactor data management section and improve backup functionality</li><li>Remove macOS installation notes from appcast.xml and update patch_appcast.py to eliminate rerendering functionality for existing release notes.</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.16.0...v1.17.0">https://github.com/bijithpn/standup/compare/v1.16.0...v1.17.0</a></p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.17.0/BreakMate-Installer.dmg"
+                       sparkle:version="56"
+                       sparkle:shortVersionString="1.17.0"
+                       sparkle:edSignature="qz9B+aMIV1+z1Dho9b3O37HgSxQH6j6neG4t4joKBB7NsobAtR3pJFB14oKTa8r2rBI6vN/qi6cV1Xdv0SAyBg=="
+                       length="39399529"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.16.0</title>
             <pubDate>Fri, 27 Nov 2026 07:10:13 +0000</pubDate>
             <description><![CDATA[
