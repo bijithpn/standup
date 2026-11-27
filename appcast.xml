@@ -3,7 +3,35 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                                                                                                                                                                                              <item>
+        <language>en</language>                                                                                                                                                                                                                                                              <item>
+            <title>Version 1.17.0</title>
+            <pubDate>Fri, 27 Nov 2026 12:25:45 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.17.0</h3>
+                <p>Bug fixes and performance improvements.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.17.0/BreakMate-1.17.0-linux-x64.tar.gz" sparkle:os="linux"
+                       sparkle:version="56"
+                       sparkle:shortVersionString="1.17.0"
+                       sparkle:edSignature=""
+                       length="33216706"
+                       type="application/octet-stream" />
+        </item>
+<item>
+            <title>Version 1.17.0</title>
+            <pubDate>Fri, 27 Nov 2026 12:25:45 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.17.0</h3>
+                <p>Bug fixes and performance improvements.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.17.0/BreakMate-Setup-1.17.0.exe" sparkle:os="windows"
+                       sparkle:version="56"
+                       sparkle:shortVersionString="1.17.0"
+                       sparkle:edSignature=""
+                       length="21471150"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.17.0</title>
             <pubDate>Fri, 27 Nov 2026 12:21:25 +0000</pubDate>
             <description><![CDATA[
