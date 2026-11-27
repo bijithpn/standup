@@ -3,7 +3,37 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                                                                                                                                                                              <item>
+        <language>en</language>                                                                                                                                                                                                                      <item>
+            <title>Version 1.16.0</title>
+            <pubDate>Fri, 27 Nov 2026 07:09:18 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.16.0</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>Add 3D avatar reconstruction tests and live cursor interaction</li><li>Introduce office hours feature for budget management and update related components</li><li>Enhance companion pet behavior and overlay interactions</li></ul>
+                <h5>⚡ Improvements</h5>
+                <ul><li>improve cursor countdown logic for pre-break banner visibility</li><li>streamline CI workflow by removing native build jobs and updating comments</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.15.0...v1.16.0">https://github.com/bijithpn/standup/compare/v1.15.0...v1.16.0</a></p>
+                <h5>🍎 Installing on macOS</h5>
+                <p>BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show <em>"Apple could not verify BreakMate…"</em>. Use either fix:</p>
+                <p><strong>Option 1: one-line install (recommended)</strong><br>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install.sh">https://github.com/bijithpn/standup/releases/latest/download/install.sh</a> | bash<br>```</p>
+                <p><strong>Option 2: you already downloaded the DMG</strong><br>```bash<br>xattr -cr /Applications/BreakMate.app<br>```<br>or open <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</p>
+                <p><strong>Homebrew</strong><br>```bash<br>brew tap bijithpn/standup <a href="https://github.com/bijithpn/standup">https://github.com/bijithpn/standup</a><br>brew install --cask breakmate<br>```</p>
+                <p><strong>Uninstall:</strong> <code>curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/uninstall.sh | bash</code> (add <code>-s -- --purge</code> to also delete settings). Linux: <code>uninstall_linux.sh</code>, Windows: <code>uninstall.ps1</code>.</p>
+                <h5>🐧 Linux / 🪟 Windows one-liners</h5>
+                <p>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh">https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh</a> | bash<br>```<br>```powershell<br>irm <a href="https://github.com/bijithpn/standup/releases/latest/download/install.ps1">https://github.com/bijithpn/standup/releases/latest/download/install.ps1</a> | iex<br>```</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.16.0/BreakMate-Installer.dmg"
+                       sparkle:version="55"
+                       sparkle:shortVersionString="1.16.0"
+                       sparkle:edSignature="O0wZCGfXqpN5tSlo6AzRB+fK3anQtcWwiSfGCZvKV4P0YfuGlVxEkOt7tJqNza/fl6DHVbdBNUgJ5zy9kbebCA=="
+                       length="39376469"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.15.0</title>
             <pubDate>Mon, 23 Nov 2026 12:31:39 +0000</pubDate>
             <description><![CDATA[
