@@ -1,7 +1,7 @@
 name: breakmate
 description: "BreakMate — a desktop break-reminder and wellness companion for macOS, Windows and Linux that protects your eyes, posture, and focus."
 publish_to: "none"
-version: 1.16.0+55
+version: 1.17.0+56
 environment:
   sdk: ^3.10.4
 

@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag       | Version | Build | Date       | Summary                                                                                                                            |
 | --------- | ------: | ----: | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `v1.17.0` |  1.17.0 |    56 | 2026-11-27 | Complete backups, a 15-minute activity timeline and overlays that stay on screen                                                   |
 | `v1.16.0` |  1.16.0 |    55 | 2026-11-26 | Rebuilt companion heads, live cursor reactions and larger floating pet windows                                                     |
 | `v1.15.0` |  1.15.0 |    53 | 2026-11-23 | Period comparisons in analytics, Review adjustment confirmation and a cleaner break overlay                                        |
 | `v1.14.0` |  1.14.0 |    52 | 2026-11-23 | Break skip limits and snooze, custom budget types, a redesigned Productivity screen and a dizzy companion                          |
@@ -36,6 +37,44 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.17.0] - 2026-11-27
+
+Tags: `v1.17.0` (not yet tagged)
+
+Build: `56`
+
+Release title: Complete Backups & a Clearer Activity Timeline
+
+Changes compared with `v1.16.0` (build `55`).
+
+### Added
+
+- Full backups include activity history, skip limits, the skip reason log and time-of-day profiles.
+- Import checks a file before replacing anything and lists what cannot be imported: damaged entries, unsupported or invalid settings, missing sections and a missing custom background image.
+- Timeline legend naming each application, in the same colors as the application list.
+
+### Changed
+
+- Activity timeline shows 15-minute columns split by application, break and away time, with a hover readout of each part.
+- Backups made by a newer version of BreakMate, and files with a damaged section, are refused with a plain explanation.
+- A failed restore puts the previous data back.
+- CSV and TSV import requires the Date, BreaksCompleted, BreaksSkipped and UsageMinutes columns, and reports the rows it skipped.
+- Release notes and update entries no longer append installation instructions.
+
+### Fixed
+
+- Daily stats are now included in CSV, TSV and full backup exports.
+- Importing stats sets today's counters from today's row instead of the total of every imported day.
+- Restored data shows immediately instead of being overwritten by values still held in memory.
+- Companion wandering, keep-on-screen and custom avatar settings are saved with the other settings.
+- Dragged reminder overlays stay on screen on macOS and Windows, and the macOS break warning opens inside the visible screen area.
+- File pickers open in macOS release builds, which keep their entitlements after signing.
+
+### Removed
+
+- The "Active time per hour" bars under the timeline.
+- Drop shadows on the compact break card, break start warning and quick reminder overlays.
 
 ## [1.16.0] - 2026-11-26
 
