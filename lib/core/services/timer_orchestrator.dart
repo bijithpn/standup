@@ -131,11 +131,13 @@ class TimerOrchestrator {
     });
   }
 
-  // Shows the cursor countdown 15s before a break and hides it otherwise.
+  // Cursor countdown is a fallback for when the pre-break banner is off; otherwise both show the same countdown.
   void _onCountdownTick() {
     _updateTray();
     final remaining = timerEngine.countdownNotifier.value;
-    if (timerEngine.state == TimerState.running && remaining == 15) {
+    if (timerEngine.state == TimerState.running &&
+        remaining == 15 &&
+        timerEngine.preBreakWarningSeconds <= 0) {
       NativeEnhancementsService.instance.showCursorCountdown(seconds: 15);
     } else if (remaining <= 0 || timerEngine.state != TimerState.running) {
       NativeEnhancementsService.instance.hideCursorCountdown();

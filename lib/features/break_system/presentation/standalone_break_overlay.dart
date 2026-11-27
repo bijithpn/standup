@@ -316,6 +316,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                             remainingSecondsNotifier: remainingSecondsNotifier,
                             onSkip: _skipBreak,
                             onSnooze: _snoozeBreak,
+                            onClose: () => closeWarning(_fadeController),
+                            onDragStart: startDragging,
                             canDismiss: _canDismiss,
                             breakInfo: _cachedBreakModel!,
                             settings: _cachedSettingsModel!,

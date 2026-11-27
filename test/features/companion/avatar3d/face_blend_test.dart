@@ -11,6 +11,15 @@ void main() {
       PetEmotionState(emotion: e, intensity: 1.0);
 
   group('face blending', () {
+    test('disabled mouth and highlights do not drift while holding a face', () {
+      const quiet = AvatarFaceStyle(
+        mouthEnabled: false,
+        highlightEnabled: false,
+        mouthWidth: 18,
+        highlightSize: 24,
+      );
+      expect(quiet.lerpTo(quiet, .2).isCloseTo(quiet, epsilon: 1e-9), isTrue);
+    });
     test('ends exactly on either face', () {
       final a = expressFace(face, full(PetEmotion.content));
       final b = expressFace(face, full(PetEmotion.laughing));

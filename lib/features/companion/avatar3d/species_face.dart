@@ -62,27 +62,27 @@ const Map<String, _Face> _faces = <String, _Face>{
   ),
 
   'bear': _Face(w: 18, h: 22, gap: 62, nose: (18, 12), noseY: 34, mouthW: 22),
-  'otter': _Face(w: 20, h: 24, gap: 54, nose: (20, 13), noseY: 30, mouthW: 22),
+  'otter': _Face(w: 24, h: 30, gap: 54, nose: (20, 13), noseY: 30, mouthW: 22),
   'seal': _Face(w: 22, h: 28, gap: 56, nose: (14, 10), mouthW: 22),
-  'monkey': _Face(w: 20, h: 24, gap: 44, mouthW: 26),
+  'monkey': _Face(w: 22, h: 28, gap: 44, nose: (10, 7), noseY: 36, mouthW: 26),
 
-  'hamster': _Face(w: 26, h: 30, gap: 64, nose: (9, 7), mouthW: 14, curve: 60),
-  'guinea-pig': _Face(w: 20, h: 24, gap: 58, nose: (12, 9), mouthW: 16),
-  'chinchilla': _Face(w: 30, h: 34, gap: 52, nose: (9, 7), mouthW: 14),
+  'hamster': _Face(w: 30, h: 36, gap: 64, nose: (9, 7), mouthW: 14, curve: 60),
+  'guinea-pig': _Face(w: 26, h: 32, gap: 58, nose: (12, 9), mouthW: 16),
+  'chinchilla': _Face(w: 34, h: 40, gap: 52, nose: (9, 7), mouthW: 14),
   'squirrel': _Face(w: 22, h: 30, gap: 46, nose: (8, 6), mouthW: 14),
-  'ferret': _Face(w: 16, h: 20, gap: 38, tilt: -6, nose: (9, 7), mouthW: 14),
-  'beaver': _Face(w: 16, h: 20, gap: 52),
+  'ferret': _Face(w: 20, h: 26, gap: 38, tilt: -6, nose: (9, 7), mouthW: 14),
+  'beaver': _Face(w: 20, h: 26, gap: 52),
   'hedgehog': _Face(
-    w: 13,
-    h: 18,
+    w: 18,
+    h: 24,
     gap: 42,
     nose: (15, 11),
     noseY: 34,
     mouthW: 14,
   ),
   'capybara': _Face(
-    w: 14,
-    h: 14,
+    w: 18,
+    h: 20,
     gap: 72,
     nose: (14, 10),
     mouthW: 24,
@@ -105,11 +105,11 @@ const Map<String, _Face> _faces = <String, _Face>{
   'cow': _Face(w: 22, h: 32, gap: 64, mouthW: 26),
   'pig': _Face(w: 18, h: 26, gap: 74, mouthW: 28),
 
-  'chick': _Face(w: 18, h: 22, gap: 58),
-  'duck': _Face(w: 16, h: 21, gap: 62),
-  'goose': _Face(w: 16, h: 21, gap: 54),
+  'chick': _Face(w: 20, h: 26, gap: 52),
+  'duck': _Face(w: 20, h: 26, gap: 54),
+  'goose': _Face(w: 20, h: 26, gap: 50),
   'penguin': _Face(w: 24, h: 30, gap: 52),
-  'parrot': _Face(w: 18, h: 22, gap: 44),
+  'parrot': _Face(w: 20, h: 26, gap: 50),
   'owl': _Face(w: 36, h: 40, gap: 62, tilt: 4),
 
   'cloud': _Face(w: 16, h: 20, gap: 50, mouthW: 18, curve: 85),
@@ -131,6 +131,9 @@ const Map<String, double> _eyeBoost = <String, double>{
 
 /// Per-species face adjustments applied on top of the authored scene face.
 AvatarFaceStyle tuneFaceForSpecies(String preset, AvatarFaceStyle base) {
+  if (base.eyeShape == "anatomical" || base.eyeShape.startsWith("reference-")) {
+    return base;
+  }
   final face = _faces[preset];
   if (face == null) return base;
   final nose = face.nose;

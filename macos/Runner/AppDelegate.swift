@@ -16,7 +16,7 @@ import window_manager
 /// Registers all required Flutter plugins for secondary engines (overlays, companion).
 /// This now uses the standard GeneratedPluginRegistrant for 100% feature parity with the main engine.
 /// Secondary isolates reuse these plugin instances to handle display queries, audio playback, and visual effects.
-func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
+func RegisterSecondaryPlugins(registry: FlutterPluginRegistry, window: NSWindow? = nil) {
     // Register only the critical plugins required for secondary isolates (overlays and companion)
     // to keep memory and CPU footprint low on lower-end macOS devices.
     //
@@ -31,7 +31,7 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
     UNUserNotificationCenter.current().delegate = notificationDelegate
     MacOSWindowUtilsPlugin.register(with: registry.registrar(forPlugin: "MacOSWindowUtilsPlugin"))
     
-    WindowBridge.register(with: registry.registrar(forPlugin: "WindowBridge"))
+    WindowBridge.register(with: registry.registrar(forPlugin: "WindowBridge"), window: window)
     BehaviorEngineBridge.register(with: registry.registrar(forPlugin: "BehaviorEngineBridge"))
 }
 
@@ -805,6 +805,7 @@ private final class NativeUpdatePanel: NSObject, NSWindowDelegate {
 class WindowBridge: NSObject, FlutterPlugin {
     private let channel: FlutterMethodChannel
     private weak var registrar: FlutterPluginRegistrar?
+    private weak var targetWindow: NSWindow?
     
     /// Whether this bridge may act on the app's main window when its own
     /// engine has no window attached.
@@ -815,12 +816,17 @@ class WindowBridge: NSObject, FlutterPlugin {
 
     /// Secondary engines (companion, PiP, overlays) register through here.
     static func register(with registrar: FlutterPluginRegistrar) {
-        let bridge = WindowBridge(registrar: registrar, allowsAppWindowFallback: false)
+        register(with: registrar, window: nil)
+    }
+
+    static func register(with registrar: FlutterPluginRegistrar, window: NSWindow?) {
+        let bridge = WindowBridge(registrar: registrar, allowsAppWindowFallback: false, targetWindow: window)
         registrar.addMethodCallDelegate(bridge, channel: bridge.channel)
     }
 
-    init(registrar: FlutterPluginRegistrar, allowsAppWindowFallback: Bool = true) {
+    init(registrar: FlutterPluginRegistrar, allowsAppWindowFallback: Bool = true, targetWindow: NSWindow? = nil) {
         self.registrar = registrar
+        self.targetWindow = targetWindow
         self.allowsAppWindowFallback = allowsAppWindowFallback
         channel = FlutterMethodChannel(
             name: "com.breakmate/window",
@@ -839,6 +845,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     /// engine would send the user's main BreakMate window wandering off
     /// instead of the pet.
     private var window: NSWindow? {
+        if let targetWindow = targetWindow { return targetWindow }
         if let own = registrar?.view?.window { return own }
         guard allowsAppWindowFallback else {
             // Logged once rather than per call: the companion asks to be moved

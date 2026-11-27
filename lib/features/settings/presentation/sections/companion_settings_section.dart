@@ -7,8 +7,11 @@ import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
-import 'package:breakmate/features/companion/domain/avatar_species.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
+import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/presentation/widgets/companion_pet.dart';
 import 'package:blobatar_flutter/blobatar_flutter.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_name_dialog.dart';
@@ -514,11 +517,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   onTap: _openBlobatarRenameDialog,
                 )
               : def != null
-              ? AvatarArtwork.definition(
-                  def,
-                  width: previewSize,
-                  height: previewSize,
-                  fit: BoxFit.contain,
+              ? CompanionPet(
+                  key: ValueKey<String>(theme.id),
+                  size: previewSize,
+                  definition: def,
+                  trackCursor: false,
                 )
               : theme.basePath.endsWith('.svg')
               ? AvatarArtwork(
@@ -571,34 +574,27 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     );
   }
 
-  String _speciesThumbnailAsset(PetTheme theme) {
-    final species = theme.avatarDefinition?.species;
-    return switch (species) {
-      AvatarSpecies.panda ||
-      AvatarSpecies.redPanda ||
-      AvatarSpecies.raccoon => 'assets/avatars/species/bear.thumbnail.png',
-      AvatarSpecies.guineaPig =>
-        'assets/avatars/species/guinea-pig.thumbnail.png',
-      final AvatarSpecies species =>
-        'assets/avatars/species/${species.name}.thumbnail.png',
-      null => theme.basePath,
-    };
-  }
-
   Widget _buildSpeciesThumbnail(PetTheme theme) {
-    return RepaintBoundary(
-      child: Image.asset(
-        _speciesThumbnailAsset(theme),
+    final def = theme.avatarDefinition;
+    if (def != null && hasAvatarScene(def.species.name)) {
+      return FittedBox(
         fit: BoxFit.cover,
-        alignment: Alignment.center,
-        cacheWidth: 256,
-        cacheHeight: 256,
-        filterQuality: FilterQuality.medium,
-        isAntiAlias: true,
-        errorBuilder: (_, _, _) => Center(
-          child: Icon(CupertinoIcons.paw, size: 34, color: AppTheme.textMuted),
+        child: Avatar3DView(
+          preset: avatarPresetFor(def.species.name),
+          size: 96,
+          background: kSceneAuthoredBackground,
+          showShadow: false,
+          densityScale: 0.7,
+          palette: def.palette == AvatarPalette.defaultPalette
+              ? null
+              : def.palette,
+          style: avatarStyleFrom(def.parts),
         ),
-      ),
+      );
+    }
+    return AvatarArtwork(
+      recipe: AvatarArtworkRecipe(assetKey: theme.basePath),
+      fit: BoxFit.contain,
     );
   }
 

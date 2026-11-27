@@ -198,7 +198,7 @@ class BreakController extends ChangeNotifier {
             'overlayType': 'preBreakWarning',
             'type': 'preBreakWarning',
             ...?_skipFlags(),
-            'warningWidth': 380,
+            'warningWidth': 420,
             'warningHeight': 100,
             'secondsRemaining': _timerEngine.countdownSeconds,
             'remainingSeconds': _timerEngine.countdownSeconds,
@@ -209,6 +209,10 @@ class BreakController extends ChangeNotifier {
           },
         );
       }
+    } else if (isPaused &&
+        overlayService.currentOverlayType == OverlayType.preBreakWarning) {
+      // A pause freezes isPreBreak, which would leave the warning on screen.
+      overlayService.hideOverlay();
     } else if (!shouldShowBreak &&
         !shouldShowWarning &&
         _lastOverlayState != null) {

@@ -75,8 +75,8 @@ final class PiPFlutterWindowManager: NSObject {
         let screen = NSScreen.main ?? NSScreen.screens.first
         let screenFrame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
 
-        let width = min(max((args?["width"] as? Double) ?? 280, 180), 360)
-        let height = min(max((args?["height"] as? Double) ?? 320, 210), 420)
+        let width = min(max((args?["width"] as? Double) ?? 360, 180), 560)
+        let height = min(max((args?["height"] as? Double) ?? 400, 210), 620)
         let x = (args?["x"] as? Double) ?? Double(screenFrame.maxX - CGFloat(width) - 20)
         let y = (args?["y"] as? Double) ?? Double(screenFrame.minY + 20)
 
@@ -90,7 +90,8 @@ final class PiPFlutterWindowManager: NSObject {
         )
 
         window.minSize = NSSize(width: 180, height: 210)
-        window.maxSize = NSSize(width: 360, height: 420)
+        window.maxSize = NSSize(width: 560, height: 620)
+        window.acceptsMouseMovedEvents = true
 
         window.backgroundColor = .clear
         window.isOpaque = false
@@ -110,7 +111,6 @@ final class PiPFlutterWindowManager: NSObject {
             allowHeadlessExecution: true
         )
         engine.run(withEntrypoint: "pipMain")
-        RegisterSecondaryPlugins(registry: engine)
         IpcBridgeManager.shared.register(engine: engine)
 
         let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
@@ -120,7 +120,8 @@ final class PiPFlutterWindowManager: NSObject {
         controller.view.autoresizingMask = [.width, .height]
         controller.view.frame = NSRect(origin: .zero, size: frame.size)
 
-        window.contentView = controller.view
+        window.contentViewController = controller
+        RegisterSecondaryPlugins(registry: engine, window: window)
 
         pendingInitialArgs = args
 

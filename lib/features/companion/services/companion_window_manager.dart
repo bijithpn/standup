@@ -58,9 +58,9 @@ class CompanionWindowManager {
 
   CompanionDisplayManager? get displayManager => _displayManager;
 
-  static const Size defaultSize = Size(280, 320);
+  static const Size defaultSize = Size(360, 400);
   static const Size minSize = Size(180, 210);
-  static const Size maxSize = Size(360, 420);
+  static const Size maxSize = Size(560, 620);
   static const double handleHeight = 24.0;
   static const double minIntersection = 20.0;
 
@@ -84,7 +84,12 @@ class CompanionWindowManager {
     final persistedX = prefs.getDouble(_keyWindowX, defaultValue: -1.0);
     final persistedY = prefs.getDouble(_keyWindowY, defaultValue: -1.0);
 
-    _currentSize = _clampSize(Size(persistedWidth, persistedHeight));
+    final savedSize = Size(persistedWidth, persistedHeight);
+    // Upgrade the former default; retain deliberate custom window sizes.
+    _currentSize = savedSize == const Size(280, 320)
+        ? defaultSize
+        : _clampSize(savedSize);
+    if (_currentSize != savedSize) _persistSize(_currentSize);
 
     double x = persistedX;
     double y = persistedY;

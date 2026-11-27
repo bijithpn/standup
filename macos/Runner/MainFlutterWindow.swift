@@ -3,6 +3,7 @@ import FlutterMacOS
 
 class OverlayPanel: NSPanel {
     var isReminder: Bool = false
+    var placedOrigin: NSPoint?
     
     override var canBecomeKey: Bool { return !isReminder }
     override var canBecomeMain: Bool { return !isReminder }
@@ -25,6 +26,8 @@ class OverlayWindowManager: NSObject {
     private var escapePresses: [Date] = []
     private var compactActive = false
     fileprivate var switchedToImmersive = false
+    // Where the user dragged the pre-break warning, relative to its screen.
+    private var warningOffset: NSPoint?
 
     private static func currentScreensHash() -> Int {
         NSScreen.screens.map { "\($0.frame)" }.joined().hashValue
@@ -67,6 +70,7 @@ class OverlayWindowManager: NSObject {
             
             // If transitioning from a reminder/pre-break warning to a full break screen, promote the window
             if !isReminder {
+                rememberWarningPosition()
                 if let appDelegate = NSApp.delegate as? AppDelegate,
                    let mainWindow = appDelegate.mainFlutterWindow,
                    !isPreview {
@@ -135,13 +139,20 @@ class OverlayWindowManager: NSObject {
         // would otherwise sit there forever with no way for the user to
         // close it. This is a hard backstop, independent of Dart, so a
         // reminder always goes away on its own.
-        // Only quick health reminders (which last 4s) have a hard 6s backstop.
-        // Pre-break warnings must run their full countdown (e.g. 20s).
-        if type == "quickReminder" {
+        // A quick reminder lasts 4s; a pre-break warning lasts its countdown.
+        let ttl: Double?
+        switch type {
+        case "quickReminder": ttl = 6
+        case "preBreakWarning": ttl = ((args?["secondsRemaining"] as? NSNumber)?.doubleValue ?? 3) + 5
+        default: ttl = nil
+        }
+        if let ttl = ttl {
             showGeneration += 1
             let generation = showGeneration
-            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + ttl) { [weak self] in
                 guard let self = self, self.showGeneration == generation else { return }
+                // The main app tracks overlay visibility, so it must hear about this too.
+                (MainFlutterWindow.shared)?.bridgeChannel?.invokeMethod("hideOverlay", arguments: nil)
                 self.hideOverlay()
             }
         }
@@ -199,6 +210,16 @@ class OverlayWindowManager: NSObject {
         }
     }
 
+    private func rememberWarningPosition() {
+        for (screen, instance) in overlayInstances {
+            let origin = instance.window.frame.origin
+            if let placed = instance.window.placedOrigin, placed != origin {
+                warningOffset = NSPoint(x: origin.x - screen.frame.minX, y: origin.y - screen.frame.minY)
+            }
+            instance.window.placedOrigin = nil
+        }
+    }
+
     private func present(_ screen: NSScreen, args: [String: Any]?, isReminder: Bool) {
         // A panel already tracked for this screen would be orphaned (visible, never hidden) if overwritten.
         if let old = overlayInstances.removeValue(forKey: screen) { destroyInstance(old) }
@@ -218,9 +239,11 @@ class OverlayWindowManager: NSObject {
             // Card-sized window instead of full-screen so the Skip button is clickable without blocking the screen.
             let size = NSSize(width: args?["warningWidth"] as? Double ?? 380, height: args?["warningHeight"] as? Double ?? 100)
             let f = screen.frame
-            instance.window.setFrame(
-                NSRect(x: f.midX - size.width / 2, y: f.midY - size.height / 2, width: size.width, height: size.height),
-                display: true)
+            let offset = warningOffset ?? NSPoint(x: (f.width - size.width) / 2, y: (f.height - size.height) / 2)
+            let x = f.minX + min(max(offset.x, 0), f.width - size.width)
+            let y = f.minY + min(max(offset.y, 0), f.height - size.height)
+            instance.window.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
+            instance.window.placedOrigin = instance.window.frame.origin
             instance.window.ignoresMouseEvents = false
         }
         overlayInstances[screen] = instance
@@ -254,6 +277,7 @@ class OverlayWindowManager: NSObject {
     var isOverlayShowing: Bool { !overlayInstances.isEmpty }
 
     func hideOverlay(restoreMainWindow: Bool = true) {
+        rememberWarningPosition()
         showGeneration += 1
         lastHideTime = Date()
         switchedToImmersive = false
@@ -556,8 +580,13 @@ class OverlayWindowManager: NSObject {
             channel.invokeMethod("updateOverlayData", arguments: initialArgs)
         }
         
-        channel.setMethodCallHandler { call, result in
+        channel.setMethodCallHandler { [weak window] call, result in
             switch call.method {
+            case "startDragging":
+                if let window = window, window.isReminder, let event = NSApp.currentEvent {
+                    window.performDrag(with: event)
+                }
+                result(nil)
             case "getOverlayData":
                 result(OverlayWindowManager.shared.lastShowArgs)
             case "checkIsMainEngine":

@@ -129,11 +129,14 @@ class GoalsSection extends StatelessWidget {
                 sectionHeader(
                   'App time budgets',
                   subtitle: s.appUsageTrackingEnabled
-                      ? 'Soft daily limits. Reaching one adds a note to your insights; nothing is blocked.'
+                      ? 'Soft daily limits that share your office hours. Reaching one adds a note to your insights; nothing is blocked.'
                       : 'Needs app usage tracking, which is off. Turn it on in Privacy.',
                 ),
                 if (s.appUsageTrackingEnabled)
                   CategoryBudgetsCard(
+                    officeHours: s.officeHours,
+                    onOfficeHoursChanged: (hours) =>
+                        repo.save(s.copyWith(officeHours: hours)),
                     budgetMinutes: s.categoryDailyBudgetMinutes,
                     onChanged: (updated) => repo.save(
                       s.copyWith(categoryDailyBudgetMinutes: updated),

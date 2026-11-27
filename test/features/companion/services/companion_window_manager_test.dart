@@ -8,8 +8,8 @@ void main() {
   group('CompanionWindowManager sizing constraints', () {
     test('enforces strict min and max bounds for PiP window', () {
       expect(CompanionWindowManager.minSize, const Size(180, 210));
-      expect(CompanionWindowManager.maxSize, const Size(360, 420));
-      expect(CompanionWindowManager.defaultSize, const Size(280, 320));
+      expect(CompanionWindowManager.maxSize, const Size(560, 620));
+      expect(CompanionWindowManager.defaultSize, const Size(360, 400));
     });
   });
 }

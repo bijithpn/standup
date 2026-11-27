@@ -465,7 +465,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
         UsagePeriod.today,
       ),
       budgetMinutes: _settings!.currentSettings.categoryDailyBudgetMinutes,
-      workDaySeconds: _settings!.currentSettings.dailyWorkGoalHours * 3600,
+      workDaySeconds: _settings!.currentSettings.officeHours * 3600,
       customCategories: _settings!.currentSettings.customBudgetCategories,
       customUsedSeconds: {
         for (final custom in _settings!.currentSettings.customBudgetCategories)

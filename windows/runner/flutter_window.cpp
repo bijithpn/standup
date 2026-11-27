@@ -1068,11 +1068,13 @@ void FlutterWindow::SetupOverlayBridge() {
           else if (method_name == "checkIsMainEngine") {
             result->Success(flutter::EncodableValue(false));
           }
-          else if (method_name == "hideOverlay") {
-            OverlayWindowManager::GetInstance()->HideOverlay();
+          else if (method_name == "startDragging") {
+            // Posted for the same deadlock reason as the PiP "startDrag".
+            ReleaseCapture();
+            PostMessage(GetHandle(), WM_NCLBUTTONDOWN, HTCAPTION, 0);
             result->Success();
           }
-          else if (method_name == "skipBreak" || method_name == "completeBreak" || method_name == "snoozeBreak") {
+          else if (method_name == "hideOverlay" || method_name == "skipBreak" || method_name == "completeBreak" || method_name == "snoozeBreak") {
             // Forward to main app directly on its bridge channel
             if (main_window_ && main_window_->GetBridgeChannel()) {
               main_window_->GetBridgeChannel()->InvokeMethod(

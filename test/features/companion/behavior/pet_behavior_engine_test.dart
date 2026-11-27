@@ -78,6 +78,29 @@ void main() {
   });
 
   group('gaze', () {
+    test('cursor movement restarts a settled frame loop', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+      engine.configure(idleAnimation: false);
+      _advance(engine, 10);
+      expect(engine.isSettled, isTrue);
+      var wakes = 0;
+      engine.onNeedsFrames = () => wakes++;
+      engine.pointerMoved(_center + const Offset(200, 0));
+      expect(wakes, greaterThan(0));
+    });
+
+    test(
+      'first cursor sample is position initialization, not a sudden motion',
+      () {
+        final engine = _engine();
+        addTearDown(engine.dispose);
+        engine.pointerMoved(_center);
+        _advance(engine, .1);
+        expect(engine.snapshot.activity, isNot(PetActivity.startled));
+      },
+    );
+
     test('follows a cursor that is moving beside it', () {
       final engine = _engine();
       addTearDown(engine.dispose);
@@ -983,8 +1006,16 @@ void main() {
       final calm = PetBehaviorEngine(random: math.Random(7))..startLocal();
       calm.setViewport(_viewport, eye: _center);
       addTearDown(calm.dispose);
-      _advance(calm, 10.0);
-      final calmInterval = calm.frameInterval;
+      var calmInterval = Duration.zero;
+      _advance(
+        calm,
+        10.0,
+        each: (_) {
+          if (calm.frameInterval > calmInterval) {
+            calmInterval = calm.frameInterval;
+          }
+        },
+      );
 
       final busy = PetBehaviorEngine(random: math.Random(7))..startLocal();
       busy.setViewport(_viewport, eye: _center);

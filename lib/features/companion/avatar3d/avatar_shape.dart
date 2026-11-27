@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:breakmate/features/companion/avatar3d/avatar_math.dart';
 
 enum AvatarBodyShape {
+  hookedBeak,
+  organic,
   sphere,
   ellipse,
   square,
@@ -33,6 +35,7 @@ enum AvatarBodyShape {
 }
 
 enum ShapeProfile {
+  hookedBeak,
   superellipsoid,
   cone,
   frustum,
@@ -64,6 +67,24 @@ class ShapeSpec {
 
 const Map<AvatarBodyShape, ShapeSpec> kShapeSpecs =
     <AvatarBodyShape, ShapeSpec>{
+      AvatarBodyShape.hookedBeak: ShapeSpec(
+        exponent: 1,
+        faceCurvature: 1,
+        faceScale: 1,
+        profile: ShapeProfile.hookedBeak,
+        radiusX: 100,
+        radiusY: 100,
+        radiusZ: 100,
+      ),
+      AvatarBodyShape.organic: ShapeSpec(
+        exponent: 1,
+        faceCurvature: 1,
+        faceScale: 1,
+        profile: ShapeProfile.superellipsoid,
+        radiusX: 139,
+        radiusY: 139,
+        radiusZ: 139,
+      ),
       AvatarBodyShape.capsule: ShapeSpec(
         exponent: 0.52,
         faceCurvature: 0.52,
@@ -167,6 +188,10 @@ const Map<AvatarBodyShape, ShapeSpec> kShapeSpecs =
 
 class ShapeOptions {
   const ShapeOptions({
+    this.muzzleProjection = 0,
+    this.muzzleWidth = 65,
+    this.muzzleY = 40,
+    this.jawTaper = 0,
     this.bottomTaper = 0,
     this.cutAngle = 0,
     this.roundness,
@@ -174,6 +199,10 @@ class ShapeOptions {
     this.faceOffsetY = 0,
   });
 
+  final double muzzleProjection;
+  final double muzzleWidth;
+  final double muzzleY;
+  final double jawTaper;
   final double bottomTaper;
   final double cutAngle;
 
@@ -206,7 +235,39 @@ Vec3 surfacePoint(
   bool faceCoordinates = false,
   ShapeOptions options = ShapeOptions.none,
 }) {
+  if (options.muzzleProjection > 0 || options.jawTaper != 0) {
+    final e = (options.roundness ?? 100) / 100;
+    final y = spec.radiusY * signedPow(math.sin(latitude), e);
+    final jaw =
+        1 - options.jawTaper * math.pow(math.max(0, y / spec.radiusY), 2);
+    final x =
+        spec.radiusX *
+        signedPow(math.cos(latitude), e) *
+        signedPow(math.sin(longitude), e) *
+        jaw;
+    final z =
+        spec.radiusZ *
+        signedPow(math.cos(latitude), e) *
+        signedPow(math.cos(longitude), e);
+    return Vec3(
+      x,
+      y,
+      z + math.max(0, math.cos(longitude)) * _muzzleDepth(x, y, options),
+    );
+  }
   switch (spec.profile) {
+    case ShapeProfile.hookedBeak:
+      final t = (latitude + math.pi / 2) / math.pi;
+      final ring = math.pow(math.max(0, math.sin(math.pi * t)), .65).toDouble();
+      final width = .67 * ring * (1 - .67 * t);
+      final depth = .45 * ring;
+      final hook = .12 + .57 * math.sin(math.pi * t * .92);
+      return Vec3(
+        spec.radiusX * width * math.sin(longitude),
+        spec.radiusY * (2 * t - 1),
+        spec.radiusZ * (hook + depth * math.cos(longitude)),
+      );
+
     case ShapeProfile.teardrop:
       {
         final scale = faceCoordinates ? spec.faceScale : 1.0;
@@ -352,12 +413,79 @@ Vec3 surfaceNormal(
   );
 }
 
+double _muzzleDepth(double x, double y, ShapeOptions o) =>
+    o.muzzleProjection *
+    math.exp(
+      -math.pow(x / o.muzzleWidth, 4) - math.pow((y - o.muzzleY) / 42, 2),
+    );
+
 /// Maps a face-plane coordinate onto the curved surface so eyes/mouth wrap the head.
 Vec3 facePoint(
   ShapeSpec spec,
   Vec2 point, {
   ShapeOptions options = ShapeOptions.none,
 }) {
+  if (options.muzzleProjection > 0 || options.jawTaper != 0) {
+    final jaw =
+        1 - options.jawTaper * math.pow(math.max(0, point.y / spec.radiusY), 2);
+    final e = (options.roundness ?? 100) / 100;
+    final r =
+        math.pow((point.x / (spec.radiusX * jaw)).abs(), 2 / e) +
+        math.pow((point.y / spec.radiusY).abs(), 2 / e);
+    return Vec3(
+      point.x,
+      point.y,
+      spec.radiusZ * math.pow(math.max(0, 1 - r), e / 2) +
+          _muzzleDepth(point.x, point.y, options) *
+              math.sqrt(
+                math.max(
+                  0,
+                  1 -
+                      math.pow(
+                        (point.x /
+                                (spec.radiusX *
+                                    jaw *
+                                    math.pow(
+                                      math.max(
+                                        .0001,
+                                        1 -
+                                            math.pow(
+                                              (point.y / spec.radiusY).abs(),
+                                              2 / e,
+                                            ),
+                                      ),
+                                      e / 2,
+                                    )))
+                            .abs(),
+                        2 / e,
+                      ),
+                ),
+              ) +
+          0.8,
+    );
+  }
+  if (spec.radiusX == 153 && options.bottomTaper > 0) {
+    final vertical = clampDouble(point.y / spec.radiusY, -.995, .995);
+    final latitude = math.asin(
+      clampDouble(signedPow(vertical, 1 / spec.exponent), -.995, .995),
+    );
+    final latitudeFactor = math
+        .pow(math.max(math.cos(latitude), 0), spec.exponent)
+        .toDouble();
+    final lowerTaper = _ellipseLowerTaper(spec, vertical, options);
+    final longitude = math.asin(
+      clampDouble(
+        signedPow(
+          point.x / math.max(spec.radiusX * latitudeFactor * lowerTaper, .001),
+          1 / spec.exponent,
+        ),
+        -.995,
+        .995,
+      ),
+    );
+    final surface = surfacePoint(spec, longitude, latitude, options: options);
+    return Vec3(surface.x, surface.y, surface.z + .8);
+  }
   final normalizedRadius = math.min(
     point.x * point.x / (spec.radiusX * spec.radiusX) +
         point.y * point.y / (spec.radiusY * spec.radiusY),
@@ -373,6 +501,36 @@ Vec3 faceNormal(
   Vec2 point, {
   ShapeOptions options = ShapeOptions.none,
 }) {
+  if (options.muzzleProjection > 0 || options.jawTaper != 0) {
+    final p = facePoint(spec, point, options: options);
+    return normalize(
+      cross(
+        subtract(
+          facePoint(spec, Vec2(point.x + .1, point.y), options: options),
+          p,
+        ),
+        subtract(
+          facePoint(spec, Vec2(point.x, point.y + .1), options: options),
+          p,
+        ),
+      ),
+    );
+  }
+  if (spec.radiusX == 153 && options.bottomTaper > 0) {
+    const d = .35;
+    return normalize(
+      cross(
+        subtract(
+          facePoint(spec, Vec2(point.x + d, point.y), options: options),
+          facePoint(spec, Vec2(point.x - d, point.y), options: options),
+        ),
+        subtract(
+          facePoint(spec, Vec2(point.x, point.y + d), options: options),
+          facePoint(spec, Vec2(point.x, point.y - d), options: options),
+        ),
+      ),
+    );
+  }
   final surface = facePoint(spec, point, options: options);
   return normalize(
     Vec3(

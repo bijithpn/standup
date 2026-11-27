@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/scheduler.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -48,6 +49,7 @@ class CompanionPetState extends State<CompanionPet>
 
   late final PetBehaviorEngine _engine = PetBehaviorEngine(
     reducedMotion: widget.isStatic,
+    species: widget.definition?.species,
   );
   Ticker? _ticker;
   final Stopwatch _clock = Stopwatch()..start();
@@ -64,20 +66,21 @@ class CompanionPetState extends State<CompanionPet>
     super.initState();
     _engine.startLocal();
 
-    if (!widget.isStatic) {
-      _ticker = createTicker(_tickEngine)..start();
-      _engine.onNeedsFrames = _requestFrames;
-      _refreshOrigin();
-      _originTimer = Timer.periodic(_originRefresh, (_) => _refreshOrigin());
-    }
+    _ticker = createTicker(_tickEngine);
+    _engine.onNeedsFrames = _requestFrames;
+    _syncMotion();
     _bindCursor();
   }
 
   @override
   void didUpdateWidget(CompanionPet oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.definition?.species != widget.definition?.species) {
+      _engine.configure(species: widget.definition?.species);
+    }
     if (oldWidget.trackCursor != widget.trackCursor ||
         oldWidget.isStatic != widget.isStatic) {
+      _syncMotion();
       _bindCursor();
     }
   }
@@ -94,9 +97,26 @@ class CompanionPetState extends State<CompanionPet>
   }
 
   /// On-demand ticking; see _enterRest for the idle fallback.
+  void _syncMotion() {
+    _engine.configure(reducedMotion: widget.isStatic);
+    _originTimer?.cancel();
+    _originTimer = null;
+    if (widget.isStatic) {
+      _ticker?.stop();
+      _restTimer?.cancel();
+      _restTimer = null;
+    } else {
+      _requestFrames();
+      if (!kIsWeb) {
+        _refreshOrigin();
+        _originTimer = Timer.periodic(_originRefresh, (_) => _refreshOrigin());
+      }
+    }
+  }
+
   void _requestFrames() {
     final ticker = _ticker;
-    if (!mounted || ticker == null) return;
+    if (!mounted || ticker == null || widget.isStatic) return;
     _restTimer?.cancel();
     _restTimer = null;
     if (!ticker.isActive) ticker.start();
@@ -122,12 +142,15 @@ class CompanionPetState extends State<CompanionPet>
   void _bindCursor() {
     _cursorSub?.cancel();
     _cursorSub = null;
-    if (!widget.trackCursor || widget.isStatic) return;
+    if (kIsWeb || !widget.trackCursor || widget.isStatic) return;
     _cursorSub = CursorFeed.instance.subscribe(_onCursorSample);
   }
 
   Future<void> _refreshOrigin() async {
-    if (!Platform.isMacOS && !Platform.isWindows && !Platform.isLinux) return;
+    if (kIsWeb ||
+        (!Platform.isMacOS && !Platform.isWindows && !Platform.isLinux)) {
+      return;
+    }
     try {
       _windowOrigin = await windowManager.getPosition();
     } catch (_) {}
@@ -140,6 +163,16 @@ class CompanionPetState extends State<CompanionPet>
     _engine
       ..setViewport(viewport)
       ..pointerMoved(sample.position);
+  }
+
+  void _trackLocalPointer(Offset position) {
+    if (widget.isStatic || !widget.trackCursor) return;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final origin = _windowOrigin + box.localToGlobal(Offset.zero);
+    _engine
+      ..setViewport(origin & box.size)
+      ..pointerMoved(origin + position);
   }
 
   /// Pet bounds in screen coordinates (window origin + local position) so they match the global cursor.
@@ -166,19 +199,23 @@ class CompanionPetState extends State<CompanionPet>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: AnimatedBuilder(
-        animation: _engine,
-        builder: (context, _) => PetStage(
-          snapshot: _engine.snapshot,
-          size: widget.size,
-          definition: widget.blobName == null ? widget.definition : null,
-          blobName: widget.blobName,
-          showShadow: widget.showShadow,
-          onTap: _handleTap,
-          onDoubleTap: widget.onDoubleTap,
+    return MouseRegion(
+      onEnter: (event) => _trackLocalPointer(event.localPosition),
+      onHover: (event) => _trackLocalPointer(event.localPosition),
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: AnimatedBuilder(
+          animation: _engine,
+          builder: (context, _) => PetStage(
+            snapshot: _engine.snapshot,
+            size: widget.size,
+            definition: widget.blobName == null ? widget.definition : null,
+            blobName: widget.blobName,
+            showShadow: widget.showShadow,
+            onTap: _handleTap,
+            onDoubleTap: widget.onDoubleTap,
+          ),
         ),
       ),
     );
